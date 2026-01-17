@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contact.com – Sign Up</title>
+    <title>Contact.com – Events</title>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
@@ -74,53 +74,51 @@
             transition: 0.3s;
         }
 
-        /* SIGN UP CARD */
-        .container {
-            width: 380px;
+        /* PAGE CONTENT */
+        .page-title {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 2.4rem;
+            font-weight: 700;
+        }
+
+        .grid {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .card {
+            width: 280px;
             background: #f7f9fc;
             color: #222;
-            padding: 30px;
+            padding: 20px;
             border-radius: 12px;
-            margin: 60px auto;
-            text-align: center;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
         }
 
-        h2 {
-            margin-bottom: 20px;
+        .card h3 {
             color: #4a6cff;
+            margin-bottom: 10px;
         }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #ccc;
+        .card p {
+            font-size: 0.95rem;
+            margin-bottom: 15px;
         }
 
-        button {
-            width: 100%;
-            padding: 12px;
+        .card button {
+            padding: 10px 20px;
             background: #4a6cff;
             color: #fff;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            margin-top: 10px;
             font-weight: 600;
-        }
-
-        .toggle {
-            margin-top: 15px;
-            color: #333;
-            font-size: 0.9rem;
-        }
-
-        .toggle a {
-            color: #4a6cff;
-            font-weight: 600;
-            text-decoration: none;
         }
 
         /* RESPONSIVE */
@@ -160,9 +158,14 @@
                 text-align: left;
             }
 
-            .container {
-                width: 90%;
-                margin-top: 40px;
+            .page-title {
+                font-size: 2rem;
+                margin-top: 30px;
+            }
+
+            .card {
+                width: 100%;
+                max-width: 350px;
             }
         }
     </style>
@@ -181,25 +184,38 @@
 
         <div class="nav-links">
             <a href="index.html">Home</a>
-            <a href="Communities.html">Communities</a>
-            <a href="Events.html">Events</a>
+            <a href="communities.html">Communities</a>
+            <a href="events.html">Events</a>
             <a href="login.html">Login</a>
             <a href="signup.html" class="nav-signup-link">Sign Up</a>
         </div>
     </nav>
 
-    <div class="container">
-        <h2>Create Account</h2>
+    <h1 class="page-title">Events</h1>
 
-        <input type="text" placeholder="Full Name" />
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
+    <div class="grid">
+        <div class="card">
+            <h3>Startup Meetup</h3>
+            <p>Connect with founders and innovators in your city.</p>
+            <button>View Event</button>
+        </div>
 
-        <button>Sign Up</button>
+        <div class="card">
+            <h3>Photography Walk</h3>
+            <p>Explore scenic spots and capture amazing shots together.</p>
+            <button>View Event</button>
+        </div>
 
-        <div class="toggle">
-            Already have an account?
-            <a href="login.html">Login</a>
+        <div class="card">
+            <h3>Fitness Bootcamp</h3>
+            <p>Join a high‑energy outdoor workout session.</p>
+            <button>View Event</button>
+        </div>
+
+        <div class="card">
+            <h3>Tech Workshop</h3>
+            <p>Learn new skills and build something awesome.</p>
+            <button>View Event</button>
         </div>
     </div>
 

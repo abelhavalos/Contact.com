@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contact.com – Sign Up</title>
+    <title>Contact.com – Learn More</title>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
@@ -74,53 +74,72 @@
             transition: 0.3s;
         }
 
-        /* SIGN UP CARD */
-        .container {
-            width: 380px;
+        /* HERO SECTION */
+        .hero {
+            text-align: center;
+            margin-top: 60px;
+            padding: 0 20px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+            opacity: 0.95;
+        }
+
+        /* FEATURES */
+        .features {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 60px;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .card {
+            width: 300px;
             background: #f7f9fc;
             color: #222;
-            padding: 30px;
+            padding: 25px;
             border-radius: 12px;
-            margin: 60px auto;
-            text-align: center;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
         }
 
-        h2 {
-            margin-bottom: 20px;
+        .card h3 {
             color: #4a6cff;
+            margin-bottom: 10px;
         }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #ccc;
+        .card p {
+            font-size: 0.95rem;
+            opacity: 0.9;
         }
 
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #4a6cff;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-weight: 600;
+        /* CTA SECTION */
+        .cta {
+            text-align: center;
+            margin-top: 60px;
+            padding-bottom: 60px;
         }
 
-        .toggle {
-            margin-top: 15px;
-            color: #333;
-            font-size: 0.9rem;
-        }
-
-        .toggle a {
+        .cta a {
+            padding: 14px 28px;
+            background: #fff;
             color: #4a6cff;
-            font-weight: 600;
+            border-radius: 8px;
             text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
 
         /* RESPONSIVE */
@@ -160,9 +179,13 @@
                 text-align: left;
             }
 
-            .container {
-                width: 90%;
-                margin-top: 40px;
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+
+            .card {
+                width: 100%;
+                max-width: 350px;
             }
         }
     </style>
@@ -181,27 +204,46 @@
 
         <div class="nav-links">
             <a href="index.html">Home</a>
-            <a href="Communities.html">Communities</a>
-            <a href="Events.html">Events</a>
+            <a href="communities.html">Communities</a>
+            <a href="events.html">Events</a>
             <a href="login.html">Login</a>
             <a href="signup.html" class="nav-signup-link">Sign Up</a>
         </div>
     </nav>
 
-    <div class="container">
-        <h2>Create Account</h2>
+    <section class="hero">
+        <h1>What Is Contact.com?</h1>
+        <p>
+            Contact.com is a modern social platform built for real human connection.  
+            No noise, no clutter — just meaningful interactions with the people and communities that matter most.
+        </p>
+    </section>
 
-        <input type="text" placeholder="Full Name" />
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
-
-        <button>Sign Up</button>
-
-        <div class="toggle">
-            Already have an account?
-            <a href="login.html">Login</a>
+    <section class="features">
+        <div class="card">
+            <h3>Real Connections</h3>
+            <p>Meet people who share your interests, values, and passions — not just random algorithmic matches.</p>
         </div>
-    </div>
+
+        <div class="card">
+            <h3>Communities That Matter</h3>
+            <p>Join groups built around creativity, wellness, tech, hobbies, and more.</p>
+        </div>
+
+        <div class="card">
+            <h3>Events You’ll Love</h3>
+            <p>Discover local meetups, workshops, and experiences that bring people together.</p>
+        </div>
+
+        <div class="card">
+            <h3>Privacy First</h3>
+            <p>Your data stays yours. No ads, no tracking, no manipulation — ever.</p>
+        </div>
+    </section>
+
+    <section class="cta">
+        <a href="signup.html">Create Your Account</a>
+    </section>
 
     <script>
         function toggleMenu() {
