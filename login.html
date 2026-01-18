@@ -190,7 +190,7 @@ button {
     <div class="nav-links">
         <a href="index.html">Home</a>
         <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
+        <a href="Events.html">Events</a>
         <a href="login.html">Login</a>
         <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     </div>
@@ -199,10 +199,9 @@ button {
 <div class="container">
     <h2>Login</h2>
 
-    <input type="email" placeholder="Email" />
-    <input type="password" placeholder="Password" />
-
-    <button>Login</button>
+    <input id="email" type="email" placeholder="Email" required />
+    <input id="password" type="password" placeholder="Password" required />
+    <button onclick="loginUser()">Login</button>
 
     <div class="toggle">
         Don't have an account?
@@ -214,7 +213,25 @@ button {
 function toggleMenu() {
     document.querySelector('.nav-links').classList.toggle('show');
 }
-</script>
 
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzVeBJpsc6FzErZ6uKIfNhsTrQEYp1Lq3Qvcpx2ykojwp5Ip2JSeEEUb9wd6fJZmjuC/exec";
+
+async function loginUser() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const url = `${WEBAPP_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        localStorage.setItem("contact_user", JSON.stringify(result.user));
+        window.location.href = "dashboard.html";
+    } else {
+        alert(result.message);
+    }
+}
+</script>
 </body>
 </html>

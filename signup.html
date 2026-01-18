@@ -181,8 +181,8 @@
 
         <div class="nav-links">
             <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
+            <a href="Communities.html">Communities</a>
+            <a href="Events.html">Events</a>
             <a href="login.html">Login</a>
             <a href="signup.html" class="nav-signup-link">Sign Up</a>
         </div>
@@ -191,23 +191,39 @@
     <div class="container">
         <h2>Create Account</h2>
 
-        <input type="text" placeholder="Full Name" />
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
-
-        <button>Sign Up</button>
+        <input id="fullName" type="text" placeholder="Full Name" required />
+        <input id="email" type="email" placeholder="Email" required />
+        <input id="password" type="password" placeholder="Password" required />
+        <button onclick="signupUser()">Sign Up</button>
 
         <div class="toggle">
             Already have an account?
             <a href="login.html">Login</a>
         </div>
     </div>
-
     <script>
-        function toggleMenu() {
-            document.querySelector('.nav-links').classList.toggle('show');
-        }
-    </script>
+    function toggleMenu() {
+        document.querySelector('.nav-links').classList.toggle('show');
+    }
+
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzVeBJpsc6FzErZ6uKIfNhsTrQEYp1Lq3Qvcpx2ykojwp5Ip2JSeEEUb9wd6fJZmjuC/exec";
+
+async function signupUser() {
+    const fullName = document.getElementById("fullName").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const url = `${WEBAPP_URL}?action=signup&fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        alert("Signup successful!");
+        window.location.href = "login.html";
+    } else {
+        alert(result.message);
+    }
+}
+</script>
 
 </body>
 </html>
