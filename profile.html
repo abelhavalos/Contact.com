@@ -138,7 +138,7 @@
 
 <body>
 
-<nav class="navbar">
+<nav class="navbar" id="navbar">
     <div class="logo">Contact<span>.</span>com</div>
 
     <div class="hamburger" onclick="toggleMenu()">
@@ -198,6 +198,51 @@ function editProfile() {
     alert("Profile editing will be added soon!");
 }
 </script>
+<script>
+function loadNavbar() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
 
+    const loggedInNav = `
+        <div class="logo">Contact<span>.</span>com</div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="communities.html">Communities</a>
+            <a href="events.html">Events</a>
+            <a href="profile.html">Profile</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    `;
+
+    const publicNav = `
+        <div class="logo">Contact<span>.</span>com</div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="communities.html">Communities</a>
+            <a href="events.html">Events</a>
+            <a href="login.html">Login</a>
+            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+        </div>
+    `;
+
+    document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
+}
+
+function toggleMenu() {
+    document.querySelector('.nav-links').classList.toggle('show');
+}
+
+function logout() {
+    localStorage.removeItem("contact_user");
+    window.location.href = "index.html";
+}
+
+document.addEventListener("DOMContentLoaded", loadNavbar);
+</script>
 </body>
 </html>
