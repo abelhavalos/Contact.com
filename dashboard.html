@@ -192,7 +192,7 @@
     </nav>
 
     <div class="header">
-        <h1>Welcome Back</h1>
+        <h1>Welcome Back, <span id="userName"></span></h1>
         <p>Your world of connections starts here.</p>
     </div>
 
@@ -223,12 +223,25 @@
         </div>
 
     </div>
+<script>
+function toggleMenu() {
+    document.querySelector('.nav-links').classList.toggle('show');
+}
 
-    <script>
-        function toggleMenu() {
-            document.querySelector('.nav-links').classList.toggle('show');
-        }
-    </script>
+// Load user from localStorage
+document.addEventListener("DOMContentLoaded", () => {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+
+    // If no user is logged in, redirect to login
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    // Display full name
+    document.getElementById("userName").textContent = user.fullName;
+});
+</script>
 
 </body>
 </html>
