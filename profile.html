@@ -166,17 +166,20 @@
         <label>Email</label>
         <input id="email" type="email" disabled />
     </div>
-
-    <button onclick="editProfile()">Edit Profile (coming soon)</button>
+<button onclick="enableEditing()">Edit Profile</button>
+<button id="saveBtn" onclick="saveProfile()" style="display:none;">Save Changes</button>
 </div>
 
 <script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzpxcsghjHuKseThgrUzcYwY6XiX0eKqZWZ3iIu1b27RukF2uFDRaw-Qve5j5O_4-dr/exec";
+
 function toggleMenu() {
     document.querySelector('.nav-links').classList.toggle('show');
 }
 
-// Load user data
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", loadProfile);
+
+function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
     if (!user) {
@@ -184,57 +187,67 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    // Load from localStorage (your backend already returned fullName + email)
     document.getElementById("fullName").value = user.fullName;
     document.getElementById("email").value = user.email;
-});
+}
 
-// Logout
+function enableEditing() {
+    document.getElementById("fullName").disabled = false;
+    document.getElementById("saveBtn").style.display = "block";
+}
+
+async function saveProfile() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const fullName = document.getElementById("fullName").value;
+
+    const url = `${API_URL}?module=editProfile&email=${encodeURIComponent(user.email)}&fullName=${encodeURIComponent(fullName)}`;
+
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        localStorage.setItem("contact_user", JSON.stringify(result.user));
+        alert("Profile updated!");
+        window.location.reload();
+    } else {
+        alert(result.message);
+    }
+}
+
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
 }
-
-function editProfile() {
-    alert("Profile editing will be added soon!");
-}
 </script>
 <script>
+function toggleMenu() {
+    document.querySelector(".nav-links").classList.toggle("show");
+}
+
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
+    const navLinks = document.querySelector(".nav-links");
 
-    const loggedInNav = `
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="nav-links">
+    if (!navLinks) return;
+
+    if (user) {
+        navLinks.innerHTML = `
             <a href="dashboard.html">Dashboard</a>
             <a href="communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="profile.html">Profile</a>
             <a href="#" onclick="logout()">Logout</a>
-        </div>
-    `;
-
-    const publicNav = `
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="nav-links">
+        `;
+    } else {
+        navLinks.innerHTML = `
             <a href="index.html">Home</a>
             <a href="communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="login.html">Login</a>
             <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        </div>
-    `;
-
-    document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
-}
-
-function toggleMenu() {
-    document.querySelector('.nav-links').classList.toggle('show');
+        `;
+    }
 }
 
 function logout() {

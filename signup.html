@@ -201,26 +201,37 @@
             <a href="login.html">Login</a>
         </div>
     </div>
-    <script>
-    function toggleMenu() {
-        document.querySelector('.nav-links').classList.toggle('show');
-    }
+<script>
+function toggleMenu() {
+    document.querySelector('.nav-links').classList.toggle('show');
+}
 
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxdOthHh5sqCQ349Ohk8Xvcu7tJCfdLNSLP-dEegp8X_-npUW1iDSZ1DPurtyA2IeG7/exec";
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzpxcsghjHuKseThgrUzcYwY6XiX0eKqZWZ3iIu1b27RukF2uFDRaw-Qve5j5O_4-dr/exec";
 
 async function signupUser() {
-    const fullName = document.getElementById("fullName").value;
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const fullName = document.getElementById("fullName").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-    const url = `${WEBAPP_URL}?action=signup&fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password = await fetch(url);
-    const result = await res.json();
+    if (!fullName || !email || !password) {
+        alert("Please fill out all fields.");
+        return;
+    }
 
-    if (result.success) {
-        alert("Signup successful!");
-        window.location.href = "login.html";
-    } else {
-        alert(result.message);
+    const url = `${WEBAPP_URL}?module=signup&fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+
+    try {
+        const res = await fetch(url);
+        const result = await res.json();
+
+        if (result.success) {
+            alert("Signup successful!");
+            window.location.href = "login.html";
+        } else {
+            alert(result.message);
+        }
+    } catch (err) {
+        alert("Network error. Please try again.");
     }
 }
 </script>

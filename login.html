@@ -210,71 +210,73 @@ button {
 </div>
 
 <script>
+const WEBAPP_URL ="https://script.google.com/macros/s/AKfycbzpxcsghjHuKseThgrUzcYwY6XiX0eKqZWZ3iIu1b27RukF2uFDRaw-Qve5j5O_4-dr/exec";
+
 function toggleMenu() {
-    document.querySelector('.nav-links').classList.toggle('show');
+  document.querySelector(".nav-links").classList.toggle("show");
 }
 
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxdOthHh5sqCQ349Ohk8Xvcu7tJCfdLNSLP-dEegp8X_-npUW1iDSZ1DPurtyA2IeG7/exec";
-
 async function loginUser() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const loginBtn = document.querySelector("button");
 
-    const url = `${WEBAPP_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+  if (!email || !password) {
+    alert("Please enter both email and password.");
+    return;
+  }
 
+  loginBtn.disabled = true;
+  loginBtn.innerText = "Logging in...";
+
+  const url = `${WEBAPP_URL}?module=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+
+  try {
     const res = await fetch(url);
     const result = await res.json();
 
     if (result.success) {
-        localStorage.setItem("contact_user", JSON.stringify(result.user));
-        window.location.href = "dashboard.html";
+      localStorage.setItem("contact_user", JSON.stringify(result.user));
+      window.location.href = "dashboard.html";
     } else {
-        alert(result.message);
+      alert(result.message);
     }
+  } catch (err) {
+    alert("Network error. Please try again.");
+  }
+
+  loginBtn.disabled = false;
+  loginBtn.innerText = "Login";
 }
-</script>
-    <script>
+
 function loadNavbar() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
+  const user = JSON.parse(localStorage.getItem("contact_user"));
+  const navLinks = document.querySelector(".nav-links");
 
-    const loggedInNav = `
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="nav-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        </div>
+  if (!navLinks) return;
+
+  if (user) {
+    navLinks.innerHTML = `
+      <a href="dashboard.html">Dashboard</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
     `;
-
-    const publicNav = `
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        </div>
+  } else {
+    navLinks.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="login.html">Login</a>
+      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     `;
-
-    document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
-}
-
-function toggleMenu() {
-    document.querySelector('.nav-links').classList.toggle('show');
+  }
 }
 
 function logout() {
-    localStorage.removeItem("contact_user");
-    window.location.href = "index.html";
+  localStorage.removeItem("contact_user");
+  window.location.href = "index.html";
 }
 
 document.addEventListener("DOMContentLoaded", loadNavbar);
