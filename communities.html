@@ -279,5 +279,23 @@ function logout() {
 
 document.addEventListener("DOMContentLoaded", loadNavbar);
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const joinButtons = document.querySelectorAll(".card button");
+
+    joinButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            if (!user) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            // If logged in, you can later add real join logic here
+            alert("Joined community!");
+        });
+    });
+});
+</script>
 </body>
 </html>
