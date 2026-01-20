@@ -155,13 +155,19 @@ document.getElementById("profilePicUpload").addEventListener("change", function(
     const file = event.target.files[0];
     if (!file) return;
 
-    const url = URL.createObjectURL(file);
+    const reader = new FileReader();
 
-    document.getElementById("profilePic").src = url;
+    reader.onload = function(e) {
+        const base64 = e.target.result; // full base64 string
 
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    user.profilePic = url;
-    localStorage.setItem("contact_user", JSON.stringify(user));
+        document.getElementById("profilePic").src = base64;
+
+        const user = JSON.parse(localStorage.getItem("contact_user"));
+        user.profilePic = base64;
+        localStorage.setItem("contact_user", JSON.stringify(user));
+    };
+
+    reader.readAsDataURL(file);
 });
 
 /* GALLERY UPLOAD */
@@ -193,12 +199,13 @@ async function saveProfile() {
     const workLife = document.getElementById("workLife").value;
 
     const url = `${API_URL}?module=saveProfile`
-        + `&email=${encodeURIComponent(user.email)}`
-        + `&fullName=${encodeURIComponent(fullName)}`
-        + `&profession=${encodeURIComponent(profession)}`
-        + `&about=${encodeURIComponent(about)}`
-        + `&skills=${encodeURIComponent(skills)}`
-        + `&workLife=${encodeURIComponent(workLife)}`;
+    + `&email=${encodeURIComponent(user.email)}`
+    + `&fullName=${encodeURIComponent(fullName)}`
+    + `&profession=${encodeURIComponent(profession)}`
+    + `&about=${encodeURIComponent(about)}`
+    + `&skills=${encodeURIComponent(skills)}`
+    + `&workLife=${encodeURIComponent(workLife)}`
+    + `&profilePic=${encodeURIComponent(user.profilePic || "")}`;
 
     const res = await fetch(url);
     const result = await res.json();
