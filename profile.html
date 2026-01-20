@@ -3,120 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles/profile.css" />
     <title>Contact.com – Profile</title>
-
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
-
-        body {
-            background: #f2f4ff;
-            color: #222;
-            min-height: 100vh;
-        }
-
-        /* NAVBAR */
-        .navbar {
-            width: 100%;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .logo { font-size: 1.8rem; font-weight: 700; color: #222; }
-        .logo span { color: #4a6cff; }
-
-        .nav-links { display: flex; align-items: center; gap: 20px; }
-        .nav-links a { text-decoration: none; color: #333; font-weight: 500; }
-
-        /* HERO */
-        .hero {
-            width: 100%;
-            padding: 60px 20px;
-            background: linear-gradient(135deg, #4a6cff, #6f8cff);
-            color: #fff;
-            text-align: center;
-        }
-
-        .profile-pic {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid #fff;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .profile-pic:hover {
-            opacity: 0.8;
-        }
-
-        .hero h1 { font-size: 2.2rem; margin-bottom: 10px; }
-        .hero p { font-size: 1.1rem; opacity: 0.9; }
-
-        /* SECTIONS */
-        .section {
-            width: 90%;
-            max-width: 900px;
-            background: #fff;
-            margin: 30px auto;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        }
-
-        .section h2 { color: #4a6cff; margin-bottom: 15px; }
-
-        textarea, input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            margin-top: 8px;
-            font-size: 1rem;
-        }
-
-        /* GALLERY */
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .gallery img, .gallery video {
-            width: 100%;
-            border-radius: 10px;
-            object-fit: cover;
-        }
-
-        button {
-            padding: 12px 20px;
-            background: #4a6cff;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-top: 15px;
-        }
-
-        .edit-btn { background: #222; }
-
-        @media (max-width: 700px) {
-            .nav-links { display: none; flex-direction: column; }
-            .nav-links.show { display: flex; }
-            .hamburger { display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
-            .hamburger span { width: 28px; height: 3px; background: #333; }
-        }
-    </style>
 </head>
 
 <body>
@@ -140,7 +28,6 @@
 <!-- HERO -->
 <div class="hero">
     <img id="profilePic" class="profile-pic" src="https://via.placeholder.com/150" />
-
     <input type="file" id="profilePicUpload" accept="image/*" style="display:none;" />
 
     <h1 id="fullNameDisplay">Your Name</h1>
@@ -173,6 +60,21 @@
     <textarea id="workLife" rows="5" disabled></textarea>
 </div>
 
+<!-- CHANGE EMAIL -->
+<div class="section">
+    <h2>Change Email</h2>
+    <input id="newEmail" type="email" placeholder="Enter new email" />
+    <button onclick="changeEmail()">Update Email</button>
+</div>
+
+<!-- CHANGE PASSWORD -->
+<div class="section">
+    <h2>Change Password</h2>
+    <input id="newPassword" type="password" placeholder="New password" />
+    <input id="confirmPassword" type="password" placeholder="Confirm password" style="margin-top:10px;" />
+    <button onclick="changePassword()">Update Password</button>
+</div>
+
 <!-- GALLERY -->
 <div class="section">
     <h2>Photos & Videos</h2>
@@ -190,33 +92,34 @@
 </div>
 
 <script>
+/* ⭐ IMPORTANT: PUT YOUR REAL WEB APP URL HERE */
+const API_URL = "https://script.google.com/macros/s/AKfycbwB2_-fOsJye_rhw-NHDknZ4lvgGFbnOBb_AP3fGa4YGkzhdsIOYxydIVfYgL_6gZAl/exec";
+
+/* NAV MENU */
 function toggleMenu() {
     document.querySelector('.nav-links').classList.toggle('show');
 }
 
+/* LOAD PROFILE */
 document.addEventListener("DOMContentLoaded", loadProfile);
 
 function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return window.location.href = "login.html";
 
-    // HERO
     document.getElementById("fullNameDisplay").innerText = user.fullName;
     document.getElementById("professionDisplay").innerText = user.profession || "Your profession";
 
-    // FORM FIELDS
     document.getElementById("fullName").value = user.fullName;
     document.getElementById("profession").value = user.profession || "";
     document.getElementById("about").value = user.about || "";
     document.getElementById("skills").value = user.skills || "";
     document.getElementById("workLife").value = user.workLife || "";
 
-    // PROFILE PIC
     if (user.profilePic) {
         document.getElementById("profilePic").src = user.profilePic;
     }
 
-    // GALLERY
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
 
@@ -234,13 +137,15 @@ function loadProfile() {
     }
 }
 
+/* ENABLE EDITING */
 function enableEditing() {
-    document.querySelectorAll("input, textarea").forEach(el => el.disabled = false);
+    document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
+        .forEach(el => el.disabled = false);
+
     document.getElementById("saveBtn").style.display = "inline-block";
     document.getElementById("editBtn").style.display = "none";
 }
-
-/* ⭐ CLICK PROFILE PIC TO UPLOAD */
+/* PROFILE PIC UPLOAD */
 document.getElementById("profilePic").addEventListener("click", () => {
     document.getElementById("profilePicUpload").click();
 });
@@ -258,7 +163,7 @@ document.getElementById("profilePicUpload").addEventListener("change", function(
     localStorage.setItem("contact_user", JSON.stringify(user));
 });
 
-/* ⭐ GALLERY UPLOAD */
+/* GALLERY UPLOAD */
 document.getElementById("mediaUpload").addEventListener("change", function(event) {
     const files = Array.from(event.target.files);
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -276,22 +181,96 @@ document.getElementById("mediaUpload").addEventListener("change", function(event
     loadProfile();
 });
 
-function saveProfile() {
+/* SAVE PROFILE TO BACKEND */
+async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
-    user.fullName = document.getElementById("fullName").value;
-    user.profession = document.getElementById("profession").value;
-    user.about = document.getElementById("about").value;
-    user.skills = document.getElementById("skills").value;
-    user.workLife = document.getElementById("workLife").value;
+    const fullName = document.getElementById("fullName").value;
+    const profession = document.getElementById("profession").value;
+    const about = document.getElementById("about").value;
+    const skills = document.getElementById("skills").value;
+    const workLife = document.getElementById("workLife").value;
 
-    localStorage.setItem("contact_user", JSON.stringify(user));
+    const url = `${API_URL}?module=saveProfile`
+        + `&email=${encodeURIComponent(user.email)}`
+        + `&fullName=${encodeURIComponent(fullName)}`
+        + `&profession=${encodeURIComponent(profession)}`
+        + `&about=${encodeURIComponent(about)}`
+        + `&skills=${encodeURIComponent(skills)}`
+        + `&workLife=${encodeURIComponent(workLife)}`;
 
-    alert("Profile updated!");
+    const res = await fetch(url);
+    const result = await res.json();
 
-    window.location.reload();
+    if (result.success) {
+        user.fullName = fullName;
+        user.profession = profession;
+        user.about = about;
+        user.skills = skills;
+        user.workLife = workLife;
+
+        localStorage.setItem("contact_user", JSON.stringify(user));
+
+        alert("Profile updated!");
+        window.location.reload();
+    } else {
+        alert(result.message || "Failed to update profile.");
+    }
 }
 
+/* CHANGE EMAIL */
+async function changeEmail() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const newEmail = document.getElementById("newEmail").value.trim();
+
+    if (!newEmail.includes("@")) {
+        alert("Enter a valid email.");
+        return;
+    }
+
+    const url = `${API_URL}?module=changeEmail&oldEmail=${encodeURIComponent(user.email)}&newEmail=${encodeURIComponent(newEmail)}`;
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        localStorage.setItem("contact_user", JSON.stringify(result.user));
+        alert("Email updated!");
+        window.location.reload();
+    } else {
+        alert(result.message || "Failed to update email.");
+    }
+}
+
+/* CHANGE PASSWORD */
+async function changePassword() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const newPass = document.getElementById("newPassword").value;
+    const confirmPass = document.getElementById("confirmPassword").value;
+
+    if (newPass.length < 6) {
+        alert("Password must be at least 6 characters.");
+        return;
+    }
+
+    if (newPass !== confirmPass) {
+        alert("Passwords do not match.");
+        return;
+    }
+
+    const url = `${API_URL}?module=changePassword&email=${encodeURIComponent(user.email)}&newPassword=${encodeURIComponent(newPass)}`;
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        alert("Password updated!");
+        localStorage.removeItem("contact_user");
+        window.location.href = "login.html";
+    } else {
+        alert(result.message || "Failed to update password.");
+    }
+}
+
+/* LOGOUT */
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
