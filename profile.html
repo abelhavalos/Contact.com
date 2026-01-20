@@ -198,14 +198,13 @@ async function saveProfile() {
     const skills = document.getElementById("skills").value;
     const workLife = document.getElementById("workLife").value;
 
-    const url = `${API_URL}?module=saveProfile`
+   const url = `${API_URL}?module=saveProfile`
     + `&email=${encodeURIComponent(user.email)}`
     + `&fullName=${encodeURIComponent(fullName)}`
     + `&profession=${encodeURIComponent(profession)}`
     + `&about=${encodeURIComponent(about)}`
     + `&skills=${encodeURIComponent(skills)}`
-    + `&workLife=${encodeURIComponent(workLife)}`
-    + `&profilePic=${encodeURIComponent(user.profilePic || "")}`;
+    + `&workLife=${encodeURIComponent(workLife)}`;
 
     const res = await fetch(url);
     const result = await res.json();
