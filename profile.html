@@ -133,40 +133,64 @@ function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return window.location.href = "login.html";
 
-    document.getElementById("fullNameDisplay").innerText = user.fullName;
-    document.getElementById("professionDisplay").innerText = user.profession || "Your profession";
+    // Safe DOM access
+    setValue("fullNameDisplay", user.fullName);
+    setValue("professionDisplay", user.profession || "Your profession");
 
-    document.getElementById("fullName").value = user.fullName;
-    document.getElementById("profession").value = user.profession || "";
-    document.getElementById("about").value = user.about || "";
-    document.getElementById("skills").value = user.skills || "";
-    document.getElementById("workLife").value = user.workLife || "";
+    setInput("fullName", user.fullName);
+    setInput("profession", user.profession);
+    setInput("about", user.about);
+    setInput("skills", user.skills);
+    setInput("workLife", user.workLife);
 
     if (user.profilePic) {
-        document.getElementById("profilePic").src = user.profilePic;
+        setSrc("profilePic", user.profilePic);
     }
 
-    if (!user.gallery) user.gallery = [];
+    // Gallery
+    if (!Array.isArray(user.gallery)) user.gallery = [];
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
+
     user.gallery.forEach(item => {
-        let el = item.type === "video" ? document.createElement("video") : document.createElement("img");
+        const el = item.type === "video" ? document.createElement("video") : document.createElement("img");
         if (item.type === "video") el.controls = true;
         el.src = item.url;
         gallery.appendChild(el);
     });
 
-    document.getElementById("uploadEmail").value = user.email;
+    setInput("uploadEmail", user.email);
+}
+
+/* SAFE HELPERS */
+function setValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = value;
+}
+
+function setInput(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value || "";
+}
+
+function setSrc(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.src = value;
 }
 
 /* PROFILE PIC FILE CHANGE → SUBMIT FORM */
-document.getElementById("profilePicFile").addEventListener("change", function (event) {
-    const file = event.target.files[0];
-    if (!file) return;
+const picFile = document.getElementById("profilePicFile");
+if (picFile) {
+    picFile.addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-    document.getElementById("profilePicForm").submit();
-    alert("Uploading profile picture...");
-});
+        const form = document.getElementById("profilePicForm");
+        if (form) form.submit();
+
+        alert("Uploading profile picture...");
+    });
+}
 
 /* RECEIVE MESSAGE FROM APPS SCRIPT (via iframe) */
 window.addEventListener("message", function (event) {
@@ -178,13 +202,12 @@ window.addEventListener("message", function (event) {
         return;
     }
 
-    const url = data.url;
     const user = JSON.parse(localStorage.getItem("contact_user"));
+    user.profilePic = data.url;
 
-    user.profilePic = url;
     localStorage.setItem("contact_user", JSON.stringify(user));
+    setSrc("profilePic", data.url);
 
-    document.getElementById("profilePic").src = url;
     alert("Profile picture updated!");
 });
 
@@ -193,8 +216,13 @@ function enableEditing() {
     document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
         .forEach(el => el.disabled = false);
 
-    document.getElementById("saveBtn").style.display = "inline-block";
-    document.getElementById("editBtn").style.display = "none";
+    setDisplay("saveBtn", "inline-block");
+    setDisplay("editBtn", "none");
+}
+
+function setDisplay(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = value;
 }
 
 /* PROFILE PIC FROM DRIVE LINK */
@@ -207,9 +235,9 @@ function applyProfilePicLink() {
 
     const user = JSON.parse(localStorage.getItem("contact_user"));
     user.profilePic = direct;
-    localStorage.setItem("contact_user", JSON.stringify(user));
 
-    document.getElementById("profilePic").src = direct;
+    localStorage.setItem("contact_user", JSON.stringify(user));
+    setSrc("profilePic", direct);
 }
 
 /* ADD GALLERY ITEM FROM DRIVE LINK */
@@ -222,7 +250,7 @@ function addGalleryItem() {
     const type = link.includes("video") ? "video" : "image";
 
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user.gallery) user.gallery = [];
+    if (!Array.isArray(user.gallery)) user.gallery = [];
 
     user.gallery.push({ url: direct, type });
     localStorage.setItem("contact_user", JSON.stringify(user));
@@ -240,13 +268,14 @@ function extractDriveId(url) {
 async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
-    const url = `${API_URL}?module=saveProfile`
+    const url =
+        `${API_URL}?module=saveProfile`
         + `&email=${encodeURIComponent(user.email)}`
-        + `&fullName=${encodeURIComponent(document.getElementById("fullName").value)}`
-        + `&profession=${encodeURIComponent(document.getElementById("profession").value)}`
-        + `&about=${encodeURIComponent(document.getElementById("about").value)}`
-        + `&skills=${encodeURIComponent(document.getElementById("skills").value)}`
-        + `&workLife=${encodeURIComponent(document.getElementById("workLife").value)}`
+        + `&fullName=${encodeURIComponent(getVal("fullName"))}`
+        + `&profession=${encodeURIComponent(getVal("profession"))}`
+        + `&about=${encodeURIComponent(getVal("about"))}`
+        + `&skills=${encodeURIComponent(getVal("skills"))}`
+        + `&workLife=${encodeURIComponent(getVal("workLife"))}`
         + `&profilePic=${encodeURIComponent(user.profilePic || "")}`
         + `&gallery=${encodeURIComponent(JSON.stringify(user.gallery || []))}`;
 
@@ -262,10 +291,15 @@ async function saveProfile() {
     }
 }
 
+function getVal(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+}
+
 /* CHANGE EMAIL */
 async function changeEmail() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    const newEmail = document.getElementById("newEmail").value.trim();
+    const newEmail = getVal("newEmail").trim();
 
     const url = `${API_URL}?module=changeEmail&oldEmail=${encodeURIComponent(user.email)}&newEmail=${encodeURIComponent(newEmail)}`;
     const res = await fetch(url);
@@ -283,8 +317,8 @@ async function changeEmail() {
 /* CHANGE PASSWORD */
 async function changePassword() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    const newPass = document.getElementById("newPassword").value;
-    const confirmPass = document.getElementById("confirmPassword").value;
+    const newPass = getVal("newPassword");
+    const confirmPass = getVal("confirmPassword");
 
     if (newPass !== confirmPass) return alert("Passwords do not match");
 
@@ -307,6 +341,5 @@ function logout() {
     window.location.href = "index.html";
 }
 </script>
-
 </body>
 </html>
