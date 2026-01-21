@@ -26,12 +26,31 @@
 </nav>
 
 <!-- HERO -->
+<!-- HERO -->
 <div class="hero">
     <img id="profilePic" class="profile-pic" src="https://via.placeholder.com/150" />
-    <input type="file" id="profilePicUpload" accept="image/*" style="display:none;" />
 
     <h1 id="fullNameDisplay">Your Name</h1>
     <p id="professionDisplay">Your profession or tagline</p>
+
+    <!-- PROFILE PIC UPLOAD -->
+    <div class="profile-upload-box">
+        <button onclick="document.getElementById('profilePicFile').click()">Choose Photo</button>
+
+        <!-- Hidden form that POSTS directly to Apps Script -->
+        <form id="profilePicForm"
+              action="https://script.google.com/macros/s/AKfycbx-Jgk4sWWdUjfr8z5RBRrTmGjNSkpuf-vsQqTnK_XJbCLkwSbMptwfdc7G11Zypeob/exec"
+              method="POST"
+              enctype="multipart/form-data"
+              target="uploadFrame">
+            <input type="hidden" name="module" value="uploadProfilePic" />
+            <input type="hidden" name="email" id="uploadEmail" />
+            <input type="file" name="file" id="profilePicFile" accept="image/*" style="display:none;" />
+        </form>
+
+        <!-- Hidden iframe to receive the upload response -->
+        <iframe name="uploadFrame" style="display:none;"></iframe>
+    </div>
 </div>
 
 <!-- EDITABLE SECTIONS -->
@@ -60,6 +79,23 @@
     <textarea id="workLife" rows="5" disabled></textarea>
 </div>
 
+<!-- PROFILE PIC VIA GOOGLE DRIVE -->
+<div class="section">
+    <h2>Profile Picture (Google Drive Link)</h2>
+    <input id="profilePicLink" placeholder="Paste Google Drive link" />
+    <button onclick="applyProfilePicLink()">Use Link</button>
+</div>
+
+<!-- GALLERY VIA GOOGLE DRIVE -->
+<div class="section">
+    <h2>Photos & Videos (Google Drive Links)</h2>
+
+    <input id="galleryLink" placeholder="Paste Google Drive link" />
+    <button onclick="addGalleryItem()">Add to Gallery</button>
+
+    <div class="gallery" id="gallery"></div>
+</div>
+
 <!-- CHANGE EMAIL -->
 <div class="section">
     <h2>Change Email</h2>
@@ -73,16 +109,6 @@
     <input id="newPassword" type="password" placeholder="New password" />
     <input id="confirmPassword" type="password" placeholder="Confirm password" style="margin-top:10px;" />
     <button onclick="changePassword()">Update Password</button>
-</div>
-
-<!-- GALLERY -->
-<div class="section">
-    <h2>Photos & Videos</h2>
-
-    <input type="file" id="mediaUpload" accept="image/*,video/*" multiple style="display:none;" />
-    <button onclick="document.getElementById('mediaUpload').click()">Upload Media</button>
-
-    <div class="gallery" id="gallery"></div>
 </div>
 
 <!-- ACTION BUTTONS -->
@@ -120,22 +146,47 @@ function loadProfile() {
         document.getElementById("profilePic").src = user.profilePic;
     }
 
+    if (!user.gallery) user.gallery = [];
     const gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
+    user.gallery.forEach(item => {
+        let el = item.type === "video" ? document.createElement("video") : document.createElement("img");
+        if (item.type === "video") el.controls = true;
+        el.src = item.url;
+        gallery.appendChild(el);
+    });
 
-    if (user.gallery) {
-        user.gallery.forEach(item => {
-            const el = item.type === "video"
-                ? document.createElement("video")
-                : document.createElement("img");
-
-            el.src = item.url;
-            if (item.type === "video") el.controls = true;
-
-            gallery.appendChild(el);
-        });
-    }
+    document.getElementById("uploadEmail").value = user.email;
 }
+
+/* PROFILE PIC FILE CHANGE → SUBMIT FORM */
+document.getElementById("profilePicFile").addEventListener("change", function (event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    document.getElementById("profilePicForm").submit();
+    alert("Uploading profile picture...");
+});
+
+/* RECEIVE MESSAGE FROM APPS SCRIPT (via iframe) */
+window.addEventListener("message", function (event) {
+    const data = event.data;
+    if (!data || data.type !== "profilePicUploaded") return;
+
+    if (data.error) {
+        alert("Upload failed: " + data.error);
+        return;
+    }
+
+    const url = data.url;
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+
+    user.profilePic = url;
+    localStorage.setItem("contact_user", JSON.stringify(user));
+
+    document.getElementById("profilePic").src = url;
+    alert("Profile picture updated!");
+});
 
 /* ENABLE EDITING */
 function enableEditing() {
@@ -146,82 +197,68 @@ function enableEditing() {
     document.getElementById("editBtn").style.display = "none";
 }
 
-/* PROFILE PIC UPLOAD */
-document.getElementById("profilePic").addEventListener("click", () => {
-    document.getElementById("profilePicUpload").click();
-});
+/* PROFILE PIC FROM DRIVE LINK */
+function applyProfilePicLink() {
+    const link = document.getElementById("profilePicLink").value.trim();
+    const fileId = extractDriveId(link);
+    if (!fileId) return alert("Invalid Google Drive link");
 
-document.getElementById("profilePicUpload").addEventListener("change", function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const direct = `https://drive.google.com/uc?export=view&id=${fileId}`;
 
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-        const base64 = e.target.result; // full base64 string
-
-        document.getElementById("profilePic").src = base64;
-
-        const user = JSON.parse(localStorage.getItem("contact_user"));
-        user.profilePic = base64;
-        localStorage.setItem("contact_user", JSON.stringify(user));
-    };
-
-    reader.readAsDataURL(file);
-});
-
-/* GALLERY UPLOAD */
-document.getElementById("mediaUpload").addEventListener("change", function(event) {
-    const files = Array.from(event.target.files);
     const user = JSON.parse(localStorage.getItem("contact_user"));
+    user.profilePic = direct;
+    localStorage.setItem("contact_user", JSON.stringify(user));
 
+    document.getElementById("profilePic").src = direct;
+}
+
+/* ADD GALLERY ITEM FROM DRIVE LINK */
+function addGalleryItem() {
+    const link = document.getElementById("galleryLink").value.trim();
+    const fileId = extractDriveId(link);
+    if (!fileId) return alert("Invalid Google Drive link");
+
+    const direct = `https://drive.google.com/uc?export=view&id=${fileId}`;
+    const type = link.includes("video") ? "video" : "image";
+
+    const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user.gallery) user.gallery = [];
 
-    files.forEach(file => {
-        const url = URL.createObjectURL(file);
-        const type = file.type.startsWith("video") ? "video" : "image";
-
-        user.gallery.push({ url, type });
-    });
-
+    user.gallery.push({ url: direct, type });
     localStorage.setItem("contact_user", JSON.stringify(user));
-    loadProfile();
-});
 
-/* SAVE PROFILE TO BACKEND */
+    loadProfile();
+}
+
+/* EXTRACT DRIVE FILE ID */
+function extractDriveId(url) {
+    const match = url.match(/\/d\/(.*?)\//);
+    return match ? match[1] : null;
+}
+
+/* SAVE PROFILE (GET ONLY) */
 async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
-    const fullName = document.getElementById("fullName").value;
-    const profession = document.getElementById("profession").value;
-    const about = document.getElementById("about").value;
-    const skills = document.getElementById("skills").value;
-    const workLife = document.getElementById("workLife").value;
-
-   const url = `${API_URL}?module=saveProfile`
-    + `&email=${encodeURIComponent(user.email)}`
-    + `&fullName=${encodeURIComponent(fullName)}`
-    + `&profession=${encodeURIComponent(profession)}`
-    + `&about=${encodeURIComponent(about)}`
-    + `&skills=${encodeURIComponent(skills)}`
-    + `&workLife=${encodeURIComponent(workLife)}`;
+    const url = `${API_URL}?module=saveProfile`
+        + `&email=${encodeURIComponent(user.email)}`
+        + `&fullName=${encodeURIComponent(document.getElementById("fullName").value)}`
+        + `&profession=${encodeURIComponent(document.getElementById("profession").value)}`
+        + `&about=${encodeURIComponent(document.getElementById("about").value)}`
+        + `&skills=${encodeURIComponent(document.getElementById("skills").value)}`
+        + `&workLife=${encodeURIComponent(document.getElementById("workLife").value)}`
+        + `&profilePic=${encodeURIComponent(user.profilePic || "")}`
+        + `&gallery=${encodeURIComponent(JSON.stringify(user.gallery || []))}`;
 
     const res = await fetch(url);
     const result = await res.json();
 
     if (result.success) {
-        user.fullName = fullName;
-        user.profession = profession;
-        user.about = about;
-        user.skills = skills;
-        user.workLife = workLife;
-
-        localStorage.setItem("contact_user", JSON.stringify(user));
-
-        alert("Profile updated!");
+        localStorage.setItem("contact_user", JSON.stringify(result.user));
+        alert("Profile updated");
         window.location.reload();
     } else {
-        alert(result.message || "Failed to update profile.");
+        alert(result.message || "Failed to update profile");
     }
 }
 
@@ -230,21 +267,16 @@ async function changeEmail() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     const newEmail = document.getElementById("newEmail").value.trim();
 
-    if (!newEmail.includes("@")) {
-        alert("Enter a valid email.");
-        return;
-    }
-
     const url = `${API_URL}?module=changeEmail&oldEmail=${encodeURIComponent(user.email)}&newEmail=${encodeURIComponent(newEmail)}`;
     const res = await fetch(url);
     const result = await res.json();
 
     if (result.success) {
         localStorage.setItem("contact_user", JSON.stringify(result.user));
-        alert("Email updated!");
+        alert("Email updated");
         window.location.reload();
     } else {
-        alert(result.message || "Failed to update email.");
+        alert(result.message || "Failed to update email");
     }
 }
 
@@ -254,26 +286,18 @@ async function changePassword() {
     const newPass = document.getElementById("newPassword").value;
     const confirmPass = document.getElementById("confirmPassword").value;
 
-    if (newPass.length < 6) {
-        alert("Password must be at least 6 characters.");
-        return;
-    }
-
-    if (newPass !== confirmPass) {
-        alert("Passwords do not match.");
-        return;
-    }
+    if (newPass !== confirmPass) return alert("Passwords do not match");
 
     const url = `${API_URL}?module=changePassword&email=${encodeURIComponent(user.email)}&newPassword=${encodeURIComponent(newPass)}`;
     const res = await fetch(url);
     const result = await res.json();
 
     if (result.success) {
-        alert("Password updated!");
+        alert("Password updated");
         localStorage.removeItem("contact_user");
         window.location.href = "login.html";
     } else {
-        alert(result.message || "Failed to update password.");
+        alert(result.message || "Failed to update password");
     }
 }
 
