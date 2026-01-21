@@ -1,6 +1,215 @@
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact.com – Messages</title>
 
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #4a6cff, #6f8cff);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #222;
+        }
+        .logo span { color: #4a6cff; }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* HAMBURGER */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .hamburger span {
+            width: 28px;
+            height: 3px;
+            background: #333;
+            border-radius: 3px;
+        }
+
+        /* MESSAGES LAYOUT */
+        .messages-container {
+            display: flex;
+            height: calc(100vh - 100px);
+            margin-top: 20px;
+        }
+
+        /* LEFT COLUMN – Conversations */
+        .conversations {
+            width: 30%;
+            background: #f7f9fc;
+            color: #222;
+            overflow-y: auto;
+            border-right: 1px solid #ddd;
+        }
+
+        .conversation {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .conversation:hover {
+            background: #eef2ff;
+        }
+
+        .conversation.active {
+            background: #dce3ff;
+        }
+
+        /* RIGHT COLUMN – Chat Window */
+        .chat-window {
+            width: 70%;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            color: #222;
+        }
+
+        .chat-header {
+            padding: 20px;
+            font-weight: 600;
+            border-bottom: 1px solid #ddd;
+            background: #f1f4ff;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.4;
+        }
+
+        .sent {
+            background: #4a6cff;
+            color: #fff;
+            margin-left: auto;
+        }
+
+        .received {
+            background: #e5e7eb;
+            color: #222;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            background: #fafafa;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .chat-input button {
+            margin-left: 10px;
+            padding: 12px 20px;
+            background: #4a6cff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* MOBILE */
+        @media (max-width: 800px) {
+            .messages-container {
+                flex-direction: column;
+            }
+            .conversations {
+                width: 100%;
+                height: 200px;
+            }
+            .chat-window {
+                width: 100%;
+                height: calc(100vh - 300px);
+            }
+            .hamburger { display: flex; }
+            .nav-links { display: none; flex-direction: column; width: 100%; }
+            .nav-links.show { display: flex; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="logo">Contact<span>.</span>com</div>
+
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+
+        <div class="nav-links"></div>
+    </nav>
+
+    <div class="messages-container">
+
+        <!-- LEFT: Conversations -->
+        <div class="conversations" id="conversationList"></div>
+
+        <!-- RIGHT: Chat Window -->
+        <div class="chat-window">
+            <div class="chat-header" id="chatHeader">Select a conversation</div>
+
+            <div class="chat-messages" id="chatMessages"></div>
+
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Type a message..." />
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+    </div>
+
+<script>
 /* NAVBAR */
 function toggleMenu() {
     document.querySelector(".nav-links").classList.toggle("show");
@@ -37,12 +246,11 @@ let activeOtherUserId = null;
 const user = JSON.parse(localStorage.getItem("contact_user"));
 if (!user) window.location.href = "login.html";
 
-/* LOAD CONVERSATIONS */
-async function loadConversations() {
-    const url = `${API_URL}?module=getConversations&userId=${encodeURIComponent(user.userId)}`;
-    const res = await fetch(url);
-    const conversations = await res.json();
-    renderConversations(conversations);
+/* LOAD CONVERSATIONS FROM BACKEND */
+function loadConversations() {
+    google.script.run
+        .withSuccessHandler(renderConversations)
+        .getConversationsForUser(user.userId);
 }
 
 function renderConversations(conversations) {
@@ -66,7 +274,7 @@ function renderConversations(conversations) {
 }
 
 /* OPEN CHAT */
-async function openChat(conversationId, otherUserId) {
+function openChat(conversationId, otherUserId) {
     activeConversationId = conversationId;
     activeOtherUserId = otherUserId;
 
@@ -75,11 +283,9 @@ async function openChat(conversationId, otherUserId) {
 
     document.getElementById("chatHeader").textContent = otherUserId;
 
-    const url = `${API_URL}?module=getMessages&conversationId=${encodeURIComponent(conversationId)}`;
-    const res = await fetch(url);
-    const messages = await res.json();
-
-    renderMessages(messages);
+    google.script.run
+        .withSuccessHandler(renderMessages)
+        .getMessages(conversationId);
 }
 
 function renderMessages(messages) {
@@ -97,25 +303,23 @@ function renderMessages(messages) {
 }
 
 /* SEND MESSAGE */
-async function sendMessage() {
+function sendMessage() {
     if (!activeConversationId) return;
 
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
     if (!text) return;
 
-    const url =
-        `${API_URL}?module=sendMessage`
-        + `&conversationId=${encodeURIComponent(activeConversationId)}`
-        + `&senderId=${encodeURIComponent(user.userId)}`
-        + `&receiverId=${encodeURIComponent(activeOtherUserId)}`
-        + `&message=${encodeURIComponent(text)}`;
-
-    await fetch(url);
-
-    input.value = "";
-    openChat(activeConversationId, activeOtherUserId);
+    google.script.run
+        .withSuccessHandler(() => {
+            input.value = "";
+            openChat(activeConversationId, activeOtherUserId);
+        })
+        .sendMessage(activeConversationId, user.userId, activeOtherUserId, text);
 }
 
 document.addEventListener("DOMContentLoaded", loadConversations);
 </script>
+
+</body>
+</html>
