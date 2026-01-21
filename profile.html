@@ -26,31 +26,9 @@
 </nav>
 
 <!-- HERO -->
-<!-- HERO -->
 <div class="hero">
-    <img id="profilePic" class="profile-pic" src="https://via.placeholder.com/150" />
-
     <h1 id="fullNameDisplay">Your Name</h1>
     <p id="professionDisplay">Your profession or tagline</p>
-
-    <!-- PROFILE PIC UPLOAD -->
-    <div class="profile-upload-box">
-        <button onclick="document.getElementById('profilePicFile').click()">Choose Photo</button>
-
-        <!-- Hidden form that POSTS directly to Apps Script -->
-        <form id="profilePicForm"
-              action="https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec"
-              method="POST"
-              enctype="multipart/form-data"
-              target="uploadFrame">
-            <input type="hidden" name="module" value="uploadProfilePic" />
-            <input type="hidden" name="email" id="uploadEmail" />
-            <input type="file" name="file" id="profilePicFile" accept="image/*" style="display:none;" />
-        </form>
-
-        <!-- Hidden iframe to receive the upload response -->
-        <iframe name="uploadFrame" style="display:none;"></iframe>
-    </div>
 </div>
 
 <!-- EDITABLE SECTIONS -->
@@ -79,23 +57,6 @@
     <textarea id="workLife" rows="5" disabled></textarea>
 </div>
 
-<!-- PROFILE PIC VIA GOOGLE DRIVE -->
-<div class="section">
-    <h2>Profile Picture (Google Drive Link)</h2>
-    <input id="profilePicLink" placeholder="Paste Google Drive link" />
-    <button onclick="applyProfilePicLink()">Use Link</button>
-</div>
-
-<!-- GALLERY VIA GOOGLE DRIVE -->
-<div class="section">
-    <h2>Photos & Videos (Google Drive Links)</h2>
-
-    <input id="galleryLink" placeholder="Paste Google Drive link" />
-    <button onclick="addGalleryItem()">Add to Gallery</button>
-
-    <div class="gallery" id="gallery"></div>
-</div>
-
 <!-- CHANGE EMAIL -->
 <div class="section">
     <h2>Change Email</h2>
@@ -116,6 +77,9 @@
     <button class="edit-btn" id="editBtn" onclick="enableEditing()">Edit Profile</button>
     <button id="saveBtn" onclick="saveProfile()" style="display:none;">Save Changes</button>
 </div>
+
+</body>
+</html>
 
 <script>
 /* REAL WEB APP URL */
@@ -142,24 +106,6 @@ function loadProfile() {
     setInput("about", user.about);
     setInput("skills", user.skills);
     setInput("workLife", user.workLife);
-
-    if (user.profilePic) {
-        setSrc("profilePic", user.profilePic);
-    }
-
-    // Gallery
-    if (!Array.isArray(user.gallery)) user.gallery = [];
-    const gallery = document.getElementById("gallery");
-    gallery.innerHTML = "";
-
-    user.gallery.forEach(item => {
-        const el = item.type === "video" ? document.createElement("video") : document.createElement("img");
-        if (item.type === "video") el.controls = true;
-        el.src = item.url;
-        gallery.appendChild(el);
-    });
-
-    setInput("uploadEmail", user.email);
 }
 
 /* SAFE HELPERS */
@@ -172,44 +118,6 @@ function setInput(id, value) {
     const el = document.getElementById(id);
     if (el) el.value = value || "";
 }
-
-function setSrc(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.src = value;
-}
-
-/* PROFILE PIC FILE CHANGE → SUBMIT FORM */
-const picFile = document.getElementById("profilePicFile");
-if (picFile) {
-    picFile.addEventListener("change", function (event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const form = document.getElementById("profilePicForm");
-        if (form) form.submit();
-
-        alert("Uploading profile picture...");
-    });
-}
-
-/* RECEIVE MESSAGE FROM APPS SCRIPT (via iframe) */
-window.addEventListener("message", function (event) {
-    const data = event.data;
-    if (!data || data.type !== "profilePicUploaded") return;
-
-    if (data.error) {
-        alert("Upload failed: " + data.error);
-        return;
-    }
-
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    user.profilePic = data.url;
-
-    localStorage.setItem("contact_user", JSON.stringify(user));
-    setSrc("profilePic", data.url);
-
-    alert("Profile picture updated!");
-});
 
 /* ENABLE EDITING */
 function enableEditing() {
@@ -225,45 +133,6 @@ function setDisplay(id, value) {
     if (el) el.style.display = value;
 }
 
-/* PROFILE PIC FROM DRIVE LINK */
-function applyProfilePicLink() {
-    const link = document.getElementById("profilePicLink").value.trim();
-    const fileId = extractDriveId(link);
-    if (!fileId) return alert("Invalid Google Drive link");
-
-    const direct = `https://drive.google.com/uc?export=view&id=${fileId}`;
-
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    user.profilePic = direct;
-
-    localStorage.setItem("contact_user", JSON.stringify(user));
-    setSrc("profilePic", direct);
-}
-
-/* ADD GALLERY ITEM FROM DRIVE LINK */
-function addGalleryItem() {
-    const link = document.getElementById("galleryLink").value.trim();
-    const fileId = extractDriveId(link);
-    if (!fileId) return alert("Invalid Google Drive link");
-
-    const direct = `https://drive.google.com/uc?export=view&id=${fileId}`;
-    const type = link.includes("video") ? "video" : "image";
-
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!Array.isArray(user.gallery)) user.gallery = [];
-
-    user.gallery.push({ url: direct, type });
-    localStorage.setItem("contact_user", JSON.stringify(user));
-
-    loadProfile();
-}
-
-/* EXTRACT DRIVE FILE ID */
-function extractDriveId(url) {
-    const match = url.match(/\/d\/(.*?)\//);
-    return match ? match[1] : null;
-}
-
 /* SAVE PROFILE (GET ONLY) */
 async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -275,9 +144,7 @@ async function saveProfile() {
         + `&profession=${encodeURIComponent(getVal("profession"))}`
         + `&about=${encodeURIComponent(getVal("about"))}`
         + `&skills=${encodeURIComponent(getVal("skills"))}`
-        + `&workLife=${encodeURIComponent(getVal("workLife"))}`
-        + `&profilePic=${encodeURIComponent(user.profilePic || "")}`
-        + `&gallery=${encodeURIComponent(JSON.stringify(user.gallery || []))}`;
+        + `&workLife=${encodeURIComponent(getVal("workLife"))}`;
 
     const res = await fetch(url);
     const result = await res.json();
