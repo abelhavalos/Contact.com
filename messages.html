@@ -210,6 +210,8 @@
     </div>
 
 <script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
+
 /* NAVBAR */
 function toggleMenu() {
     document.querySelector(".nav-links").classList.toggle("show");
@@ -246,11 +248,12 @@ let activeOtherUserId = null;
 const user = JSON.parse(localStorage.getItem("contact_user"));
 if (!user) window.location.href = "login.html";
 
-/* LOAD CONVERSATIONS FROM BACKEND */
-function loadConversations() {
-    google.script.run
-        .withSuccessHandler(renderConversations)
-        .getConversationsForUser(user.userId);
+/* LOAD CONVERSATIONS */
+async function loadConversations() {
+    const url = `${API_URL}?module=getConversations&userId=${encodeURIComponent(user.userId)}`;
+    const res = await fetch(url);
+    const conversations = await res.json();
+    renderConversations(conversations);
 }
 
 function renderConversations(conversations) {
@@ -274,7 +277,7 @@ function renderConversations(conversations) {
 }
 
 /* OPEN CHAT */
-function openChat(conversationId, otherUserId) {
+async function openChat(conversationId, otherUserId) {
     activeConversationId = conversationId;
     activeOtherUserId = otherUserId;
 
@@ -283,9 +286,11 @@ function openChat(conversationId, otherUserId) {
 
     document.getElementById("chatHeader").textContent = otherUserId;
 
-    google.script.run
-        .withSuccessHandler(renderMessages)
-        .getMessages(conversationId);
+    const url = `${API_URL}?module=getMessages&conversationId=${encodeURIComponent(conversationId)}`;
+    const res = await fetch(url);
+    const messages = await res.json();
+
+    renderMessages(messages);
 }
 
 function renderMessages(messages) {
@@ -303,23 +308,27 @@ function renderMessages(messages) {
 }
 
 /* SEND MESSAGE */
-function sendMessage() {
+async function sendMessage() {
     if (!activeConversationId) return;
 
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
     if (!text) return;
 
-    google.script.run
-        .withSuccessHandler(() => {
-            input.value = "";
-            openChat(activeConversationId, activeOtherUserId);
-        })
-        .sendMessage(activeConversationId, user.userId, activeOtherUserId, text);
+    const url =
+        `${API_URL}?module=sendMessage`
+        + `&conversationId=${encodeURIComponent(activeConversationId)}`
+        + `&senderId=${encodeURIComponent(user.userId)}`
+        + `&receiverId=${encodeURIComponent(activeOtherUserId)}`
+        + `&message=${encodeURIComponent(text)}`;
+
+    await fetch(url);
+
+    input.value = "";
+    openChat(activeConversationId, activeOtherUserId);
 }
 
 document.addEventListener("DOMContentLoaded", loadConversations);
 </script>
-
 </body>
 </html>
