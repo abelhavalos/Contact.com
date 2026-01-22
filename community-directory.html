@@ -3,104 +3,132 @@
 <head>
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
-    body { font-family: Arial, sans-serif; margin:0; background:#f5f5f5; }
-    #header { background: linear-gradient(135deg, #4a6cff, #6f8cff);
-      color: #fff;padding:12px 16px;font-size:18px;font-weight:bold; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111;
+      padding: 12px 18px;
+      color: white;
+    }
+
+    .navbar .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+    }
+
+    .nav-right a {
+      color: white;
+      margin-left: 18px;
+      text-decoration: none;
+      font-size: 15px;
+    }
+
+    .nav-right a:hover {
+      color: #4da3ff;
+    }
+
+    .hamburger {
+      display: none;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      background: #111;
+      padding: 10px 0;
+    }
+
+    .mobile-menu a {
+      padding: 12px 18px;
+      color: white;
+      text-decoration: none;
+      border-top: 1px solid #222;
+    }
+
+    .mobile-menu a:hover {
+      background: #222;
+    }
+
+    @media (max-width: 768px) {
+      .nav-right {
+        display: none;
+      }
+      .hamburger {
+        display: block;
+      }
+    }
+
+    /* PAGE HEADER */
+    #header {
+      background: #fff;
+      color: #111;
+      padding: 12px 16px;
+      font-size: 18px;
+      font-weight: bold;
+      border-bottom: 1px solid #ddd;
+    }
+
+    /* COMMUNITY CARDS */
+    #communitiesContainer {
+      padding: 16px;
+    }
+
     .community-card {
-      background:white;
-      margin:12px 16px;
-      padding:12px 16px;
-      border-radius:8px;
-      box-shadow:0 1px 3px rgba(0,0,0,0.08);
+      background: white;
+      padding: 16px;
+      margin-bottom: 14px;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
-    .community-card button {
-      margin-top:8px;
-      padding:8px 12px;
-      background:#111;
-      color:white;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
+
+    .community-title {
+      font-size: 17px;
+      font-weight: bold;
+      margin-bottom: 6px;
     }
-  
-/* NAVBAR */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background:#ffffff;
-  padding: 12px 18px;
-  color: #222;
-  text-decoration: none;
-}
 
+    .community-desc {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 10px;
+    }
 
-  .logo {
-    text-decoration: none;  
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #222;
-}
-.logo span {
-    color: #4a6cff;
-}
-.nav-right a {
- 
-  margin-left: 18px;
-  text-decoration: none;
-  font-size: 15px;
-  text-decoration: none;
-  color: #333;
-  font-weight: 500;
-}
+    .enter-btn {
+      padding: 10px 14px;
+      background: #111;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
 
-.nav-right a:hover {
-  color: #4da3ff;
-}
-
-.hamburger {
-  display: none;
-  font-size: 24px;
-  cursor: pointer;
-}
-
-/* MOBILE MENU */
-.mobile-menu {
-  display: none;
-  flex-direction: column;
-  background: #111;
-  padding: 10px 0;
-}
-
-.mobile-menu a {
-  padding: 12px 18px;
-  color: white;
-  text-decoration: none;
-  border-top: 1px solid #222;
-}
-
-.mobile-menu a:hover {
-  background: #222;
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .nav-right {
-    display: none;
-  }
-  .hamburger {
-    display: block;
-  }
-}
+    .enter-btn:hover {
+      background: #333;
+    }
   </style>
 </head>
+
 <body>
 
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="nav-left">
-    <a href="dashboard.html" class="logo">Contact<span style="color:#4da3ff;">.</span>com</a>
+    <a href="dashboard.html" class="logo">Contact<span style="color:#4da3ff;">.com</span></a>
   </div>
 
   <div class="nav-right">
@@ -122,39 +150,59 @@
   <a href="profile.html">Profile</a>
 </div>
 
+<!-- PAGE HEADER -->
 <div id="header">Communities</div>
-  <div id="communitiesContainer"></div>
 
-  <script>
+<!-- COMMUNITY LIST -->
+<div id="communitiesContainer">Loading communities...</div>
+
+<script>
+  /* NAVBAR JS */
   function toggleMenu() {
-  const menu = document.getElementById("mobileMenu");
-  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
-}
-    window.onload = () => {
-      google.script.run
-        .withSuccessHandler(renderCommunities)
-        .getAllCommunities();
-    };
+    const menu = document.getElementById("mobileMenu");
+    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+  }
 
-    function renderCommunities(list) {
-      const container = document.getElementById("communitiesContainer");
-      container.innerHTML = "";
+  const current = window.location.pathname.split("/").pop();
+  document.querySelectorAll(".nav-right a, .mobile-menu a").forEach(link => {
+    if (link.getAttribute("href") === current) {
+      link.style.color = "#4da3ff";
+      link.style.fontWeight = "bold";
+    }
+  });
 
-      list.forEach(c => {
-        const div = document.createElement("div");
-        div.className = "community-card";
-        div.innerHTML = `
-          <div style="font-weight:bold;">${c.name}</div>
-          <div style="font-size:13px;color:#555;margin-top:4px;">${c.description || ''}</div>
-          <button onclick="enterChat('${c.communityId}')">Enter Chatroom</button>
-        `;
-        container.appendChild(div);
-      });
+  /* MAIN LOGIC */
+  window.onload = () => {
+    google.script.run
+      .withSuccessHandler(renderCommunities)
+      .getAllCommunities();
+  };
+
+  function renderCommunities(list) {
+    const container = document.getElementById("communitiesContainer");
+    container.innerHTML = "";
+
+    if (!list.length) {
+      container.innerHTML = "<p style='color:#666;'>No communities available.</p>";
+      return;
     }
 
-    function enterChat(communityId) {
-      window.location.href = `messages.html?communityId=${communityId}`;
-    }
-  </script>
+    list.forEach(c => {
+      const div = document.createElement("div");
+      div.className = "community-card";
+      div.innerHTML = `
+        <div class="community-title">${c.name}</div>
+        <div class="community-desc">${c.description || ""}</div>
+        <button class="enter-btn" onclick="enterChat('${c.communityId}')">Enter Chatroom</button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function enterChat(communityId) {
+    window.location.href = `messages.html?communityId=${communityId}`;
+  }
+</script>
+
 </body>
 </html>

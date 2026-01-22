@@ -244,7 +244,7 @@ function loadNavbar() {
         </div>
         <div class="nav-links">
             <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
+            <a href="community-directory.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="profile.html">Profile</a>
             <a href="#" onclick="logout()">Logout</a>
@@ -281,21 +281,22 @@ document.addEventListener("DOMContentLoaded", loadNavbar);
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
     const joinButtons = document.querySelectorAll(".card button");
 
     joinButtons.forEach(btn => {
         btn.addEventListener("click", () => {
+            const user = JSON.parse(localStorage.getItem("contact_user"));
+
             if (!user) {
                 window.location.href = "login.html";
                 return;
             }
 
-            // If logged in, you can later add real join logic here
-            alert("Joined community!");
+            // Logged in → send to community directory
+            window.location.href = "community-directory.html";
         });
     });
 });
-</script>    
+</script>
 </body>
 </html>
