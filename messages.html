@@ -1,334 +1,640 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contact.com – Messages</title>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+    }
 
-        body {
-            background: linear-gradient(135deg, #4a6cff, #6f8cff);
-            color: #fff;
-            min-height: 100vh;
-        }
+    #header {
+      background: #111;
+      color: white;
+      padding: 12px 16px;
+      font-size: 18px;
+      font-weight: bold;
+      background: #4a6cff;
+    color: #fff;
+    }
 
-        /* NAVBAR */
-        .navbar {
-            width: 100%;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
+    #chat-container {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
 
-        .logo {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #222;
-        }
-        .logo span { color: #4a6cff; }
+    #sidebar {
+      width: 260px;
+      background: linear-gradient(135deg, #4a6cff, #6f8cff);
+      color: #fff;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+    }
 
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+    #sidebar h3 {
+      margin: 16px;
+      font-size: 16px;
+      color: #fff;
+    }
 
-        .nav-links a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-        }
+    .sidebar-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
 
-        /* HAMBURGER */
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-        }
-        .hamburger span {
-            width: 28px;
-            height: 3px;
-            background: #333;
-            border-radius: 3px;
-        }
+    .sidebar-item:hover {
+      background: #f0f0f0;
+    }
 
-        /* MESSAGES LAYOUT */
-        .messages-container {
-            display: flex;
-            height: calc(100vh - 100px);
-            margin-top: 20px;
-        }
+    #chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
 
-        /* LEFT COLUMN – Conversations */
-        .conversations {
-            width: 30%;
-            background: #f7f9fc;
-            color: #222;
-            overflow-y: auto;
-            border-right: 1px solid #ddd;
-        }
+    #messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
 
-        .conversation {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+    .msg {
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      background: #fff;
+      border-radius: 8px;
+      max-width: 70%;
+    }
 
-        .conversation:hover {
-            background: #eef2ff;
-        }
+    .me {
+      background: #d1eaff;
+      margin-left: auto;
+    }
 
-        .conversation.active {
-            background: #dce3ff;
-        }
+    #input-area {
+      display: flex;
+      padding: 12px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+    }
 
-        /* RIGHT COLUMN – Chat Window */
-        .chat-window {
-            width: 70%;
-            display: flex;
-            flex-direction: column;
-            background: #ffffff;
-            color: #222;
-        }
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
 
-        .chat-header {
-            padding: 20px;
-            font-weight: 600;
-            border-bottom: 1px solid #ddd;
-            background: #f1f4ff;
-        }
+    #sendBtn {
+      padding: 10px 20px;
+    background: #4a6cff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    }
+  /* NAVBAR */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background:#ffffff;
+  padding: 12px 18px;
+  color: #222;
+  text-decoration: none;
+}
 
-        .chat-messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
 
-        .message {
-            margin-bottom: 15px;
-            max-width: 70%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            line-height: 1.4;
-        }
+  .logo {
+    text-decoration: none;  
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #222;
+}
+.logo span {
+    color: #4a6cff;
+}
+.nav-right a {
+ 
+  margin-left: 18px;
+  text-decoration: none;
+  font-size: 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
 
-        .sent {
-            background: #4a6cff;
-            color: #fff;
-            margin-left: auto;
-        }
+.nav-right a:hover {
+  color: #4da3ff;
+}
 
-        .received {
-            background: #e5e7eb;
-            color: #222;
-        }
+.hamburger {
+  display: none;
+  font-size: 24px;
+  cursor: pointer;
+}
 
-        .chat-input {
-            display: flex;
-            padding: 15px;
-            border-top: 1px solid #ddd;
-            background: #fafafa;
-        }
+/* MOBILE MENU */
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: #111;
+  padding: 10px 0;
+}
 
-        .chat-input input {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
+.mobile-menu a {
+  padding: 12px 18px;
+  color: white;
+  text-decoration: none;
+  border-top: 1px solid #222;
+}
 
-        .chat-input button {
-            margin-left: 10px;
-            padding: 12px 20px;
-            background: #4a6cff;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
+.mobile-menu a:hover {
+  background: #222;
+}
 
-        /* MOBILE */
-        @media (max-width: 800px) {
-            .messages-container {
-                flex-direction: column;
-            }
-            .conversations {
-                width: 100%;
-                height: 200px;
-            }
-            .chat-window {
-                width: 100%;
-                height: calc(100vh - 300px);
-            }
-            .hamburger { display: flex; }
-            .nav-links { display: none; flex-direction: column; width: 100%; }
-            .nav-links.show { display: flex; }
-        }
-    </style>
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .nav-right {
+    display: none;
+  }
+  .hamburger {
+    display: block;
+  }
+}
+  </style>
 </head>
 
 <body>
 
-    <nav class="navbar">
-        <div class="logo">Contact<span>.</span>com</div>
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-left">
+    <div href="dashboard.html" class="logo">Contact<span>.</span>com</div>
 
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
+  </div>
 
-        <div class="nav-links"></div>
-    </nav>
+  <div class="nav-right">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="communities.html">Communities</a>
+    <a href="groups.html">Groups</a>
+    <a href="messages.html">Messages</a>
+    <a href="profile.html">Profile</a>
+  </div>
 
-    <div class="messages-container">
+  <div class="hamburger" onclick="toggleMenu()">☰</div>
+</nav>
 
-        <!-- LEFT: Conversations -->
-        <div class="conversations" id="conversationList"></div>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="dashboard.html">Dashboard</a>
+  <a href="communities.html">Communities</a>
+  <a href="groups.html">Groups</a>
+  <a href="messages.html">Messages</a>
+  <a href="profile.html">Profile</a>
+</div>
 
-        <!-- RIGHT: Chat Window -->
-        <div class="chat-window">
-            <div class="chat-header" id="chatHeader">Select a conversation</div>
+<!-- PAGE HEADER -->
+<div id="header">Messages</div>
 
-            <div class="chat-messages" id="chatMessages"></div>
+<!-- CHAT LAYOUT BELOW REMAINS THE SAME -->
 
-            <div class="chat-input">
-                <input type="text" id="messageInput" placeholder="Type a message..." />
-                <button onclick="sendMessage()">Send</button>
-            </div>
-        </div>
+<div id="chat-container">
 
+  <!-- LEFT SIDEBAR -->
+  <div id="sidebar">
+    <h3>Groups</h3>
+<div id="groupList"></div>
+
+<button id="createGroupBtn" style="
+  margin: 16px;
+  padding: 10px;
+  width: calc(100% - 32px);
+  background: #111;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+">
+  + Create Group
+</button>
+    <h3>Chats</h3>
+    <div id="chatList"></div>
+  </div>
+
+  <!-- MAIN CHAT AREA -->
+  <div id="chat">
+    <div id="messages"></div>
+<div id="typingIndicator" style="
+  padding:4px 16px;
+  font-size:12px;
+  color:#666;
+  display:none;
+">Someone is typing...</div>
+    <div id="input-area">
+      <input id="messageInput" placeholder="Type a message...">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+</div>
+<div id="groupModal" style="
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+">
+  <div style="
+    background:white;
+    padding:20px;
+    width:90%;
+    max-width:400px;
+    border-radius:10px;
+  ">
+    <h2>Create Group</h2>
+
+    <input id="groupNameInput" placeholder="Group name" style="
+      width:100%;
+      padding:10px;
+      margin-bottom:12px;
+      border:1px solid #ccc;
+      border-radius:6px;
+    ">
+
+    <div id="memberSelect" style="
+      max-height:200px;
+      overflow-y:auto;
+      border:1px solid #ddd;
+      padding:10px;
+      border-radius:6px;
+    ">
+      Loading users...
     </div>
 
+    <button onclick="submitGroup()" style="
+      margin-top:12px;
+      width:100%;
+      padding:10px;
+      background:#111;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+    ">Create</button>
+
+    <button onclick="closeGroupModal()" style="
+      margin-top:8px;
+      width:100%;
+      padding:10px;
+      background:#ccc;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+    ">Cancel</button>
+  </div>
+  
+  
+  
+</div>
+  
+  
+  <div id="profileModal" style="
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+">
+  <div style="
+    background:white;
+    padding:20px;
+    width:90%;
+    max-width:320px;
+    border-radius:10px;
+    text-align:center;
+  ">
+    <img id="profileAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:10px;">
+    <h2 id="profileName"></h2>
+    <p id="profileEmail" style="color:#666;font-size:14px;"></p>
+    <button onclick="closeProfile()" style="
+      margin-top:12px;
+      width:100%;
+      padding:10px;
+      background:#111;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+    ">Close</button>
+  </div>
+</div>
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
-
-/* NAVBAR */
 function toggleMenu() {
-    document.querySelector(".nav-links").classList.toggle("show");
+  const menu = document.getElementById("mobileMenu");
+  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
 }
+  const url = new URL(window.location.href);
+  const communityId = url.searchParams.get("communityId");
+  const userId = url.searchParams.get("userId");
+  const groupId = url.searchParams.get("groupId");
 
-function loadNavbar() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    const nav = document.querySelector(".nav-links");
+  const loggedInUser = JSON.parse(localStorage.getItem("user"));
 
-    if (user) {
-        nav.innerHTML = `
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="profile.html">Profile</a>
-            <a href="index.html" onclick="logout()">Logout</a>
-        `;
+  let currentMode = "inbox"; 
+  let activeConversationId = null;
+
+  window.onload = () => {
+    if (communityId) {
+      currentMode = "community";
+      loadCommunityChat();
+    } else if (groupId) {
+      currentMode = "group";
+      loadGroupChat();
+    } else if (userId) {
+      currentMode = "private";
+      startPrivateChat();
     } else {
-        window.location.href = "login.html";
+      loadInbox();
     }
-}
+    loadGroupList();
+    document.getElementById("sendBtn").onclick = sendMessage;
+  };
 
-function logout() {
-    localStorage.removeItem("contact_user");
-    window.location.href = "index.html";
-}
+  /* ---------------------------
+     MODE: COMMUNITY CHATROOM
+  ----------------------------*/
+  function loadCommunityChat() {
+    document.getElementById("header").innerText = "Community Chatroom";
 
-document.addEventListener("DOMContentLoaded", loadNavbar);
+    google.script.run
+      .withSuccessHandler(renderMessages)
+      .getCommunityMessages(communityId);
 
-/* GLOBALS */
-let activeConversationId = null;
-let activeOtherUserId = null;
+    setInterval(() => {
+      google.script.run
+        .withSuccessHandler(renderMessages)
+        .getCommunityMessages(communityId);
+    }, 3000);
+  }
 
-const user = JSON.parse(localStorage.getItem("contact_user"));
-if (!user) window.location.href = "login.html";
+  function sendCommunityMessage(text) {
+    google.script.run.sendCommunityMessage(communityId, loggedInUser.userId, text);
+  }
 
-/* LOAD CONVERSATIONS */
-async function loadConversations() {
-    const url = `${API_URL}?module=getConversations&userId=${encodeURIComponent(user.userId)}`;
-    const res = await fetch(url);
-    const conversations = await res.json();
-    renderConversations(conversations);
-}
+  /* ---------------------------
+     MODE: GROUP CHAT
+  ----------------------------*/
+  function loadGroupChat() {
+    document.getElementById("header").innerText = "Group Chat";
 
-function renderConversations(conversations) {
-    const list = document.getElementById("conversationList");
-    list.innerHTML = "";
+    google.script.run
+      .withSuccessHandler(renderMessages)
+      .getGroupMessages(groupId);
 
-    conversations.forEach(conv => {
-        const div = document.createElement("div");
-        div.className = "conversation";
-        div.dataset.id = conv.conversationId;
-        div.dataset.other = conv.otherUserId;
+    setInterval(() => {
+      google.script.run
+        .withSuccessHandler(renderMessages)
+        .getGroupMessages(groupId);
+    }, 3000);
+  }
 
-        div.innerHTML = `
-            <strong>${conv.otherUserId}</strong><br>
-            <small>${conv.lastMessage}</small>
-        `;
+  function sendGroupMessage(text) {
+    google.script.run.sendGroupMessage(groupId, loggedInUser.userId, text);
+  }
 
-        div.onclick = () => openChat(conv.conversationId, conv.otherUserId);
-        list.appendChild(div);
+  /* ---------------------------
+     MODE: PRIVATE CHAT
+  ----------------------------*/
+  function startPrivateChat() {
+    google.script.run
+      .withSuccessHandler((conversationId) => {
+        activeConversationId = conversationId;
+        loadPrivateMessages();
+      })
+      .startConversation(loggedInUser.userId, userId);
+  }
+
+  function loadPrivateMessages() {
+    google.script.run
+      .withSuccessHandler(renderMessages)
+      .getMessages(activeConversationId);
+
+    setInterval(() => {
+      google.script.run
+        .withSuccessHandler(renderMessages)
+        .getMessages(activeConversationId);
+    }, 3000);
+  }
+
+  function sendPrivateMessage(text) {
+    google.script.run.sendMessage(activeConversationId, loggedInUser.userId, userId, text);
+  }
+
+  /* ---------------------------
+     MODE: INBOX
+  ----------------------------*/
+  function loadInbox() {
+    document.getElementById("header").innerText = "Inbox";
+
+    google.script.run
+      .withSuccessHandler(renderChatList)
+      .getConversationsForUser(loggedInUser.userId);
+  }
+
+  function renderChatList(list) {
+    const container = document.getElementById("chatList");
+    container.innerHTML = "";
+
+    list.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "sidebar-item";
+      div.innerText = item.title;
+      div.onclick = () => {
+        window.location.href = `messages.html?conversationId=${item.conversationId}`;
+      };
+      container.appendChild(div);
     });
-}
+  }
 
-/* OPEN CHAT */
-async function openChat(conversationId, otherUserId) {
-    activeConversationId = conversationId;
-    activeOtherUserId = otherUserId;
-
-    document.querySelectorAll(".conversation").forEach(el => el.classList.remove("active"));
-    event.target.closest(".conversation").classList.add("active");
-
-    document.getElementById("chatHeader").textContent = otherUserId;
-
-    const url = `${API_URL}?module=getMessages&conversationId=${encodeURIComponent(conversationId)}`;
-    const res = await fetch(url);
-    const messages = await res.json();
-
-    renderMessages(messages);
-}
-
-function renderMessages(messages) {
-    const chatBox = document.getElementById("chatMessages");
-    chatBox.innerHTML = "";
-
-    messages.forEach(msg => {
-        const div = document.createElement("div");
-        div.className = "message " + (msg.senderId === user.userId ? "sent" : "received");
-        div.textContent = msg.message;
-        chatBox.appendChild(div);
-    });
-
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-/* SEND MESSAGE */
-async function sendMessage() {
-    if (!activeConversationId) return;
-
-    const input = document.getElementById("messageInput");
-    const text = input.value.trim();
+  /* ---------------------------
+     SEND MESSAGE (UNIFIED)
+  ----------------------------*/
+  function sendMessage() {
+    const text = document.getElementById("messageInput").value.trim();
     if (!text) return;
 
-    const url =
-        `${API_URL}?module=sendMessage`
-        + `&conversationId=${encodeURIComponent(activeConversationId)}`
-        + `&senderId=${encodeURIComponent(user.userId)}`
-        + `&receiverId=${encodeURIComponent(activeOtherUserId)}`
-        + `&message=${encodeURIComponent(text)}`;
+    if (currentMode === "community") sendCommunityMessage(text);
+    else if (currentMode === "group") sendGroupMessage(text);
+    else if (currentMode === "private") sendPrivateMessage(text);
 
-    await fetch(url);
+    document.getElementById("messageInput").value = "";
+  }
 
-    input.value = "";
-    openChat(activeConversationId, activeOtherUserId);
+  /* ---------------------------
+     RENDER MESSAGES
+  ----------------------------*/
+  function renderMessages(messages) {
+  const container = document.getElementById("messages");
+  container.innerHTML = "";
+
+  messages.forEach(msg => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    if (msg.senderId == loggedInUser.userId) div.classList.add("me");
+
+    const header = document.createElement("div");
+    header.style.fontSize = "12px";
+    header.style.color = "#666";
+    header.style.marginBottom = "4px";
+    header.style.cursor = "pointer";
+    header.innerText = msg.senderName || ('User ' + msg.senderId);
+    header.onclick = () => openProfile(msg.senderId);
+
+    const body = document.createElement("div");
+    body.innerText = msg.message;
+
+    const footer = document.createElement("div");
+    footer.style.fontSize = "11px";
+    footer.style.color = "#aaa";
+    footer.style.marginTop = "4px";
+    footer.innerHTML = `
+      <span onclick="addReaction('${msg.messageId}', '👍')" style="cursor:pointer;margin-right:6px;">👍</span>
+      <span onclick="addReaction('${msg.messageId}', '❤️')" style="cursor:pointer;margin-right:6px;">❤️</span>
+      <span onclick="addReaction('${msg.messageId}', '😂')" style="cursor:pointer;">😂</span>
+    `;
+
+    div.appendChild(header);
+    div.appendChild(body);
+    div.appendChild(footer);
+
+    container.appendChild(div);
+  });
+
+  container.scrollTop = container.scrollHeight;
+}
+  
+  /* ---------------------------
+   GROUP LIST + MODAL
+----------------------------*/
+
+document.getElementById("createGroupBtn").onclick = openGroupModal;
+
+function openGroupModal() {
+  document.getElementById("groupModal").style.display = "flex";
+
+  google.script.run
+    .withSuccessHandler(renderMemberSelect)
+    .getAllUsers(); // You must have this function already
 }
 
-document.addEventListener("DOMContentLoaded", loadConversations);
+function closeGroupModal() {
+  document.getElementById("groupModal").style.display = "none";
+}
+
+function renderMemberSelect(users) {
+  const container = document.getElementById("memberSelect");
+  container.innerHTML = "";
+
+  users.forEach(u => {
+    if (u.userId == loggedInUser.userId) return;
+
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <label>
+        <input type="checkbox" value="${u.userId}">
+        ${u.name}
+      </label>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function submitGroup() {
+  const name = document.getElementById("groupNameInput").value.trim();
+  if (!name) return alert("Enter a group name");
+
+  const checkboxes = document.querySelectorAll("#memberSelect input:checked");
+  const members = Array.from(checkboxes).map(cb => cb.value);
+
+  members.push(loggedInUser.userId); // creator is always included
+
+  google.script.run
+    .withSuccessHandler(groupId => {
+      closeGroupModal();
+      window.location.href = `messages.html?groupId=${groupId}`;
+    })
+    .createGroup(name, members, loggedInUser.userId);
+}
+
+/* ---------------------------
+   LOAD GROUPS IN SIDEBAR
+----------------------------*/
+function loadGroupList() {
+  google.script.run
+    .withSuccessHandler(renderGroupList)
+    .getGroupsForUser(loggedInUser.userId);
+}
+
+function renderGroupList(groups) {
+  const container = document.getElementById("groupList");
+  container.innerHTML = "";
+
+  groups.forEach(g => {
+    const div = document.createElement("div");
+    div.className = "sidebar-item";
+    div.innerText = g.name;
+    div.onclick = () => {
+      window.location.href = `messages.html?groupId=${g.groupId}`;
+    };
+    container.appendChild(div);
+  });
+}
+  
+  function openProfile(userId) {
+  google.script.run
+    .withSuccessHandler(user => {
+      if (!user) return;
+      document.getElementById("profileAvatar").src = user.avatarUrl || "https://via.placeholder.com/80";
+      document.getElementById("profileName").innerText = user.name || ('User ' + user.userId);
+      document.getElementById("profileEmail").innerText = user.email || '';
+      document.getElementById("profileModal").style.display = "flex";
+    })
+    .getUserById(userId);
+}
+
+function closeProfile() {
+  document.getElementById("profileModal").style.display = "none";
+}
+  let typingTimeout = null;
+
+document.getElementById("messageInput").addEventListener("input", () => {
+  // Here you could call a backend "setTyping" if you want multi-user typing.
+  showTyping();
+});
+
+function showTyping() {
+  const el = document.getElementById("typingIndicator");
+  el.style.display = "block";
+
+  if (typingTimeout) clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    el.style.display = "none";
+  }, 1500);
+}
+  
+  function addReaction(messageId, emoji) {
+  google.script.run.addReaction(messageId, loggedInUser.userId, emoji);
+}
 </script>
+
 </body>
 </html>

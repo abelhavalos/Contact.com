@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f5f5f5; }
+    #header { background: linear-gradient(135deg, #4a6cff, #6f8cff);
+      color: #fff;padding:12px 16px;font-size:18px;font-weight:bold; }
+    .community-card {
+      background:white;
+      margin:12px 16px;
+      padding:12px 16px;
+      border-radius:8px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.08);
+    }
+    .community-card button {
+      margin-top:8px;
+      padding:8px 12px;
+      background:#111;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+    }
+  
+/* NAVBAR */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background:#ffffff;
+  padding: 12px 18px;
+  color: #222;
+  text-decoration: none;
+}
+
+
+  .logo {
+    text-decoration: none;  
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #222;
+}
+.logo span {
+    color: #4a6cff;
+}
+.nav-right a {
+ 
+  margin-left: 18px;
+  text-decoration: none;
+  font-size: 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
+
+.nav-right a:hover {
+  color: #4da3ff;
+}
+
+.hamburger {
+  display: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* MOBILE MENU */
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: #111;
+  padding: 10px 0;
+}
+
+.mobile-menu a {
+  padding: 12px 18px;
+  color: white;
+  text-decoration: none;
+  border-top: 1px solid #222;
+}
+
+.mobile-menu a:hover {
+  background: #222;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .nav-right {
+    display: none;
+  }
+  .hamburger {
+    display: block;
+  }
+}
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="dashboard.html" class="logo">Contact<span style="color:#4da3ff;">.</span>com</a>
+  </div>
+
+  <div class="nav-right">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="communities.html">Communities</a>
+    <a href="groups.html">Groups</a>
+    <a href="messages.html">Messages</a>
+    <a href="profile.html">Profile</a>
+  </div>
+
+  <div class="hamburger" onclick="toggleMenu()">☰</div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="dashboard.html">Dashboard</a>
+  <a href="communities.html">Communities</a>
+  <a href="groups.html">Groups</a>
+  <a href="messages.html">Messages</a>
+  <a href="profile.html">Profile</a>
+</div>
+
+<div id="header">Communities</div>
+  <div id="communitiesContainer"></div>
+
+  <script>
+  function toggleMenu() {
+  const menu = document.getElementById("mobileMenu");
+  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+}
+    window.onload = () => {
+      google.script.run
+        .withSuccessHandler(renderCommunities)
+        .getAllCommunities();
+    };
+
+    function renderCommunities(list) {
+      const container = document.getElementById("communitiesContainer");
+      container.innerHTML = "";
+
+      list.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "community-card";
+        div.innerHTML = `
+          <div style="font-weight:bold;">${c.name}</div>
+          <div style="font-size:13px;color:#555;margin-top:4px;">${c.description || ''}</div>
+          <button onclick="enterChat('${c.communityId}')">Enter Chatroom</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function enterChat(communityId) {
+      window.location.href = `messages.html?communityId=${communityId}`;
+    }
+  </script>
+</body>
+</html>
