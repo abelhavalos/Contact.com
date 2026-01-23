@@ -356,51 +356,46 @@
 </div>
 
 <script>
+/* ===========================
+   CONFIG
+=========================== */
 const API_URL = "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
 
-/* NAVBAR JS */
-function toggleMenu() {
-  const menu = document.getElementById("mobileMenu");
-  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+/* ===========================
+   LOGIN USER FIX
+=========================== */
+let loggedInUser = JSON.parse(localStorage.getItem("user"));
+
+// fallback for older login system
+if (!loggedInUser) {
+  loggedInUser = {
+    email: localStorage.getItem("hq_email"),
+    fullName: localStorage.getItem("hq_name"),
+    role: localStorage.getItem("hq_role")
+  };
 }
 
-const current = window.location.pathname.split("/").pop();
-document.querySelectorAll(".nav-right a, .mobile-menu a").forEach(link => {
-  if (link.getAttribute("href") === current) {
-    link.style.color = "#4da3ff";
-    link.style.fontWeight = "bold";
-  }
-});
+if (!loggedInUser || !loggedInUser.email) {
+  alert("No logged in user found.");
+}
 
-/* URL PARAMS */
+/* ===========================
+   URL PARAMS
+=========================== */
 const url = new URL(window.location.href);
 const communityId = url.searchParams.get("communityId");
 const userId = url.searchParams.get("userId");
 const groupId = url.searchParams.get("groupId");
 const conversationIdParam = url.searchParams.get("conversationId");
 
-
-let loggedInUser = JSON.parse(localStorage.getItem("user"));
-
-if (!loggedInUser) {
-  // fallback for your older login system
-  loggedInUser = {
-    email: localStorage.getItem("hq_email"),
-    fullName: localStorage.getItem("hq_name"),
-    role: localStorage.getItem("hq_role")
-  };
-} 
-
 let currentMode = "inbox";
 let activeConversationId = conversationIdParam || null;
 let typingTimeout = null;
 
+/* ===========================
+   ON LOAD
+=========================== */
 window.onload = () => {
-  if (!loggedInUser || !loggedInUser.email) {
-    alert("No logged in user found.");
-    return;
-  }
-
   if (communityId) {
     currentMode = "community";
     document.getElementById("header").innerText = "Community Chat";
@@ -438,7 +433,9 @@ window.onload = () => {
   document.getElementById("createGroupBtn").onclick = openGroupModal;
 };
 
-/* COMMUNITY CHAT */
+/* ===========================
+   COMMUNITY CHAT
+=========================== */
 function loadCommunityChat() {
   fetch(`${API_URL}?module=getCommunityMessages&communityId=${communityId}`)
     .then(r => r.json())
@@ -455,7 +452,9 @@ function sendCommunityMessage(text) {
   fetch(`${API_URL}?module=sendCommunityMessage&communityId=${communityId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(text)}`);
 }
 
-/* GROUP CHAT */
+/* ===========================
+   GROUP CHAT
+=========================== */
 function loadGroupChat() {
   fetch(`${API_URL}?module=getGroupMessages&groupId=${groupId}`)
     .then(r => r.json())
@@ -493,7 +492,9 @@ function renderGroupList(groups) {
   });
 }
 
-/* PRIVATE CHAT */
+/* ===========================
+   PRIVATE CHAT
+=========================== */
 function startPrivateChat() {
   fetch(`${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${userId}`)
     .then(r => r.json())
@@ -525,7 +526,9 @@ function sendPrivateMessage(text) {
   fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderId=${loggedInUser.email}&receiverId=${userId}&message=${encodeURIComponent(text)}`);
 }
 
-/* INBOX */
+/* ===========================
+   INBOX
+=========================== */
 function loadInbox() {
   fetch(`${API_URL}?module=getConversations&userId=${loggedInUser.email}`)
     .then(r => r.json())
@@ -547,7 +550,9 @@ function renderChatList(list) {
   });
 }
 
-/* SEND MESSAGE */
+/* ===========================
+   SEND MESSAGE (UNIFIED)
+=========================== */
 function sendMessage() {
   const text = document.getElementById("messageInput").value.trim();
   if (!text) return;
@@ -559,7 +564,9 @@ function sendMessage() {
   document.getElementById("messageInput").value = "";
 }
 
-/* RENDER MESSAGES */
+/* ===========================
+   RENDER MESSAGES
+=========================== */
 function renderMessages(messages) {
   const container = document.getElementById("messages");
   container.innerHTML = "";
@@ -583,111 +590,6 @@ function renderMessages(messages) {
     footer.style.fontSize = "11px";
     footer.style.color = "#aaa";
     footer.style.marginTop = "4px";
-    footer.innerHTML = `
-      <span onclick="addReaction('${msg.messageId}', '👍')" style="cursor:pointer;margin-right:6px;">👍</span>
-      <span onclick="addReaction('${msg.messageId}', '❤️')" style="cursor:pointer;margin-right:6px;">❤️</span>
-      <span onclick="addReaction('${msg.messageId}', '😂')" style="cursor:pointer;">😂</span>
-    `;
-
-    div.appendChild(header);
-    div.appendChild(body);
-    div.appendChild(footer);
-
-    container.appendChild(div);
-  });
-
-  container.scrollTop = container.scrollHeight;
-}
-
-/* TYPING */
-function showTypingLocal() {
-  const el = document.getElementById("typingIndicator");
-  el.style.display = "block";
-
-  if (typingTimeout) clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    el.style.display = "none";
-  }, 1500);
-}
-
-function renderTyping(activeList) {
-  const el = document.getElementById("typingIndicator");
-  el.style.display = activeList && activeList.length > 0 ? "block" : "none";
-}
-
-/* REACTIONS */
-function addReaction(messageId, emoji) {
-  fetch(`${API_URL}?module=addReaction&messageId=${messageId}&userEmail=${loggedInUser.email}&emoji=${emoji}`);
-}
-
-/* GROUP MODAL */
-function openGroupModal() {
-  document.getElementById("groupModal").style.display = "flex";
-
-  fetch(`${API_URL}?module=getAllUsers`)
-    .then(r => r.json())
-    .then(d => renderMemberSelect(d.data));
-}
-
-function closeGroupModal() {
-  document.getElementById("groupModal").style.display = "none";
-}
-
-function renderMemberSelect(users) {
-  const container = document.getElementById("memberSelect");
-  container.innerHTML = "";
-
-  users.forEach(u => {
-    if (u.email === loggedInUser.email) return;
-
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <label>
-        <input type="checkbox" value="${u.userId}">
-        ${u.name} (${u.email})
-      </label>
-    `;
-    container.appendChild(div);
-  });
-}
-
-function submitGroup() {
-  const name = document.getElementById("groupNameInput").value.trim();
-  if (!name) return alert("Enter a group name");
-
-  const checkboxes = document.querySelectorAll("#memberSelect input:checked");
-  const members = Array.from(checkboxes).map(cb => cb.value);
-
-  members.push(loggedInUser.email);
-
-  fetch(`${API_URL}?module=createGroup&name=${encodeURIComponent(name)}&members=${encodeURIComponent(JSON.stringify(members))}&createdByEmail=${loggedInUser.email}`)
-    .then(r => r.json())
-    .then(d => {
-      closeGroupModal();
-      window.location.href = `messages.html?groupId=${d.data.groupId}`;
-    });
-}
-
-/* PROFILE */
-function openProfile(email) {
-  fetch(`${API_URL}?module=getUserById&email=${email}`)
-    .then(r => r.json())
-    .then(d => {
-      const user = d.data;
-      if (!user) return;
-
-      document.getElementById("profileAvatar").src = user.avatarUrl || "https://via.placeholder.com/80";
-      document.getElementById("profileName").innerText = user.name || email;
-      document.getElementById("profileEmail").innerText = user.email || email;
-      document.getElementById("profileAbout").innerText = user.about || "";
-      document.getElementById("profileProfession").innerText = user.profession || "";
-      document.getElementById("profileModal").style.display = "flex";
-    });
-}
-
-function closeProfile() {
-  document.getElementById("profileModal").style.display = "none";
-}
-</script>
+    footer.inner
 </body>
 </html>
