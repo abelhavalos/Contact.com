@@ -356,330 +356,328 @@
 </div>
 
 <script>
-  /* NAVBAR JS */
-  function toggleMenu() {
-    const menu = document.getElementById("mobileMenu");
-    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+const API_URL = "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
+
+/* NAVBAR JS */
+function toggleMenu() {
+  const menu = document.getElementById("mobileMenu");
+  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+}
+
+const current = window.location.pathname.split("/").pop();
+document.querySelectorAll(".nav-right a, .mobile-menu a").forEach(link => {
+  if (link.getAttribute("href") === current) {
+    link.style.color = "#4da3ff";
+    link.style.fontWeight = "bold";
+  }
+});
+
+/* URL PARAMS */
+const url = new URL(window.location.href);
+const communityId = url.searchParams.get("communityId");
+const userId = url.searchParams.get("userId");
+const groupId = url.searchParams.get("groupId");
+const conversationIdParam = url.searchParams.get("conversationId");
+
+const loggedInUser = JSON.parse(localStorage.getItem("user"));
+
+let currentMode = "inbox";
+let activeConversationId = conversationIdParam || null;
+let typingTimeout = null;
+
+window.onload = () => {
+  if (!loggedInUser || !loggedInUser.email) {
+    alert("No logged in user found.");
+    return;
   }
 
-  const current = window.location.pathname.split("/").pop();
-  document.querySelectorAll(".nav-right a, .mobile-menu a").forEach(link => {
-    if (link.getAttribute("href") === current) {
-      link.style.color = "#4da3ff";
-      link.style.fontWeight = "bold";
+  if (communityId) {
+    currentMode = "community";
+    document.getElementById("header").innerText = "Community Chat";
+    loadCommunityChat();
+  } else if (groupId) {
+    currentMode = "group";
+    document.getElementById("header").innerText = "Group Chat";
+    loadGroupChat();
+  } else if (userId) {
+    currentMode = "private";
+    document.getElementById("header").innerText = "Private Chat";
+    startPrivateChat();
+  } else if (conversationIdParam) {
+    currentMode = "private";
+    document.getElementById("header").innerText = "Private Chat";
+    activeConversationId = conversationIdParam;
+    loadPrivateMessages();
+  } else {
+    currentMode = "inbox";
+    document.getElementById("header").innerText = "Inbox";
+    loadInbox();
+  }
+
+  loadGroupList();
+
+  document.getElementById("sendBtn").onclick = sendMessage;
+
+  document.getElementById("messageInput").addEventListener("input", () => {
+    showTypingLocal();
+    if (currentMode === "private" && activeConversationId) {
+      fetch(`${API_URL}?module=setTyping&conversationId=${activeConversationId}&userEmail=${loggedInUser.email}`);
     }
   });
 
-  /* URL PARAMS */
-  const url = new URL(window.location.href);
-  const communityId = url.searchParams.get("communityId");
-  const userId = url.searchParams.get("userId");   // other user's email
-  const groupId = url.searchParams.get("groupId");
-  const conversationIdParam = url.searchParams.get("conversationId");
+  document.getElementById("createGroupBtn").onclick = openGroupModal;
+};
 
-  const loggedInUser = JSON.parse(localStorage.getItem("user")); // must contain .email
+/* COMMUNITY CHAT */
+function loadCommunityChat() {
+  fetch(`${API_URL}?module=getCommunityMessages&communityId=${communityId}`)
+    .then(r => r.json())
+    .then(d => renderMessages(d.data));
 
-  let currentMode = "inbox";
-  let activeConversationId = conversationIdParam || null;
-  let typingTimeout = null;
+  setInterval(() => {
+    fetch(`${API_URL}?module=getCommunityMessages&communityId=${communityId}`)
+      .then(r => r.json())
+      .then(d => renderMessages(d.data));
+  }, 3000);
+}
 
-  window.onload = () => {
-    if (!loggedInUser || !loggedInUser.email) {
-      alert("No logged in user found.");
-      return;
-    }
+function sendCommunityMessage(text) {
+  fetch(`${API_URL}?module=sendCommunityMessage&communityId=${communityId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(text)}`);
+}
 
-    if (communityId) {
-      currentMode = "community";
-      document.getElementById("header").innerText = "Community Chat";
-      loadCommunityChat();
-    } else if (groupId) {
-      currentMode = "group";
-      document.getElementById("header").innerText = "Group Chat";
-      loadGroupChat();
-    } else if (userId) {
-      currentMode = "private";
-      document.getElementById("header").innerText = "Private Chat";
-      startPrivateChat();
-    } else if (conversationIdParam) {
-      currentMode = "private";
-      document.getElementById("header").innerText = "Private Chat";
-      activeConversationId = conversationIdParam;
+/* GROUP CHAT */
+function loadGroupChat() {
+  fetch(`${API_URL}?module=getGroupMessages&groupId=${groupId}`)
+    .then(r => r.json())
+    .then(d => renderMessages(d.data));
+
+  setInterval(() => {
+    fetch(`${API_URL}?module=getGroupMessages&groupId=${groupId}`)
+      .then(r => r.json())
+      .then(d => renderMessages(d.data));
+  }, 3000);
+}
+
+function sendGroupMessage(text) {
+  fetch(`${API_URL}?module=sendGroupMessage&groupId=${groupId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(text)}`);
+}
+
+function loadGroupList() {
+  fetch(`${API_URL}?module=getGroupsForUser&userEmail=${loggedInUser.email}`)
+    .then(r => r.json())
+    .then(d => renderGroupList(d.data));
+}
+
+function renderGroupList(groups) {
+  const container = document.getElementById("groupList");
+  container.innerHTML = "";
+
+  groups.forEach(g => {
+    const div = document.createElement("div");
+    div.className = "sidebar-item";
+    div.innerText = g.name;
+    div.onclick = () => {
+      window.location.href = `messages.html?groupId=${g.groupId}`;
+    };
+    container.appendChild(div);
+  });
+}
+
+/* PRIVATE CHAT */
+function startPrivateChat() {
+  fetch(`${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${userId}`)
+    .then(r => r.json())
+    .then(d => {
+      activeConversationId = d.data;
       loadPrivateMessages();
-    } else {
-      currentMode = "inbox";
-      document.getElementById("header").innerText = "Inbox";
-      loadInbox();
-    }
-
-    loadGroupList();
-
-    document.getElementById("sendBtn").onclick = sendMessage;
-
-    document.getElementById("messageInput").addEventListener("input", () => {
-      showTypingLocal();
-      if (currentMode === "private" && activeConversationId) {
-        google.script.run.setTyping(activeConversationId, loggedInUser.email);
-      }
     });
+}
 
-    document.getElementById("createGroupBtn").onclick = openGroupModal;
-  };
+function loadPrivateMessages() {
+  fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`)
+    .then(r => r.json())
+    .then(d => renderMessages(d.data));
 
-  /* COMMUNITY CHAT */
-  function loadCommunityChat() {
-    google.script.run
-      .withSuccessHandler(renderMessages)
-      .getCommunityMessages(communityId);
+  setInterval(() => {
+    fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`)
+      .then(r => r.json())
+      .then(d => renderMessages(d.data));
+  }, 3000);
 
-    setInterval(() => {
-      google.script.run
-        .withSuccessHandler(renderMessages)
-        .getCommunityMessages(communityId);
-    }, 3000);
-  }
+  setInterval(() => {
+    fetch(`${API_URL}?module=getTyping&conversationId=${activeConversationId}`)
+      .then(r => r.json())
+      .then(d => renderTyping(d.data));
+  }, 1000);
+}
 
-  function sendCommunityMessage(text) {
-    google.script.run.sendCommunityMessage(communityId, loggedInUser.email, text);
-  }
+function sendPrivateMessage(text) {
+  fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderId=${loggedInUser.email}&receiverId=${userId}&message=${encodeURIComponent(text)}`);
+}
 
-  /* GROUP CHAT */
-  function loadGroupChat() {
-    google.script.run
-      .withSuccessHandler(renderMessages)
-      .getGroupMessages(groupId);
+/* INBOX */
+function loadInbox() {
+  fetch(`${API_URL}?module=getConversations&userId=${loggedInUser.email}`)
+    .then(r => r.json())
+    .then(d => renderChatList(d.data));
+}
 
-    setInterval(() => {
-      google.script.run
-        .withSuccessHandler(renderMessages)
-        .getGroupMessages(groupId);
-    }, 3000);
-  }
+function renderChatList(list) {
+  const container = document.getElementById("chatList");
+  container.innerHTML = "";
 
-  function sendGroupMessage(text) {
-    google.script.run.sendGroupMessage(groupId, loggedInUser.email, text);
-  }
+  list.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "sidebar-item";
+    div.innerText = item.title;
+    div.onclick = () => {
+      window.location.href = `messages.html?conversationId=${item.conversationId}`;
+    };
+    container.appendChild(div);
+  });
+}
 
-  function loadGroupList() {
-    google.script.run
-      .withSuccessHandler(renderGroupList)
-      .getGroupsForUser(loggedInUser.email);
-  }
+/* SEND MESSAGE */
+function sendMessage() {
+  const text = document.getElementById("messageInput").value.trim();
+  if (!text) return;
 
-  function renderGroupList(groups) {
-    const container = document.getElementById("groupList");
-    container.innerHTML = "";
+  if (currentMode === "community") sendCommunityMessage(text);
+  else if (currentMode === "group") sendGroupMessage(text);
+  else if (currentMode === "private") sendPrivateMessage(text);
 
-    groups.forEach(g => {
-      const div = document.createElement("div");
-      div.className = "sidebar-item";
-      div.innerText = g.name;
-      div.onclick = () => {
-        window.location.href = `messages.html?groupId=${g.groupId}`;
-      };
-      container.appendChild(div);
+  document.getElementById("messageInput").value = "";
+}
+
+/* RENDER MESSAGES */
+function renderMessages(messages) {
+  const container = document.getElementById("messages");
+  container.innerHTML = "";
+
+  messages.forEach(msg => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    if (msg.senderId === loggedInUser.email) div.classList.add("me");
+
+    const header = document.createElement("div");
+    header.style.fontSize = "12px";
+    header.style.color = "#666";
+    header.style.marginBottom = "4px";
+    header.style.cursor = "pointer";
+    header.innerText = msg.senderId;
+
+    const body = document.createElement("div");
+    body.innerText = msg.message;
+
+    const footer = document.createElement("div");
+    footer.style.fontSize = "11px";
+    footer.style.color = "#aaa";
+    footer.style.marginTop = "4px";
+    footer.innerHTML = `
+      <span onclick="addReaction('${msg.messageId}', '👍')" style="cursor:pointer;margin-right:6px;">👍</span>
+      <span onclick="addReaction('${msg.messageId}', '❤️')" style="cursor:pointer;margin-right:6px;">❤️</span>
+      <span onclick="addReaction('${msg.messageId}', '😂')" style="cursor:pointer;">😂</span>
+    `;
+
+    div.appendChild(header);
+    div.appendChild(body);
+    div.appendChild(footer);
+
+    container.appendChild(div);
+  });
+
+  container.scrollTop = container.scrollHeight;
+}
+
+/* TYPING */
+function showTypingLocal() {
+  const el = document.getElementById("typingIndicator");
+  el.style.display = "block";
+
+  if (typingTimeout) clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    el.style.display = "none";
+  }, 1500);
+}
+
+function renderTyping(activeList) {
+  const el = document.getElementById("typingIndicator");
+  el.style.display = activeList && activeList.length > 0 ? "block" : "none";
+}
+
+/* REACTIONS */
+function addReaction(messageId, emoji) {
+  fetch(`${API_URL}?module=addReaction&messageId=${messageId}&userEmail=${loggedInUser.email}&emoji=${emoji}`);
+}
+
+/* GROUP MODAL */
+function openGroupModal() {
+  document.getElementById("groupModal").style.display = "flex";
+
+  fetch(`${API_URL}?module=getAllUsers`)
+    .then(r => r.json())
+    .then(d => renderMemberSelect(d.data));
+}
+
+function closeGroupModal() {
+  document.getElementById("groupModal").style.display = "none";
+}
+
+function renderMemberSelect(users) {
+  const container = document.getElementById("memberSelect");
+  container.innerHTML = "";
+
+  users.forEach(u => {
+    if (u.email === loggedInUser.email) return;
+
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <label>
+        <input type="checkbox" value="${u.userId}">
+        ${u.name} (${u.email})
+      </label>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function submitGroup() {
+  const name = document.getElementById("groupNameInput").value.trim();
+  if (!name) return alert("Enter a group name");
+
+  const checkboxes = document.querySelectorAll("#memberSelect input:checked");
+  const members = Array.from(checkboxes).map(cb => cb.value);
+
+  members.push(loggedInUser.email);
+
+  fetch(`${API_URL}?module=createGroup&name=${encodeURIComponent(name)}&members=${encodeURIComponent(JSON.stringify(members))}&createdByEmail=${loggedInUser.email}`)
+    .then(r => r.json())
+    .then(d => {
+      closeGroupModal();
+      window.location.href = `messages.html?groupId=${d.data.groupId}`;
     });
-  }
+}
 
-  /* PRIVATE CHAT */
-  function startPrivateChat() {
-    google.script.run
-      .withSuccessHandler((conversationId) => {
-        activeConversationId = conversationId;
-        loadPrivateMessages();
-      })
-      .startConversation(loggedInUser.email, userId);
-  }
+/* PROFILE */
+function openProfile(email) {
+  fetch(`${API_URL}?module=getUserById&email=${email}`)
+    .then(r => r.json())
+    .then(d => {
+      const user = d.data;
+      if (!user) return;
 
-  function loadPrivateMessages() {
-    google.script.run
-      .withSuccessHandler(renderMessages)
-      .getMessages(activeConversationId);
-
-    setInterval(() => {
-      google.script.run
-        .withSuccessHandler(renderMessages)
-        .getMessages(activeConversationId);
-    }, 3000);
-
-    setInterval(() => {
-      google.script.run
-        .withSuccessHandler(renderTyping)
-        .getTyping(activeConversationId);
-    }, 1000);
-  }
-
-  function sendPrivateMessage(text) {
-    google.script.run.sendMessage(activeConversationId, loggedInUser.email, userId, text);
-  }
-
-  /* INBOX */
-  function loadInbox() {
-    google.script.run
-      .withSuccessHandler(renderChatList)
-      .getConversationsForUser(loggedInUser.email);
-  }
-
-  function renderChatList(list) {
-    const container = document.getElementById("chatList");
-    container.innerHTML = "";
-
-    list.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "sidebar-item";
-      div.innerText = item.title;
-      div.onclick = () => {
-        window.location.href = `messages.html?conversationId=${item.conversationId}`;
-      };
-      container.appendChild(div);
+      document.getElementById("profileAvatar").src = user.avatarUrl || "https://via.placeholder.com/80";
+      document.getElementById("profileName").innerText = user.name || email;
+      document.getElementById("profileEmail").innerText = user.email || email;
+      document.getElementById("profileAbout").innerText = user.about || "";
+      document.getElementById("profileProfession").innerText = user.profession || "";
+      document.getElementById("profileModal").style.display = "flex";
     });
-  }
+}
 
-  /* SEND MESSAGE (UNIFIED) */
-  function sendMessage() {
-    const text = document.getElementById("messageInput").value.trim();
-    if (!text) return;
-
-    if (currentMode === "community") sendCommunityMessage(text);
-    else if (currentMode === "group") sendGroupMessage(text);
-    else if (currentMode === "private") sendPrivateMessage(text);
-
-    document.getElementById("messageInput").value = "";
-  }
-
-  /* RENDER MESSAGES */
-  function renderMessages(messages) {
-    const container = document.getElementById("messages");
-    container.innerHTML = "";
-
-    messages.forEach(msg => {
-      const div = document.createElement("div");
-      div.className = "msg";
-      if (msg.senderId === loggedInUser.email) div.classList.add("me");
-
-      const header = document.createElement("div");
-      header.style.fontSize = "12px";
-      header.style.color = "#666";
-      header.style.marginBottom = "4px";
-      header.style.cursor = "pointer";
-      header.innerText = msg.senderId;
-      header.onclick = () => openProfile(msg.senderId);
-
-      const body = document.createElement("div");
-      body.innerText = msg.message;
-
-      const footer = document.createElement("div");
-      footer.style.fontSize = "11px";
-      footer.style.color = "#aaa";
-      footer.style.marginTop = "4px";
-      footer.innerHTML = `
-        <span onclick="addReaction('${msg.messageId}', '👍')" style="cursor:pointer;margin-right:6px;">👍</span>
-        <span onclick="addReaction('${msg.messageId}', '❤️')" style="cursor:pointer;margin-right:6px;">❤️</span>
-        <span onclick="addReaction('${msg.messageId}', '😂')" style="cursor:pointer;">😂</span>
-      `;
-
-      div.appendChild(header);
-      div.appendChild(body);
-      div.appendChild(footer);
-
-      container.appendChild(div);
-    });
-
-    container.scrollTop = container.scrollHeight;
-  }
-
-  /* TYPING INDICATOR */
-  function showTypingLocal() {
-    const el = document.getElementById("typingIndicator");
-    el.style.display = "block";
-
-    if (typingTimeout) clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
-      el.style.display = "none";
-    }, 1500);
-  }
-
-  function renderTyping(activeList) {
-    const el = document.getElementById("typingIndicator");
-    if (activeList && activeList.length > 0) {
-      el.style.display = "block";
-    } else {
-      el.style.display = "none";
-    }
-  }
-
-  /* REACTIONS */
-  function addReaction(messageId, emoji) {
-    google.script.run.addReaction(messageId, loggedInUser.email, emoji);
-  }
-
-  /* GROUP MODAL */
-  function openGroupModal() {
-    document.getElementById("groupModal").style.display = "flex";
-
-    google.script.run
-      .withSuccessHandler(renderMemberSelect)
-      .getAllUsers();
-  }
-
-  function closeGroupModal() {
-    document.getElementById("groupModal").style.display = "none";
-  }
-
-  function renderMemberSelect(users) {
-    const container = document.getElementById("memberSelect");
-    container.innerHTML = "";
-
-    users.forEach(u => {
-      if (u.email === loggedInUser.email || u.userId === loggedInUser.email) return;
-
-      const div = document.createElement("div");
-      div.innerHTML = `
-        <label>
-          <input type="checkbox" value="${u.userId}">
-          ${u.name} (${u.email})
-        </label>
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  function submitGroup() {
-    const name = document.getElementById("groupNameInput").value.trim();
-    if (!name) return alert("Enter a group name");
-
-    const checkboxes = document.querySelectorAll("#memberSelect input:checked");
-    const members = Array.from(checkboxes).map(cb => cb.value);
-
-    members.push(loggedInUser.email);
-
-    google.script.run
-      .withSuccessHandler(groupId => {
-        closeGroupModal();
-        window.location.href = `messages.html?groupId=${groupId}`;
-      })
-      .createGroup(name, members, loggedInUser.email);
-  }
-
-  /* PROFILE MODAL */
-  function openProfile(email) {
-    google.script.run
-      .withSuccessHandler(user => {
-        if (!user) return;
-        document.getElementById("profileAvatar").src = user.avatarUrl || "https://via.placeholder.com/80";
-        document.getElementById("profileName").innerText = user.name || email;
-        document.getElementById("profileEmail").innerText = user.email || email;
-        document.getElementById("profileAbout").innerText = user.about || "";
-        document.getElementById("profileProfession").innerText = user.profession || "";
-        document.getElementById("profileModal").style.display = "flex";
-      })
-      .getUserById(email);
-  }
-
-  function closeProfile() {
-    document.getElementById("profileModal").style.display = "none";
-  }
+function closeProfile() {
+  document.getElementById("profileModal").style.display = "none";
+}
 </script>
-
 </body>
 </html>
