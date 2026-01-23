@@ -130,6 +130,8 @@
 
     #messages {
       flex: 1;
+      background: linear-gradient(135deg, #4a6cff, #6f8cff);
+      color: #fff;        
       padding: 16px;
       overflow-y: auto;
     }
