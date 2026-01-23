@@ -1,356 +1,325 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact.com – Messages</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-    }
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
-    /* NAVBAR */
-    .navbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #111;
-      padding: 12px 18px;
-      color: white;
-    }
+        body {
+            background: linear-gradient(135deg, #4a6cff, #6f8cff);
+            color: #fff;
+            min-height: 100vh;
+        }
 
-    .navbar .logo {
-      font-size: 20px;
-      font-weight: bold;
-      color: white;
-      text-decoration: none;
-    }
+        /* NAVBAR */
+        .navbar {
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
 
-    .nav-right a {
-      color: white;
-      margin-left: 18px;
-      text-decoration: none;
-      font-size: 15px;
-    }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #222;
+        }
+        .logo span { color: #4a6cff; }
 
-    .nav-right a:hover {
-      color: #4da3ff;
-    }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
 
-    .hamburger {
-      display: none;
-      font-size: 24px;
-      cursor: pointer;
-    }
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+        }
 
-    .mobile-menu {
-      display: none;
-      flex-direction: column;
-      background: #111;
-      padding: 10px 0;
-    }
+        /* HAMBURGER */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .hamburger span {
+            width: 28px;
+            height: 3px;
+            background: #333;
+            border-radius: 3px;
+        }
 
-    .mobile-menu a {
-      padding: 12px 18px;
-      color: white;
-      text-decoration: none;
-      border-top: 1px solid #222;
-    }
+        /* MESSAGES LAYOUT */
+        .messages-container {
+            display: flex;
+            height: calc(100vh - 100px);
+            margin-top: 20px;
+        }
 
-    .mobile-menu a:hover {
-      background: #222;
-    }
+        /* LEFT COLUMN – Conversations */
+        .conversations {
+            width: 30%;
+            background: #f7f9fc;
+            color: #222;
+            overflow-y: auto;
+            border-right: 1px solid #ddd;
+        }
 
-    @media (max-width: 768px) {
-      .nav-right {
-        display: none;
-      }
-      .hamburger {
-        display: block;
-      }
-    }
+        .conversation {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: 0.2s;
+        }
 
-    /* PAGE HEADER */
-    #header {
-      background: #fff;
-      color: #111;
-      padding: 12px 16px;
-      font-size: 18px;
-      font-weight: bold;
-      border-bottom: 1px solid #ddd;
-    }
+        .conversation:hover {
+            background: #eef2ff;
+        }
 
-    /* LAYOUT */
-    #chat-container {
-      display: flex;
-      height: calc(100vh - 96px); /* navbar + header */
-    }
+        .conversation.active {
+            background: #dce3ff;
+        }
 
-    #sidebar {
-      width: 280px;
-      background: #fff;
-      border-right: 1px solid #ddd;
-      overflow-y: auto;
-    }
+        /* RIGHT COLUMN – Chat Window */
+        .chat-window {
+            width: 70%;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            color: #222;
+        }
 
-    #sidebar h3 {
-      margin: 16px;
-      font-size: 16px;
-      color: #444;
-    }
+        .chat-header {
+            padding: 20px;
+            font-weight: 600;
+            border-bottom: 1px solid #ddd;
+            background: #f1f4ff;
+        }
 
-    .sidebar-item {
-      padding: 10px 16px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      font-size: 14px;
-    }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
 
-    .sidebar-item:hover {
-      background: #f0f0f0;
-    }
+        .message {
+            margin-bottom: 15px;
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.4;
+        }
 
-    #chat {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+        .sent {
+            background: #4a6cff;
+            color: #fff;
+            margin-left: auto;
+        }
 
-    #messages {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-    }
+        .received {
+            background: #e5e7eb;
+            color: #222;
+        }
 
-    .msg {
-      margin-bottom: 12px;
-      padding: 10px 14px;
-      background: #fff;
-      border-radius: 8px;
-      max-width: 70%;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            background: #fafafa;
+        }
 
-    .me {
-      background: #d1eaff;
-      margin-left: auto;
-    }
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
 
-    #typingIndicator {
-      padding: 4px 16px;
-      font-size: 12px;
-      color: #666;
-      display: none;
-    }
+        .chat-input button {
+            margin-left: 10px;
+            padding: 12px 20px;
+            background: #4a6cff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
 
-    #input-area {
-      display: flex;
-      padding: 12px;
-      background: #fff;
-      border-top: 1px solid #ddd;
-    }
-
-    #messageInput {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    #sendBtn {
-      margin-left: 10px;
-      padding: 10px 16px;
-      background: #111;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    #sendBtn:hover {
-      background: #333;
-    }
-
-    /* CREATE GROUP BUTTON */
-    #createGroupBtn {
-      margin: 8px 16px 16px 16px;
-      padding: 10px;
-      width: calc(100% - 32px);
-      background: #111;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    #createGroupBtn:hover {
-      background: #333;
-    }
-
-    /* MODALS */
-    #groupModal,
-    #profileModal {
-      display:none;
-      position:fixed;
-      top:0; left:0;
-      width:100%; height:100%;
-      background:rgba(0,0,0,0.5);
-      justify-content:center;
-      align-items:center;
-      z-index: 999;
-    }
-
-    .modal-inner {
-      background:white;
-      padding:20px;
-      width:90%;
-      max-width:400px;
-      border-radius:10px;
-    }
-
-    /* RESPONSIVE CHAT LAYOUT */
-    @media (max-width: 900px) {
-      #chat-container {
-        flex-direction: column;
-      }
-      #sidebar {
-        width: 100%;
-        height: 200px;
-        border-right: none;
-        border-bottom: 1px solid #ddd;
-      }
-      #chat {
-        height: calc(100vh - 96px - 200px);
-      }
-    }
-  </style>
+        /* MOBILE */
+        @media (max-width: 800px) {
+            .messages-container {
+                flex-direction: column;
+            }
+            .conversations {
+                width: 100%;
+                height: 200px;
+            }
+            .chat-window {
+                width: 100%;
+                height: calc(100vh - 300px);
+            }
+            .hamburger { display: flex; }
+            .nav-links { display: none; flex-direction: column; width: 100%; }
+            .nav-links.show { display: flex; }
+        }
+    </style>
 </head>
 
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar">
-  <div class="nav-left">
-    <a href="dashboard.html" class="logo">Contact<span style="color:#4da3ff;">.</span>com</a>
-  </div>
+    <nav class="navbar">
+        <div class="logo">Contact<span>.</span>com</div>
 
-  <div class="nav-right">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="communities.html">Communities</a>
-    <a href="groups.html">Groups</a>
-    <a href="messages.html">Messages</a>
-    <a href="profile.html">Profile</a>
-  </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
 
-  <div class="hamburger" onclick="toggleMenu()">☰</div>
-</nav>
+        <div class="nav-links"></div>
+    </nav>
 
-<div class="mobile-menu" id="mobileMenu">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="communities.html">Communities</a>
-  <a href="groups.html">Groups</a>
-  <a href="messages.html">Messages</a>
-  <a href="profile.html">Profile</a>
-</div>
+    <div class="messages-container">
 
-<!-- PAGE HEADER -->
-<div id="header">Messages</div>
+        <!-- LEFT: Conversations -->
+        <div class="conversations" id="conversationList"></div>
 
-<!-- MAIN LAYOUT -->
-<div id="chat-container">
+        <!-- RIGHT: Chat Window -->
+        <div class="chat-window">
+            <div class="chat-header" id="chatHeader">Select a conversation</div>
 
-  <!-- SIDEBAR -->
-  <div id="sidebar">
-    <h3>Inbox</h3>
-    <div id="chatList"></div>
+            <div class="chat-messages" id="chatMessages"></div>
 
-    <h3>Groups</h3>
-    <div id="groupList"></div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Type a message..." />
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
 
-    <button id="createGroupBtn">+ Create Group</button>
-  </div>
-
-  <!-- CHAT AREA -->
-  <div id="chat">
-    <div id="messages"></div>
-    <div id="typingIndicator">Someone is typing...</div>
-
-    <div id="input-area">
-      <input id="messageInput" placeholder="Type a message...">
-      <button id="sendBtn">Send</button>
-    </div>
-  </div>
-</div>
-
-<!-- GROUP CREATION MODAL -->
-<div id="groupModal">
-  <div class="modal-inner">
-    <h2>Create Group</h2>
-
-    <input id="groupNameInput" placeholder="Group name" style="
-      width:100%;
-      padding:10px;
-      margin-bottom:12px;
-      border:1px solid #ccc;
-      border-radius:6px;
-    ">
-
-    <div id="memberSelect" style="
-      max-height:200px;
-      overflow-y:auto;
-      border:1px solid #ddd;
-      padding:10px;
-      border-radius:6px;
-      font-size:14px;
-    ">
-      Loading users...
     </div>
 
-    <button onclick="submitGroup()" style="
-      margin-top:12px;
-      width:100%;
-      padding:10px;
-      background:#111;
-      color:white;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-    ">Create</button>
+<script>
+/* NAVBAR */
+function toggleMenu() {
+    document.querySelector(".nav-links").classList.toggle("show");
+}
 
-    <button onclick="closeGroupModal()" style="
-      margin-top:8px;
-      width:100%;
-      padding:10px;
-      background:#ccc;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-    ">Cancel</button>
-  </div>
-</div>
+function loadNavbar() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const nav = document.querySelector(".nav-links");
 
-<!-- PROFILE MODAL -->
-<div id="profileModal">
-  <div class="modal-inner" style="max-width:320px;text-align:center;">
-    <img id="profileAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:10px;">
-    <h2 id="profileName"></h2>
-    <p id="profileEmail" style="color:#666;font-size:14px;"></p>
-    <p id="profileAbout" style="color:#555;font-size:13px;"></p>
-    <p id="profileProfession" style="color:#555;font-size:13px;"></p>
-    <button onclick="closeProfile()" style="
-      margin-top:12px;
-      width:100%;
-      padding:10px;
-      background:#111;
-      color:white;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-    ">Close</button>
-  </div>
-</div>
+    if (user) {
+        nav.innerHTML = `
+            <a href="dashboard.html">Dashboard</a>
+            <a href="communities.html">Communities</a>
+            <a href="events.html">Events</a>
+            <a href="profile.html">Profile</a>
+            <a href="index.html" onclick="logout()">Logout</a>
+        `;
+    } else {
+        window.location.href = "login.html";
+    }
+}
+
+function logout() {
+    localStorage.removeItem("contact_user");
+    window.location.href = "index.html";
+}
+
+document.addEventListener("DOMContentLoaded", loadNavbar);
+
+/* GLOBALS */
+let activeConversationId = null;
+let activeOtherUserId = null;
+
+const user = JSON.parse(localStorage.getItem("contact_user"));
+if (!user) window.location.href = "login.html";
+
+/* LOAD CONVERSATIONS FROM BACKEND */
+function loadConversations() {
+    google.script.run
+        .withSuccessHandler(renderConversations)
+        .getConversationsForUser(user.userId);
+}
+
+function renderConversations(conversations) {
+    const list = document.getElementById("conversationList");
+    list.innerHTML = "";
+
+    conversations.forEach(conv => {
+        const div = document.createElement("div");
+        div.className = "conversation";
+        div.dataset.id = conv.conversationId;
+        div.dataset.other = conv.otherUserId;
+
+        div.innerHTML = `
+            <strong>${conv.otherUserId}</strong><br>
+            <small>${conv.lastMessage}</small>
+        `;
+
+        div.onclick = () => openChat(conv.conversationId, conv.otherUserId);
+        list.appendChild(div);
+    });
+}
+
+/* OPEN CHAT */
+function openChat(conversationId, otherUserId) {
+    activeConversationId = conversationId;
+    activeOtherUserId = otherUserId;
+
+    document.querySelectorAll(".conversation").forEach(el => el.classList.remove("active"));
+    event.target.closest(".conversation").classList.add("active");
+
+    document.getElementById("chatHeader").textContent = otherUserId;
+
+    google.script.run
+        .withSuccessHandler(renderMessages)
+        .getMessages(conversationId);
+}
+
+function renderMessages(messages) {
+    const chatBox = document.getElementById("chatMessages");
+    chatBox.innerHTML = "";
+
+    messages.forEach(msg => {
+        const div = document.createElement("div");
+        div.className = "message " + (msg.senderId === user.userId ? "sent" : "received");
+        div.textContent = msg.message;
+        chatBox.appendChild(div);
+    });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+/* SEND MESSAGE */
+function sendMessage() {
+    if (!activeConversationId) return;
+
+    const input = document.getElementById("messageInput");
+    const text = input.value.trim();
+    if (!text) return;
+
+    google.script.run
+        .withSuccessHandler(() => {
+            input.value = "";
+            openChat(activeConversationId, activeOtherUserId);
+        })
+        .sendMessage(activeConversationId, user.userId, activeOtherUserId, text);
+}
+
+document.addEventListener("DOMContentLoaded", loadConversations);
+</script>
+
+</body>
+</html>
