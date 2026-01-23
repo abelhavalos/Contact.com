@@ -360,19 +360,18 @@ const API_URL =
   "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
 
 /* ============ USER ============ */
-let loggedInUser = JSON.parse(localStorage.getItem("user"));
+let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 
+// fallback for older login system
 if (!loggedInUser) {
-  loggedInUser = {
-    email: localStorage.getItem("hq_email"),
-    fullName: localStorage.getItem("hq_name")
-  };
+  loggedInUser = JSON.parse(localStorage.getItem("user"));
 }
 
 if (!loggedInUser || !loggedInUser.email) {
-  alert("No logged in user found.");
+  console.warn("LocalStorage contents:", localStorage);
+  alert("No logged in user found. Please log in again.");
+  window.location.href = "login.html";
 }
-
 /* ============ URL PARAMS ============ */
 // messages.html?otherEmail=someone@example.com
 const url = new URL(window.location.href);
