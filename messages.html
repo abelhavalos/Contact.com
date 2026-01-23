@@ -354,332 +354,222 @@
     ">Close</button>
   </div>
 </div>
+/* ============ CONFIG ============ */
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
 
-<script>
-  /* NAVBAR JS */
-  function toggleMenu() {
-    const menu = document.getElementById("mobileMenu");
-    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
-  }
+/* ============ USER ============ */
+let loggedInUser = JSON.parse(localStorage.getItem("user"));
 
-  const current = window.location.pathname.split("/").pop();
-  document.querySelectorAll(".nav-right a, .mobile-menu a").forEach(link => {
-    if (link.getAttribute("href") === current) {
-      link.style.color = "#4da3ff";
-      link.style.fontWeight = "bold";
+if (!loggedInUser) {
+  loggedInUser = {
+    email: localStorage.getItem("hq_email"),
+    fullName: localStorage.getItem("hq_name")
+  };
+}
+
+if (!loggedInUser || !loggedInUser.email) {
+  alert("No logged in user found.");
+}
+
+/* ============ URL PARAMS ============ */
+// messages.html?otherEmail=someone@example.com
+const url = new URL(window.location.href);
+const otherEmail = url.searchParams.get("otherEmail");
+const conversationIdParam = url.searchParams.get("conversationId");
+
+let activeConversationId = conversationIdParam || null;
+let typingTimeout = null;
+
+/* ============ INIT ============ */
+window.onload = () => {
+  document.getElementById("header").innerText = "Private Chat";
+
+  document.getElementById("sendBtn").onclick = sendMessage;
+
+  document.getElementById("messageInput").addEventListener("input", () => {
+    showTypingLocal();
+    if (activeConversationId) {
+      fetch(
+        `${API_URL}?module=setTyping&conversationId=${activeConversationId}&userEmail=${encodeURIComponent(
+          loggedInUser.email
+        )}`
+      );
     }
   });
 
-  /* URL PARAMS */
-  const url = new URL(window.location.href);
-  const communityId = url.searchParams.get("communityId");
-  const userId = url.searchParams.get("userId");   // other user's email
-  const groupId = url.searchParams.get("groupId");
-  const conversationIdParam = url.searchParams.get("conversationId");
+  if (activeConversationId) {
+    startPolling();
+  } else if (otherEmail) {
+    startConversation();
+  } else {
+    alert("No conversationId or otherEmail provided in URL.");
+  }
+};
 
-  const loggedInUser = JSON.parse(localStorage.getItem("user")); // must contain .email
-
-  let currentMode = "inbox";
-  let activeConversationId = conversationIdParam || null;
-  let typingTimeout = null;
-
-  window.onload = () => {
-    if (!loggedInUser || !loggedInUser.email) {
-      alert("No logged in user found.");
-      return;
-    }
-
-    if (communityId) {
-      currentMode = "community";
-      document.getElementById("header").innerText = "Community Chat";
-      loadCommunityChat();
-    } else if (groupId) {
-      currentMode = "group";
-      document.getElementById("header").innerText = "Group Chat";
-      loadGroupChat();
-    } else if (userId) {
-      currentMode = "private";
-      document.getElementById("header").innerText = "Private Chat";
-      startPrivateChat();
-    } else if (conversationIdParam) {
-      currentMode = "private";
-      document.getElementById("header").innerText = "Private Chat";
-      activeConversationId = conversationIdParam;
-      loadPrivateMessages();
-    } else {
-      currentMode = "inbox";
-      document.getElementById("header").innerText = "Inbox";
-      loadInbox();
-    }
-
-    loadGroupList();
-
-    document.getElementById("sendBtn").onclick = sendMessage;
-
-    document.getElementById("messageInput").addEventListener("input", () => {
-      showTypingLocal();
-      if (currentMode === "private" && activeConversationId) {
-        google.script.run.setTyping(activeConversationId, loggedInUser.email);
+/* ============ CONVERSATION ============ */
+function startConversation() {
+  fetch(
+    `${API_URL}?module=startConversation&userEmail=${encodeURIComponent(
+      loggedInUser.email
+    )}&otherEmail=${encodeURIComponent(otherEmail)}`
+  )
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) {
+        alert(d.message || "Failed to start conversation");
+        return;
       }
-    });
+      activeConversationId = d.conversationId;
+      startPolling();
+    })
+    .catch(err => console.error(err));
+}
 
-    document.getElementById("createGroupBtn").onclick = openGroupModal;
-  };
+function startPolling() {
+  loadMessages();
+  setInterval(loadMessages, 2000);
+  setInterval(loadTyping, 1000);
+}
 
-  /* COMMUNITY CHAT */
-  function loadCommunityChat() {
-    google.script.run
-      .withSuccessHandler(renderMessages)
-      .getCommunityMessages(communityId);
+/* ============ MESSAGES ============ */
+function loadMessages() {
+  if (!activeConversationId) return;
 
-    setInterval(() => {
-      google.script.run
-        .withSuccessHandler(renderMessages)
-        .getCommunityMessages(communityId);
-    }, 3000);
-  }
+  fetch(
+    `${API_URL}?module=getMessages&conversationId=${encodeURIComponent(
+      activeConversationId
+    )}`
+  )
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) {
+        console.error(d.error || d.message);
+        return;
+      }
+      renderMessages(d.messages || []);
+    })
+    .catch(err => console.error(err));
+}
 
-  function sendCommunityMessage(text) {
-    google.script.run.sendCommunityMessage(communityId, loggedInUser.email, text);
-  }
+function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (!text || !activeConversationId) return;
 
-  /* GROUP CHAT */
-  function loadGroupChat() {
-    google.script.run
-      .withSuccessHandler(renderMessages)
-      .getGroupMessages(groupId);
+  fetch(
+    `${API_URL}?module=sendMessage` +
+      `&conversationId=${encodeURIComponent(activeConversationId)}` +
+      `&senderEmail=${encodeURIComponent(loggedInUser.email)}` +
+      `&receiverEmail=${encodeURIComponent(otherEmail || "")}` +
+      `&text=${encodeURIComponent(text)}`
+  )
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) {
+        alert(d.message || "Failed to send message");
+        return;
+      }
+      input.value = "";
+      loadMessages();
+    })
+    .catch(err => console.error(err));
+}
 
-    setInterval(() => {
-      google.script.run
-        .withSuccessHandler(renderMessages)
-        .getGroupMessages(groupId);
-    }, 3000);
-  }
+function renderMessages(messages) {
+  const container = document.getElementById("messages");
+  container.innerHTML = "";
 
-  function sendGroupMessage(text) {
-    google.script.run.sendGroupMessage(groupId, loggedInUser.email, text);
-  }
+  messages.forEach(msg => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    if (msg.senderEmail === loggedInUser.email) div.classList.add("me");
 
-  function loadGroupList() {
-    google.script.run
-      .withSuccessHandler(renderGroupList)
-      .getGroupsForUser(loggedInUser.email);
-  }
+    const header = document.createElement("div");
+    header.style.fontSize = "12px";
+    header.style.color = "#666";
+    header.style.marginBottom = "4px";
+    header.innerText = msg.senderEmail;
 
-  function renderGroupList(groups) {
-    const container = document.getElementById("groupList");
-    container.innerHTML = "";
+    const body = document.createElement("div");
+    body.innerText = msg.text;
 
-    groups.forEach(g => {
-      const div = document.createElement("div");
-      div.className = "sidebar-item";
-      div.innerText = g.name;
-      div.onclick = () => {
-        window.location.href = `messages.html?groupId=${g.groupId}`;
-      };
-      container.appendChild(div);
-    });
-  }
+    const footer = document.createElement("div");
+    footer.style.fontSize = "11px";
+    footer.style.color = "#aaa";
+    footer.style.marginTop = "4px";
 
-  /* PRIVATE CHAT */
-  function startPrivateChat() {
-    google.script.run
-      .withSuccessHandler((conversationId) => {
-        activeConversationId = conversationId;
-        loadPrivateMessages();
-      })
-      .startConversation(loggedInUser.email, userId);
-  }
+    const reactions = msg.reactions || [];
+    const counts = reactions.reduce((acc, e) => {
+      acc[e] = (acc[e] || 0) + 1;
+      return acc;
+    }, {});
 
-  function loadPrivateMessages() {
-    google.script.run
-      .withSuccessHandler(renderMessages)
-      .getMessages(activeConversationId);
+    footer.innerHTML =
+      `<span onclick="addReaction('${msg.messageId}','👍')" style="cursor:pointer;margin-right:6px;">👍 ${counts['👍'] || ''}</span>` +
+      `<span onclick="addReaction('${msg.messageId}','❤️')" style="cursor:pointer;margin-right:6px;">❤️ ${counts['❤️'] || ''}</span>` +
+      `<span onclick="addReaction('${msg.messageId}','😂')" style="cursor:pointer;">😂 ${counts['😂'] || ''}</span>`;
 
-    setInterval(() => {
-      google.script.run
-        .withSuccessHandler(renderMessages)
-        .getMessages(activeConversationId);
-    }, 3000);
+    div.appendChild(header);
+    div.appendChild(body);
+    div.appendChild(footer);
 
-    setInterval(() => {
-      google.script.run
-        .withSuccessHandler(renderTyping)
-        .getTyping(activeConversationId);
-    }, 1000);
-  }
+    container.appendChild(div);
+  });
 
-  function sendPrivateMessage(text) {
-    google.script.run.sendMessage(activeConversationId, loggedInUser.email, userId, text);
-  }
+  container.scrollTop = container.scrollHeight;
+}
 
-  /* INBOX */
-  function loadInbox() {
-    google.script.run
-      .withSuccessHandler(renderChatList)
-      .getConversationsForUser(loggedInUser.email);
-  }
+/* ============ TYPING ============ */
+function showTypingLocal() {
+  const el = document.getElementById("typingIndicator");
+  el.style.display = "block";
 
-  function renderChatList(list) {
-    const container = document.getElementById("chatList");
-    container.innerHTML = "";
+  if (typingTimeout) clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    el.style.display = "none";
+  }, 1500);
+}
 
-    list.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "sidebar-item";
-      div.innerText = item.title;
-      div.onclick = () => {
-        window.location.href = `messages.html?conversationId=${item.conversationId}`;
-      };
-      container.appendChild(div);
-    });
-  }
+function loadTyping() {
+  if (!activeConversationId) return;
 
-  /* SEND MESSAGE (UNIFIED) */
-  function sendMessage() {
-    const text = document.getElementById("messageInput").value.trim();
-    if (!text) return;
+  fetch(
+    `${API_URL}?module=getTyping&conversationId=${encodeURIComponent(
+      activeConversationId
+    )}`
+  )
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) return;
+      const users = d.users || [];
+      const el = document.getElementById("typingIndicator");
+      if (users.length > 0) {
+        el.style.display = "block";
+      } else {
+        el.style.display = "none";
+      }
+    })
+    .catch(err => console.error(err));
+}
 
-    if (currentMode === "community") sendCommunityMessage(text);
-    else if (currentMode === "group") sendGroupMessage(text);
-    else if (currentMode === "private") sendPrivateMessage(text);
-
-    document.getElementById("messageInput").value = "";
-  }
-
-  /* RENDER MESSAGES */
-  function renderMessages(messages) {
-    const container = document.getElementById("messages");
-    container.innerHTML = "";
-
-    messages.forEach(msg => {
-      const div = document.createElement("div");
-      div.className = "msg";
-      if (msg.senderId === loggedInUser.email) div.classList.add("me");
-
-      const header = document.createElement("div");
-      header.style.fontSize = "12px";
-      header.style.color = "#666";
-      header.style.marginBottom = "4px";
-      header.style.cursor = "pointer";
-      header.innerText = msg.senderId;
-      header.onclick = () => openProfile(msg.senderId);
-
-      const body = document.createElement("div");
-      body.innerText = msg.message;
-
-      const footer = document.createElement("div");
-      footer.style.fontSize = "11px";
-      footer.style.color = "#aaa";
-      footer.style.marginTop = "4px";
-      footer.innerHTML = `
-        <span onclick="addReaction('${msg.messageId}', '👍')" style="cursor:pointer;margin-right:6px;">👍</span>
-        <span onclick="addReaction('${msg.messageId}', '❤️')" style="cursor:pointer;margin-right:6px;">❤️</span>
-        <span onclick="addReaction('${msg.messageId}', '😂')" style="cursor:pointer;">😂</span>
-      `;
-
-      div.appendChild(header);
-      div.appendChild(body);
-      div.appendChild(footer);
-
-      container.appendChild(div);
-    });
-
-    container.scrollTop = container.scrollHeight;
-  }
-
-  /* TYPING INDICATOR */
-  function showTypingLocal() {
-    const el = document.getElementById("typingIndicator");
-    el.style.display = "block";
-
-    if (typingTimeout) clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
-      el.style.display = "none";
-    }, 1500);
-  }
-
-  function renderTyping(activeList) {
-    const el = document.getElementById("typingIndicator");
-    if (activeList && activeList.length > 0) {
-      el.style.display = "block";
-    } else {
-      el.style.display = "none";
-    }
-  }
-
-  /* REACTIONS */
-  function addReaction(messageId, emoji) {
-    google.script.run.addReaction(messageId, loggedInUser.email, emoji);
-  }
-
-  /* GROUP MODAL */
-  function openGroupModal() {
-    document.getElementById("groupModal").style.display = "flex";
-
-    google.script.run
-      .withSuccessHandler(renderMemberSelect)
-      .getAllUsers();
-  }
-
-  function closeGroupModal() {
-    document.getElementById("groupModal").style.display = "none";
-  }
-
-  function renderMemberSelect(users) {
-    const container = document.getElementById("memberSelect");
-    container.innerHTML = "";
-
-    users.forEach(u => {
-      if (u.email === loggedInUser.email || u.userId === loggedInUser.email) return;
-
-      const div = document.createElement("div");
-      div.innerHTML = `
-        <label>
-          <input type="checkbox" value="${u.userId}">
-          ${u.name} (${u.email})
-        </label>
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  function submitGroup() {
-    const name = document.getElementById("groupNameInput").value.trim();
-    if (!name) return alert("Enter a group name");
-
-    const checkboxes = document.querySelectorAll("#memberSelect input:checked");
-    const members = Array.from(checkboxes).map(cb => cb.value);
-
-    members.push(loggedInUser.email);
-
-    google.script.run
-      .withSuccessHandler(groupId => {
-        closeGroupModal();
-        window.location.href = `messages.html?groupId=${groupId}`;
-      })
-      .createGroup(name, members, loggedInUser.email);
-  }
-
-  /* PROFILE MODAL */
-  function openProfile(email) {
-    google.script.run
-      .withSuccessHandler(user => {
-        if (!user) return;
-        document.getElementById("profileAvatar").src = user.avatarUrl || "https://via.placeholder.com/80";
-        document.getElementById("profileName").innerText = user.name || email;
-        document.getElementById("profileEmail").innerText = user.email || email;
-        document.getElementById("profileAbout").innerText = user.about || "";
-        document.getElementById("profileProfession").innerText = user.profession || "";
-        document.getElementById("profileModal").style.display = "flex";
-      })
-      .getUserById(email);
-  }
-
-  function closeProfile() {
-    document.getElementById("profileModal").style.display = "none";
-  }
-</script>
-
+/* ============ REACTIONS ============ */
+function addReaction(messageId, emoji) {
+  fetch(
+    `${API_URL}?module=addReaction` +
+      `&messageId=${encodeURIComponent(messageId)}` +
+      `&userEmail=${encodeURIComponent(loggedInUser.email)}` +
+      `&emoji=${encodeURIComponent(emoji)}`
+  )
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) {
+        console.error(d.message || "Failed to add reaction");
+        return;
+      }
+      loadMessages();
+    })
+    .catch(err => console.error(err));
+}
 </body>
 </html>
