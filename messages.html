@@ -553,7 +553,7 @@ function loadInbox() {
     .then(d => renderChatList(d.data));
 }
 
-function renderChatList(list) {
+function renderChatList(list = []) {
   const container = document.getElementById("chatList");
   container.innerHTML = "";
 
