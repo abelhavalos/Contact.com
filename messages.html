@@ -489,7 +489,7 @@ function renderMessages(messages) {
     header.style.fontSize = "12px";
     header.style.color = "#666";
     header.style.marginBottom = "4px";
-    header.innerText = msg.senderEmail;
+    header.innerText = msg.senderName || msg.senderEmail;
 
     const body = document.createElement("div");
     body.innerText = msg.text;
