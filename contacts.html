@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contacts – Contact.com</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+
+    body {
+      background: #f4f6fb;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      width: 100%;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #222;
+    }
+    .logo span { color: #4a6cff; }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+    }
+
+    /* PAGE HEADER */
+    .header {
+      text-align: center;
+      margin-top: 40px;
+      padding: 0 20px;
+    }
+
+    .header h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #4a6cff;
+    }
+
+    /* CONTACT LIST */
+    .contacts-container {
+      max-width: 700px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .contact-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .contact-item:last-child {
+      border-bottom: none;
+    }
+
+    .contact-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .contact-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .contact-email {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .message-btn {
+      padding: 8px 14px;
+      background: #4a6cff;
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar">
+    <div class="logo">Contact<span>.</span>com</div>
+
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="contacts.html">Contacts</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="messages.html">Messages</a>
+      <a href="profile.html">Profile</a>
+      <a href="index.html" onclick="logout()">Logout</a>
+    </div>
+  </nav>
+
+  <div class="header">
+    <h1>Your Contacts</h1>
+    <p>Select someone to start chatting.</p>
+  </div>
+
+  <div class="contacts-container" id="contactsList">
+    Loading contacts...
+  </div>
+
+<script>
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
+
+function logout() {
+  localStorage.removeItem("contact_user");
+  window.location.href = "index.html";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const user = JSON.parse(localStorage.getItem("contact_user"));
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  loadContacts(user.email);
+});
+
+function loadContacts(currentUserEmail) {
+  fetch(`${API_URL}?module=getAllUsers`)
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) {
+        document.getElementById("contactsList").innerText = "Failed to load contacts.";
+        return;
+      }
+
+      renderContacts(d.data, currentUserEmail);
+    });
+}
+
+function renderContacts(users, currentUserEmail) {
+  const container = document.getElementById("contactsList");
+  container.innerHTML = "";
+
+  users.forEach(u => {
+    if (u.email === currentUserEmail) return;
+
+    const div = document.createElement("div");
+    div.className = "contact-item";
+
+    div.innerHTML = `
+      <div class="contact-info">
+        <div class="contact-name">${u.name}</div>
+        <div class="contact-email">${u.email}</div>
+      </div>
+      <a class="message-btn" href="messages.html?otherEmail=${encodeURIComponent(u.email)}">
+        Message
+      </a>
+    `;
+
+    container.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
