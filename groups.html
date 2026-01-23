@@ -3,15 +3,97 @@
 <head>
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles/message.css">
-</head>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f5f5f5; }
+    #header { background: linear-gradient(135deg, #4a6cff, #6f8cff);
+      color: #fff;padding:12px 16px;font-size:18px;font-weight:bold; }
+    .group-card {
+      background:white;
+      margin:12px 16px;
+      padding:12px 16px;
+      border-radius:8px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.08);
+      cursor:pointer;
+    }
+    .group-card:hover { background:#f0f0f0; }
+  
+    /* NAVBAR */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background:#ffffff;
+  padding: 12px 18px;
+  color: #222;
+  text-decoration: none;
+}
 
+
+  .logo {
+    text-decoration: none;  
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #222;
+}
+.logo span {
+    color: #4a6cff;
+}
+.nav-right a {
+ 
+  margin-left: 18px;
+  text-decoration: none;
+  font-size: 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
+
+.nav-right a:hover {
+  color: #4da3ff;
+}
+
+.hamburger {
+  display: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* MOBILE MENU */
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: #111;
+  padding: 10px 0;
+}
+
+.mobile-menu a {
+  padding: 12px 18px;
+  color: white;
+  text-decoration: none;
+  border-top: 1px solid #222;
+}
+
+.mobile-menu a:hover {
+  background: #222;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .nav-right {
+    display: none;
+  }
+  .hamburger {
+    display: block;
+  }
+}
+  </style>
+</head>
 <body>
 
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="nav-left">
-    <a href="dashboard.html" class="logo">Contact<span style="color:#4da3ff;">.com</span></a>
+    <div href="dashboard.html" class="logo">Contact<span>.</span>com</div>
   </div>
 
   <div class="nav-right">
@@ -32,65 +114,40 @@
   <a href="messages.html">Messages</a>
   <a href="profile.html">Profile</a>
 </div>
+  
+  <div id="header">Groups</div>
+  <div id="groupsContainer"></div>
 
-<!-- PAGE HEADER -->
-<div id="header">Groups</div>
-
-<!-- GROUP LIST -->
-<div id="groupsContainer">Loading groups...</div>
-
-<script>
-  /* NAVBAR JS */
+  <script>
   function toggleMenu() {
-    const menu = document.getElementById("mobileMenu");
-    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
-  }
+  const menu = document.getElementById("mobileMenu");
+  menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+}
+    const loggedInUser = JSON.parse(localStorage.getItem("user"));
 
-  const current = window.location.pathname.split("/").pop();
-  document.querySelectorAll(".nav-right a, .mobile-menu a").forEach(link => {
-    if (link.getAttribute("href") === current) {
-      link.style.color = "#4da3ff";
-      link.style.fontWeight = "bold";
+    window.onload = () => {
+      google.script.run
+        .withSuccessHandler(renderGroups)
+        .getGroupsForUser(loggedInUser.userId);
+    };
+
+    function renderGroups(groups) {
+      const container = document.getElementById("groupsContainer");
+      container.innerHTML = "";
+
+      groups.forEach(g => {
+        const div = document.createElement("div");
+        div.className = "group-card";
+        div.innerHTML = `
+          <div style="font-weight:bold;">${g.name}</div>
+          <div style="font-size:12px;color:#666;">Created: ${new Date(g.createdAt).toLocaleString()}</div>
+        `;
+        div.onclick = () => {
+          window.location.href = `messages.html?groupId=${g.groupId}`;
+        };
+        container.appendChild(div);
+      });
     }
-  });
-
-  /* MAIN LOGIC */
-  const loggedInUser = JSON.parse(localStorage.getItem("user"));
-
-  window.onload = () => {
-    if (!loggedInUser || !loggedInUser.email) {
-      document.getElementById("groupsContainer").innerText = "No user logged in.";
-      return;
-    }
-
-    google.script.run
-      .withSuccessHandler(renderGroups)
-      .getGroupsForUser(loggedInUser.email);
-  };
-
-  function renderGroups(groups) {
-    const container = document.getElementById("groupsContainer");
-    container.innerHTML = "";
-
-    if (!groups.length) {
-      container.innerHTML = "<p style='color:#666;'>You are not in any groups yet.</p>";
-      return;
-    }
-
-    groups.forEach(g => {
-      const div = document.createElement("div");
-      div.className = "group-card";
-      div.innerHTML = `
-        <div class="group-title">${g.name}</div>
-        <div class="group-meta">Created: ${new Date(g.createdAt).toLocaleString()}</div>
-      `;
-      div.onclick = () => {
-        window.location.href = `messages.html?groupId=${g.groupId}`;
-      };
-      container.appendChild(div);
-    });
-  }
-</script>
-
+  </script>
 </body>
 </html>
