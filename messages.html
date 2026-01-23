@@ -379,7 +379,17 @@ const userId = url.searchParams.get("userId");
 const groupId = url.searchParams.get("groupId");
 const conversationIdParam = url.searchParams.get("conversationId");
 
-const loggedInUser = JSON.parse(localStorage.getItem("user"));
+
+let loggedInUser = JSON.parse(localStorage.getItem("user"));
+
+if (!loggedInUser) {
+  // fallback for your older login system
+  loggedInUser = {
+    email: localStorage.getItem("hq_email"),
+    fullName: localStorage.getItem("hq_name"),
+    role: localStorage.getItem("hq_role")
+  };
+} 
 
 let currentMode = "inbox";
 let activeConversationId = conversationIdParam || null;
