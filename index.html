@@ -7,24 +7,32 @@
     <link rel="stylesheet" href="styles/style.css" />
 </head>
 <body>
-<nav class="navbar" id="navbar">
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
     <div class="logo">Contact<span>.</span>com</div>
 
-    <div class="hamburger" onclick="toggleMenu()">
-        <span></span>
-        <span></span>
-        <span></span>
-    </div>
-
     <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="communities.html">Communities</a>
-        <a href="Events.html">Events</a>
-        <a href="login.html">Login</a>
-        <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+      <a href="index.html">Home</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="login.html">Login</a>
+      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     </div>
-</nav>
+  </nav>
 
+  <div class="mobile-menu" id="mobileMenu">
+      <a href="index.html">Home</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="login.html">Login</a>
+     <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+  </div>
     <header class="hero">
         <div class="hero-content">
             <h1>Contact the People Who Matter</h1>
@@ -54,33 +62,8 @@
     <script src="scripts/app.js"></script>
     <script>
 function toggleMenu() {
-    document.querySelector(".nav-links").classList.toggle("show");
-}
-
-function loadNavbar() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    const navLinks = document.querySelector(".nav-links");
-
-    if (!navLinks) return;
-
-    if (user) {
-        navLinks.innerHTML = `
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>            
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        `;
-    } else {
-        navLinks.innerHTML = `
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        `;
-    }
+  document.querySelector(".nav-links").classList.toggle("show");
+  document.getElementById("mobileMenu").classList.toggle("show");
 }
 
 function logout() {
@@ -88,7 +71,6 @@ function logout() {
     window.location.href = "index.html";
 }
 
-document.addEventListener("DOMContentLoaded", loadNavbar);
 </script>
     
 </body>

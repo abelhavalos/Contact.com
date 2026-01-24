@@ -19,7 +19,6 @@
             width: 100%;
             padding: 20px 40px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
             background: #ffffff;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -28,50 +27,69 @@
             z-index: 10;
         }
 
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+
+        .hamburger span {
+            width: 28px;
+            height: 3px;
+            background: #222;
+            border-radius: 3px;
+            transition: 0.3s;
+        }
+
         .logo {
             font-size: 1.8rem;
             font-weight: 700;
             color: #222;
         }
-        .logo span {
-            color: #4a6cff;
-        }
+        .logo span { color: #4a6cff; }
 
         .nav-links {
             display: flex;
             align-items: center;
             gap: 20px;
+            margin-left: auto;
         }
 
         .nav-links a {
             text-decoration: none;
             color: #333;
             font-weight: 500;
+            transition: 0.2s;
         }
+        .nav-links a:hover { color: #4a6cff; }
 
-        .nav-signup-link {
-            padding: 10px 20px;
-            border: 2px solid #4a6cff;
-            border-radius: 6px;
-            color: #4a6cff;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        /* HAMBURGER MENU */
-        .hamburger {
+        /* MOBILE MENU */
+        .mobile-menu {
             display: none;
             flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
+            background: #4a6cff;
+            padding: 10px 0;
         }
 
-        .hamburger span {
-            width: 28px;
-            height: 3px;
-            background: #333;
-            border-radius: 3px;
-            transition: 0.3s;
+        .mobile-menu a,
+        .mobile-menu button {
+            padding: 12px 18px;
+            color: white;
+            text-decoration: none;
+            border: none;
+            background: transparent;
+            text-align: left;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .mobile-menu.show { display: flex; }
+
+        /* RESPONSIVE */
+        @media (max-width: 700px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
         }
 
         /* PAGE CONTENT */
@@ -101,15 +119,8 @@
             text-align: center;
         }
 
-        .card h3 {
-            color: #4a6cff;
-            margin-bottom: 10px;
-        }
-
-        .card p {
-            font-size: 0.95rem;
-            margin-bottom: 15px;
-        }
+        .card h3 { color: #4a6cff; margin-bottom: 10px; }
+        .card p { font-size: 0.95rem; margin-bottom: 15px; }
 
         .card button {
             padding: 10px 20px;
@@ -121,142 +132,84 @@
             font-weight: 600;
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 700px) {
-
-            .hamburger {
-                display: flex;
-            }
-
-            .nav-links {
-                display: none;
-                flex-direction: column;
-                width: 100%;
-                margin-top: 15px;
-                gap: 15px;
-                animation: slideDown 0.3s ease forwards;
-            }
-
-            .nav-links.show {
-                display: flex;
-            }
-
-            @keyframes slideDown {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-
-            .navbar {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 20px;
-            }
-
-            .nav-links a,
-            .nav-links .nav-signup-link {
-                width: 100%;
-                text-align: left;
-            }
-
-            .page-title {
-                font-size: 2rem;
-                margin-top: 30px;
-            }
-
-            .card {
-                width: 100%;
-                max-width: 350px;
-            }
+        .btn-primary {
+            padding: 10px 20px;
+            background: #4a6cff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
         }
-    .btn-primary {
-    padding: 10px 20px;
-    background: #4a6cff;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-}
     </style>
 </head>
 
 <body>
 
-    <nav class="navbar" id="navbar">
-        <div class="logo">Contact<span>.</span>com</div>
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar"></nav>
 
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu"></div>
 
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <a href="signup.html" class="nav-signup-link">Sign Up</a>
-        </div>
-    </nav>
+<h1 class="page-title">Communities</h1>
 
-    <h1 class="page-title">Communities</h1>
-
-    <div class="grid">
-        <div class="card">
-            <h3>Tech Innovators</h3>
-            <p>A community for builders, coders, and creators shaping the future.</p>
-            <button>Join</button>
-        </div>
-
-        <div class="card">
-            <h3>Fitness & Wellness</h3>
-            <p>Stay motivated with people who share your health goals.</p>
-            <button>Join</button>
-        </div>
-
-        <div class="card">
-            <h3>Photography Club</h3>
-            <p>Share your shots, learn new skills, and grow your craft.</p>
-            <button>Join</button>
-        </div>
-
-        <div class="card">
-            <h3>Entrepreneurs Hub</h3>
-            <p>Connect with founders, share ideas, and build together.</p>
-            <button>Join</button>
-        </div>
+<div class="grid">
+    <div class="card">
+        <h3>Tech Innovators</h3>
+        <p>A community for builders, coders, and creators shaping the future.</p>
+        <button>Join</button>
     </div>
 
-    <script>
-        function toggleMenu() {
-            document.querySelector('.nav-links').classList.toggle('show');
-        }
-    </script>
+    <div class="card">
+        <h3>Fitness & Wellness</h3>
+        <p>Stay motivated with people who share your health goals.</p>
+        <button>Join</button>
+    </div>
+
+    <div class="card">
+        <h3>Photography Club</h3>
+        <p>Share your shots, learn new skills, and grow your craft.</p>
+        <button>Join</button>
+    </div>
+
+    <div class="card">
+        <h3>Entrepreneurs Hub</h3>
+        <p>Connect with founders, share ideas, and build together.</p>
+        <button>Join</button>
+    </div>
+</div>
+
 <script>
+/* FIXED toggleMenu */
+function toggleMenu() {
+    document.getElementById("mobileMenu").classList.toggle("show");
+}
+
+/* FIXED dynamic navbar */
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
     const loggedInNav = `
-        <div class="logo">Contact<span>.</span>com</div>
         <div class="hamburger" onclick="toggleMenu()">
             <span></span><span></span><span></span>
         </div>
+        <div class="logo">Contact<span>.</span>com</div>
         <div class="nav-links">
             <a href="dashboard.html">Dashboard</a>
-            <a href="community-directory.html">Communities</a>
+            <a href="Communities.html">Communities</a>
             <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>            
+            <a href="contacts.html">Contacts</a>
             <a href="profile.html">Profile</a>
-            <a href="index.html" onclick="logout()">Logout</a>
+            <a href="#" onclick="logout()">Logout</a>
         </div>
     `;
 
     const publicNav = `
-        <div class="logo">Contact<span>.</span>com</div>
         <div class="hamburger" onclick="toggleMenu()">
             <span></span><span></span><span></span>
         </div>
+        <div class="logo">Contact<span>.</span>com</div>
         <div class="nav-links">
             <a href="index.html">Home</a>
             <a href="communities.html">Communities</a>
@@ -267,10 +220,24 @@ function loadNavbar() {
     `;
 
     document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
-}
 
-function toggleMenu() {
-    document.querySelector('.nav-links').classList.toggle('show');
+    /* Build mobile menu */
+    document.getElementById("mobileMenu").innerHTML = user
+        ? `
+            <a href="dashboard.html">Dashboard</a>
+            <a href="Communities.html">Communities</a>
+            <a href="events.html">Events</a>
+            <a href="contacts.html">Contacts</a>
+            <a href="profile.html">Profile</a>
+            <a href="#" onclick="logout()">Logout</a>
+        `
+        : `
+            <a href="index.html">Home</a>
+            <a href="communities.html">Communities</a>
+            <a href="events.html">Events</a>
+            <a href="login.html">Login</a>
+            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+        `;
 }
 
 function logout() {
@@ -280,24 +247,6 @@ function logout() {
 
 document.addEventListener("DOMContentLoaded", loadNavbar);
 </script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const joinButtons = document.querySelectorAll(".card button");
 
-    joinButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            const user = JSON.parse(localStorage.getItem("contact_user"));
-
-            if (!user) {
-                window.location.href = "login.html";
-                return;
-            }
-
-            // Logged in → send to community directory
-            window.location.href = "community-directory.html";
-        });
-    });
-});
-</script>
 </body>
 </html>
