@@ -197,7 +197,7 @@ function loadNavbar() {
         <div class="logo">Contact<span>.</span>com</div>
         <div class="nav-links">
             <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
+            <a href="Communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="contacts.html">Contacts</a>
             <a href="profile.html">Profile</a>
@@ -225,7 +225,7 @@ function loadNavbar() {
     document.getElementById("mobileMenu").innerHTML = user
         ? `
             <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
+            <a href="Communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="contacts.html">Contacts</a>
             <a href="profile.html">Profile</a>
@@ -240,12 +240,33 @@ function loadNavbar() {
         `;
 }
 
+// NEW: Make Join buttons redirect if not signed in
+function setupJoinButtons() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const buttons = document.querySelectorAll(".card button");
+
+    buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            if (!user) {
+                window.location.href = "signup.html";
+                return;
+            }
+
+            // Later: join community logic here
+            alert("Joined community!");
+        });
+    });
+}
+
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
 }
 
-document.addEventListener("DOMContentLoaded", loadNavbar);
+document.addEventListener("DOMContentLoaded", () => {
+    loadNavbar();
+    setupJoinButtons();
+});
 </script>
 
 </body>
