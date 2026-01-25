@@ -150,7 +150,14 @@
     text-decoration: none;
     font-weight: 600;
   }
-  
+.view-profile-btn {
+  padding: 8px 14px;
+  background: #28c76f;
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
 </style>
 </head>
 
@@ -252,9 +259,22 @@ function renderContacts(users, currentUserEmail) {
         <div class="contact-name">${u.name}</div>
         <div class="contact-email">${u.email}</div>
       </div>
-      <a class="message-btn" href="messages.html?otherEmail=${encodeURIComponent(u.email)}">
-        Message
-      </a>
+
+      <div style="display:flex; gap:10px;">
+  <a 
+    class="view-profile-btn" 
+    href="public-profile.html?email=${encodeURIComponent(u.email)}"
+  >
+    View Profile
+  </a>
+
+  <a 
+    class="message-btn" 
+    href="messages.html?otherEmail=${encodeURIComponent(u.email)}"
+  >
+    Message
+  </a>
+</div>
     `;
 
     container.appendChild(div);

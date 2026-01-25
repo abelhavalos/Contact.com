@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact.com – Public Profile</title>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #4a6cff, #6f8cff);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #222;
+        }
+        .logo span { color: #4a6cff; }
+
+        /* PROFILE CARD */
+        .profile-card {
+            background: #fff;
+            color: #222;
+            width: 90%;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+
+        .profile-card h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .profile-card p {
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            color: #4a6cff;
+            font-weight: 700;
+            margin-top: 20px;
+            margin-bottom: 6px;
+            text-align: left;
+        }
+
+        .section-text {
+            text-align: left;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .btn-row {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 22px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .btn-message { background: #4a6cff; }
+        .btn-add { background: #28c76f; }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="logo">Contact<span>.</span>com</div>
+</nav>
+
+<div class="profile-card">
+    <h1 id="name">Loading...</h1>
+    <p id="profession">Loading...</p>
+
+    <div class="section-title">About</div>
+    <div id="about" class="section-text"></div>
+
+    <div class="section-title">Skills</div>
+    <div id="skills" class="section-text"></div>
+
+    <div class="section-title">Work & Life</div>
+    <div id="workLife" class="section-text"></div>
+
+    <div class="btn-row">
+        <button class="btn btn-message" onclick="openChat()">Message</button>
+        <button class="btn btn-add" onclick="addToContacts()">Add to Contacts</button>
+    </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
+
+// Get ?email= from URL
+const params = new URLSearchParams(window.location.search);
+const profileEmail = params.get("email");
+
+// Load public profile
+async function loadPublicProfile() {
+    if (!profileEmail) return alert("No profile specified");
+
+    const url = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(profileEmail)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.success) return alert("Profile not found");
+
+    const u = data.user;
+
+    document.getElementById("name").innerText = u.fullName;
+    document.getElementById("profession").innerText = u.profession || "";
+    document.getElementById("about").innerText = u.about || "";
+    document.getElementById("skills").innerText = u.skills || "";
+    document.getElementById("workLife").innerText = u.workLife || "";
+}
+
+loadPublicProfile();
+
+// MESSAGE BUTTON
+function openChat() {
+    window.location.href = `messages.html?otherEmail=${encodeURIComponent(profileEmail)}`;
+}
+
+// ADD TO CONTACTS
+async function addToContacts() {
+    const me = JSON.parse(localStorage.getItem("contact_user"));
+    if (!me) return window.location.href = "login.html";
+
+    const url = `${API_URL}?module=addContact&owner=${encodeURIComponent(me.email)}&contact=${encodeURIComponent(profileEmail)}`;
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        alert("Added to contacts");
+    } else {
+        alert(result.message || "Failed to add contact");
+    }
+}
+</script>
+
+</body>
+</html>
