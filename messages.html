@@ -216,7 +216,6 @@
 
 <body>
 
-  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="hamburger" onclick="toggleMenu()">
       <span></span>
@@ -232,42 +231,37 @@
       <a href="events.html">Events</a>
       <a href="contacts.html">Contacts</a>
       <a href="profile.html">Profile</a>
-      <a href="#" onclick="logout()">Logout</a>
+      <a href="index.html">Logout</a>
     </div>
   </nav>
 
-  <!-- MOBILE MENU -->
   <div class="mobile-menu" id="mobileMenu">
     <a href="dashboard.html">Dashboard</a>
     <a href="communities.html">Communities</a>
-    <a href="events.html">Events</a>
+    <a href="groups.html">Groups</a>
     <a href="contacts.html">Contacts</a>
     <a href="profile.html">Profile</a>
-    <a href="#" onclick="logout()">Logout</a>
   </div>
 
-  <!-- CHAT HEADER -->
-  <div id="header">Loading chat...</div>
+  <div id="header">Messages</div>
 
-  <!-- CHAT CONTAINER -->
   <div id="chat-container">
     <div id="chat">
       <div id="messages"></div>
-      <div id="typingIndicator" style="display:none;">Someone is typing...</div>
+      <div id="typingIndicator">Someone is typing...</div>
 
       <div id="input-area">
-        <input id="messageInput" placeholder="Type a message..." autocomplete="off">
+        <input id="messageInput" placeholder="Type a message...">
         <button id="sendBtn">Send</button>
       </div>
     </div>
   </div>
-  <script>
-/* ============ MENU ============ */
-function toggleMenu() {
+
+<script>
+  function toggleMenu() {
   document.querySelector(".nav-links").classList.toggle("show");
   document.getElementById("mobileMenu").classList.toggle("show");
 }
-
 /* ============ CONFIG ============ */
 const API_URL =
   "https://script.google.com/macros/s/AKfycbxH8gxO-udSGq71pi8M2Te6GSxz_QyNH5d9-Z9C1do-kUr5j14ukxrgneUIViMlg-vj/exec";
@@ -283,50 +277,18 @@ if (!loggedInUser || !loggedInUser.email) {
 
 /* ============ URL PARAMS ============ */
 const url = new URL(window.location.href);
-
 const otherEmail = url.searchParams.get("otherEmail");
 const conversationIdParam = url.searchParams.get("conversationId");
-const groupId = url.searchParams.get("group");
-const communityId = url.searchParams.get("community");
-
-/* ============ CHAT MODE ============ */
-let chatMode = "private";
-let chatTarget = otherEmail;
-
-if (conversationIdParam) {
-  chatMode = "conversation";
-  chatTarget = conversationIdParam;
-}
-
-if (groupId) {
-  chatMode = "group";
-  chatTarget = groupId;
-}
-
-if (communityId) {
-  chatMode = "community";
-  chatTarget = communityId;
-}
 
 let activeConversationId = conversationIdParam || null;
 let typingTimeout = null;
 
 /* ============ INIT ============ */
 window.onload = () => {
+  document.getElementById("header").innerText = "Private Chat";
   document.getElementById("sendBtn").onclick = sendMessage;
 
-  // Set header
-  if (chatMode === "private") {
-    document.getElementById("header").innerText = "Private Chat";
-  }
-  if (chatMode === "group") {
-    document.getElementById("header").innerText = "Group Chat";
-  }
-  if (chatMode === "community") {
-    document.getElementById("header").innerText = "Community Chat";
-  }
-
-  // Typing indicator
+  // SEND TYPING STATUS
   document.getElementById("messageInput").addEventListener("input", () => {
     showTypingLocal();
 
@@ -339,22 +301,18 @@ window.onload = () => {
     }
   });
 
-  // Start chat
+  // LOAD CHAT
   if (activeConversationId) {
     startPolling();
-  } else if (chatMode === "private" && otherEmail) {
-    startPrivateConversation();
-  } else if (chatMode === "group") {
-    startGroupConversation();
-  } else if (chatMode === "community") {
-    startCommunityConversation();
+  } else if (otherEmail) {
+    startConversation();
   } else {
-    alert("Missing chat parameters.");
+    alert("No conversationId or otherEmail provided in URL.");
   }
 };
 
-/* ============ START CONVERSATIONS ============ */
-function startPrivateConversation() {
+/* ============ CONVERSATION ============ */
+function startConversation() {
   fetch(
     `${API_URL}?module=startConversation` +
     `&userEmail=${encodeURIComponent(loggedInUser.email)}` +
@@ -362,41 +320,16 @@ function startPrivateConversation() {
   )
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return alert(d.message);
+      if (!d.success) {
+        alert(d.message || "Failed to start conversation");
+        return;
+      }
       activeConversationId = d.conversationId;
       startPolling();
-    });
+    })
+    .catch(err => console.error(err));
 }
 
-function startGroupConversation() {
-  fetch(
-    `${API_URL}?module=startGroupConversation` +
-    `&groupId=${encodeURIComponent(groupId)}` +
-    `&userEmail=${encodeURIComponent(loggedInUser.email)}`
-  )
-    .then(r => r.json())
-    .then(d => {
-      if (!d.success) return alert(d.message);
-      activeConversationId = d.conversationId;
-      startPolling();
-    });
-}
-
-function startCommunityConversation() {
-  fetch(
-    `${API_URL}?module=startCommunityConversation` +
-    `&communityId=${encodeURIComponent(communityId)}` +
-    `&userEmail=${encodeURIComponent(loggedInUser.email)}`
-  )
-    .then(r => r.json())
-    .then(d => {
-      if (!d.success) return alert(d.message);
-      activeConversationId = d.conversationId;
-      startPolling();
-    });
-}
-
-/* ============ POLLING ============ */
 function startPolling() {
   loadMessages();
   setInterval(loadMessages, 2000);
@@ -415,7 +348,8 @@ function loadMessages() {
     .then(d => {
       if (!d.success) return;
       renderMessages(d.messages || []);
-    });
+    })
+    .catch(err => console.error(err));
 }
 
 function sendMessage() {
@@ -423,26 +357,23 @@ function sendMessage() {
   const text = input.value.trim();
   if (!text || !activeConversationId) return;
 
-  let url = `${API_URL}?module=sendMessage` +
-            `&conversationId=${encodeURIComponent(activeConversationId)}` +
-            `&senderEmail=${encodeURIComponent(loggedInUser.email)}` +
-            `&text=${encodeURIComponent(text)}`;
-
-  if (chatMode === "private" && otherEmail) {
-    url += `&receiverEmail=${encodeURIComponent(otherEmail)}`;
-  }
-
-  fetch(url)
+  fetch(
+    `${API_URL}?module=sendMessage` +
+    `&conversationId=${encodeURIComponent(activeConversationId)}` +
+    `&senderEmail=${encodeURIComponent(loggedInUser.email)}` +
+    `&receiverEmail=${encodeURIComponent(otherEmail || "")}` +
+    `&text=${encodeURIComponent(text)}`
+  )
     .then(r => r.json())
     .then(d => {
       if (!d.success) {
-        console.error("Send error:", d);
-        alert(d.message || "Failed to send message.");
+        alert(d.message || "Failed to send message");
         return;
       }
       input.value = "";
       loadMessages();
-    });
+    })
+    .catch(err => console.error(err));
 }
 
 function renderMessages(messages) {
@@ -455,15 +386,18 @@ function renderMessages(messages) {
     if (msg.senderEmail === loggedInUser.email) div.classList.add("me");
 
     const header = document.createElement("div");
-    header.className = "msg-header";
+    header.style.fontSize = "12px";
+    header.style.color = "#666";
+    header.style.marginBottom = "4px";
     header.innerText = msg.senderName || msg.senderEmail;
 
     const body = document.createElement("div");
-    body.className = "msg-body";
     body.innerText = msg.text;
 
     const footer = document.createElement("div");
-    footer.className = "msg-footer";
+    footer.style.fontSize = "11px";
+    footer.style.color = "#aaa";
+    footer.style.marginTop = "4px";
 
     const reactions = msg.reactions || [];
     const counts = reactions.reduce((acc, e) => {
@@ -472,9 +406,9 @@ function renderMessages(messages) {
     }, {});
 
     footer.innerHTML =
-      `<span onclick="addReaction('${msg.messageId}','👍')">👍 ${counts['👍'] || ''}</span>` +
-      `<span onclick="addReaction('${msg.messageId}','❤️')">❤️ ${counts['❤️'] || ''}</span>` +
-      `<span onclick="addReaction('${msg.messageId}','😂')">😂 ${counts['😂'] || ''}</span>`;
+      `<span onclick="addReaction('${msg.messageId}','👍')" style="cursor:pointer;margin-right:6px;">👍 ${counts['👍'] || ''}</span>` +
+      `<span onclick="addReaction('${msg.messageId}','❤️')" style="cursor:pointer;margin-right:6px;">❤️ ${counts['❤️'] || ''}</span>` +
+      `<span onclick="addReaction('${msg.messageId}','😂')" style="cursor:pointer;">😂 ${counts['😂'] || ''}</span>`;
 
     div.appendChild(header);
     div.appendChild(body);
@@ -507,9 +441,13 @@ function loadTyping() {
     .then(r => r.json())
     .then(d => {
       if (!d.success) return;
+
+      const users = d.users || [];
       const el = document.getElementById("typingIndicator");
-      el.style.display = (d.users || []).length > 0 ? "block" : "none";
-    });
+
+      el.style.display = users.length > 0 ? "block" : "none";
+    })
+    .catch(err => console.error(err));
 }
 
 /* ============ REACTIONS ============ */
@@ -524,15 +462,9 @@ function addReaction(messageId, emoji) {
     .then(d => {
       if (!d.success) return;
       loadMessages();
-    });
+    })
+    .catch(err => console.error(err));
 }
-  
-function logout() {
-  localStorage.removeItem("contact_user");
-  localStorage.removeItem("user");
-  window.location.href = "index.html";
-}
-  
-  </script>
+</script>
 </body>
 </html>
