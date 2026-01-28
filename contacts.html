@@ -255,25 +255,25 @@ function renderContacts(users, currentUserEmail) {
 
     div.innerHTML = `
       <div class="contact-info">
-        <div class="contact-name">${u.name}</div>
+        <div class="contact-name">${u.fullName || "(No name)"}</div>
         <div class="contact-email">${u.email}</div>
       </div>
 
       <div style="display:flex; gap:10px;">
-  <a 
-    class="view-profile-btn" 
-    href="public-profile.html?email=${encodeURIComponent(u.email)}"
-  >
-    View Profile
-  </a>
+        <a 
+          class="view-profile-btn" 
+          href="public-profile.html?email=${encodeURIComponent(u.email)}"
+        >
+          View Profile
+        </a>
 
-  <a 
-    class="message-btn" 
-    href="messages.html?otherEmail=${encodeURIComponent(u.email)}"
-  >
-    Message
-  </a>
-</div>
+        <a 
+          class="message-btn" 
+          href="messages.html?otherEmail=${encodeURIComponent(u.email)}"
+        >
+          Message
+        </a>
+      </div>
     `;
 
     container.appendChild(div);
