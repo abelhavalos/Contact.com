@@ -155,7 +155,12 @@ async function addToContacts() {
     const me = JSON.parse(localStorage.getItem("contact_user"));
     if (!me) return window.location.href = "login.html";
 
-    const url = `${API_URL}?module=addContact&owner=${encodeURIComponent(me.email)}&contact=${encodeURIComponent(profileEmail)}`;
+    // FIXED: correct parameter names
+    const url =
+        `${API_URL}?module=addContact`
+        + `&userEmail=${encodeURIComponent(me.email)}`
+        + `&contactEmail=${encodeURIComponent(profileEmail)}`;
+
     const res = await fetch(url);
     const result = await res.json();
 
@@ -166,6 +171,5 @@ async function addToContacts() {
     }
 }
 </script>
-
 </body>
 </html>
