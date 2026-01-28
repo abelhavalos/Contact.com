@@ -354,27 +354,49 @@ async function changeEmail() {
     alert(result.message || "Failed to update email");
 }
 
-/* CHANGE PASSWORD */
+/* CHANGE PASSWORD – ROBUST VERSION */
 async function changePassword() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     const newPass = getVal("newPassword");
     const confirmPass = getVal("confirmPassword");
 
-    if (newPass !== confirmPass) return alert("Passwords do not match");
+    if (newPass !== confirmPass) {
+        alert("Passwords do not match");
+        return;
+    }
 
     const url = `${API_URL}?module=changePassword&email=${encodeURIComponent(user.email)}&newPassword=${encodeURIComponent(newPass)}`;
     const res = await fetch(url);
     const result = await res.json();
 
+    // If backend reports success, follow normal flow
     if (result.success) {
         alert("Password updated");
         localStorage.removeItem("contact_user");
         window.location.href = "login.html";
-    } else {
-        alert(result.message || "Failed to update password");
+        return;
     }
-}
 
+    // Fallback: backend says fail, but sheet may still be updated.
+    // Try to verify by attempting a login with the new password.
+    try {
+        const loginUrl = `${API_URL}?module=login&email=${encodeURIComponent(user.email)}&password=${encodeURIComponent(newPass)}`;
+        const loginRes = await fetch(loginUrl);
+        const loginData = await loginRes.json();
+
+        if (loginData.success && loginData.user) {
+            // Password DID update even though backend returned failure
+            alert("Password updated");
+            localStorage.removeItem("contact_user");
+            window.location.href = "login.html";
+            return;
+        }
+    } catch (e) {
+        // ignore and fall through to error alert
+    }
+
+    alert(result.message || "Failed to update password");
+}
 /* LOGOUT */
 function logout() {
     localStorage.removeItem("contact_user");
