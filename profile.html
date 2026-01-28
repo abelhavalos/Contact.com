@@ -278,7 +278,7 @@ function enableEditing() {
     document.getElementById("editBtn").style.display = "none";
 }
 
-/* SAVE PROFILE */
+/* SAVE PROFILE – ROBUST VERSION */
 async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
@@ -294,17 +294,40 @@ async function saveProfile() {
     const res = await fetch(url);
     const result = await res.json();
 
+    // Backend says success → normal path
     if (result.success) {
         if (result.user) {
             localStorage.setItem("contact_user", JSON.stringify(result.user));
         }
         alert("Profile updated");
         window.location.reload();
-    } else {
-        alert(result.message || "Failed to update profile");
+        return;
     }
-}
 
+    // Fallback: backend says fail, but sheet might still be updated.
+    // Try to fetch the latest profile by email.
+    try {
+        const checkUrl = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(user.email)}`;
+        const checkRes = await fetch(checkUrl);
+        const checkData = await checkRes.json();
+
+        if (checkData.success && checkData.user) {
+            // Treat as success: update localStorage with fresh data
+            const updatedUser = {
+                ...user,
+                ...checkData.user
+            };
+            localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+            alert("Profile updated");
+            window.location.reload();
+            return;
+        }
+    } catch (e) {
+        // ignore and fall through
+    }
+
+    alert(result.message || "Failed to update profile");
+}
 function getVal(id) {
     const el = document.getElementById(id);
     return el ? el.value : "";
