@@ -295,7 +295,10 @@ async function saveProfile() {
     const result = await res.json();
 
     if (result.success) {
-        localStorage.setItem("contact_user", JSON.stringify(result.user));
+        // Always refresh localStorage with returned user
+        if (result.user) {
+            localStorage.setItem("contact_user", JSON.stringify(result.user));
+        }
         alert("Profile updated");
         window.location.reload();
     } else {
@@ -318,7 +321,10 @@ async function changeEmail() {
     const result = await res.json();
 
     if (result.success) {
-        localStorage.setItem("contact_user", JSON.stringify(result.user));
+        // FIX: Always update localStorage with new email even if backend forgets to return user
+        const updatedUser = result.user || { ...user, email: newEmail };
+        localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+
         alert("Email updated");
         window.location.reload();
     } else {
