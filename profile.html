@@ -295,7 +295,6 @@ async function saveProfile() {
     const result = await res.json();
 
     if (result.success) {
-        // Always refresh localStorage with returned user
         if (result.user) {
             localStorage.setItem("contact_user", JSON.stringify(result.user));
         }
@@ -311,25 +310,48 @@ function getVal(id) {
     return el ? el.value : "";
 }
 
-/* CHANGE EMAIL */
+/* CHANGE EMAIL – ROBUST VERSION */
 async function changeEmail() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     const newEmail = getVal("newEmail").trim();
+    if (!newEmail) return alert("Please enter a new email");
 
     const url = `${API_URL}?module=changeEmail&oldEmail=${encodeURIComponent(user.email)}&newEmail=${encodeURIComponent(newEmail)}`;
     const res = await fetch(url);
     const result = await res.json();
 
+    // If backend says success, use it directly
     if (result.success) {
-        // FIX: Always update localStorage with new email even if backend forgets to return user
         const updatedUser = result.user || { ...user, email: newEmail };
         localStorage.setItem("contact_user", JSON.stringify(updatedUser));
-
         alert("Email updated");
         window.location.reload();
-    } else {
-        alert(result.message || "Failed to update email");
+        return;
     }
+
+    // Fallback: backend says fail, but sheet might still be updated.
+    // Try to load the user by the *new* email.
+    try {
+        const checkUrl = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(newEmail)}`;
+        const checkRes = await fetch(checkUrl);
+        const checkData = await checkRes.json();
+
+        if (checkData.success && checkData.user) {
+            const updatedUser = {
+                ...user,
+                ...checkData.user,
+                email: newEmail
+            };
+            localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+            alert("Email updated");
+            window.location.reload();
+            return;
+        }
+    } catch (e) {
+        // ignore and fall through to error alert
+    }
+
+    alert(result.message || "Failed to update email");
 }
 
 /* CHANGE PASSWORD */
@@ -359,6 +381,5 @@ function logout() {
     window.location.href = "index.html";
 }
 </script>
-
 </body>
 </html>
