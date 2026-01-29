@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-  *{
-    margin:0;
-    padding:0;
-  }
   body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -28,7 +24,6 @@
     z-index: 10;
   }
 
-  /* Hamburger on the far left */
   .hamburger {
     display: none;
     flex-direction: column;
@@ -87,37 +82,19 @@
     border-top: 1px solid rgba(255,255,255,0.2);
   }
 
-  .mobile-menu a:hover {
-    background: rgba(0,0,0,0.1);
-  }
-
-  /* Show mobile menu when toggled */
   .mobile-menu.show {
     display: flex;
   }
 
-  /* RESPONSIVE */
   @media (max-width: 700px) {
-
     .hamburger {
       display: flex;
     }
-
-    /* Hide desktop nav links */
     .nav-links {
       display: none;
     }
-
-    /* Navbar stays row layout */
     .navbar {
-      flex-direction: row;
-      align-items: center;
       padding: 20px;
-    }
-
-    .nav-links a {
-      width: 100%;
-      text-align: left;
     }
   }
 
@@ -131,25 +108,28 @@
     border-bottom: 1px solid #e5e5e5;
   }
 
-  /* LAYOUT */
+  /* ============================
+     FIXED LAYOUT (MERGED)
+     ============================ */
   #chat-container {
     display: flex;
-    height: calc(100vh - 96px);
-    background: linear-gradient(135deg, #4a6cff, #6f8cff);
-    color: #fff;
+    height: calc(100vh - 120px); /* navbar + header */
+    overflow: hidden;
   }
 
+  /* Chat area */
   #chat {
     flex: 1;
     display: flex;
     flex-direction: column;
+    background: #eef4ff;
   }
 
   #messages {
     flex: 1;
     padding: 16px;
     overflow-y: auto;
-    color:#222;
+    color: #222;
   }
 
   .msg {
@@ -159,13 +139,11 @@
     border-radius: 8px;
     max-width: 70%;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    color:#222;
   }
 
   .me {
     background: #d1eaff;
     margin-left: auto;
-    color:222;
   }
 
   #typingIndicator {
@@ -199,20 +177,63 @@
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    transition: 0.2s;
   }
 
   #sendBtn:hover {
     background: #3a56d6;
   }
 
-  @media (max-width: 900px) {
+  /* Member sidebar */
+  #memberSidebar {
+    width: 260px;
+    background: #ffffff;
+    border-left: 1px solid #ddd;
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  #memberSidebar h3 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #333;
+  }
+
+  .member {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  .member-name {
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+
+  .member button {
+    margin-right: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .member button:hover {
+    background: #0056b3;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
     #chat-container {
       flex-direction: column;
+      height: auto;
     }
-
-    #chat {
-      height: calc(100vh - 96px - 200px);
+    #memberSidebar {
+      width: 100%;
+      border-left: none;
+      border-top: 1px solid #ddd;
+      height: auto;
     }
   }
 </style>
@@ -249,7 +270,10 @@
 
   <div id="header">Messages</div>
 
+  <!-- NEW: Two-column layout -->
   <div id="chat-container">
+
+    <!-- LEFT: Chat -->
     <div id="chat">
       <div id="messages"></div>
       <div id="typingIndicator">Someone is typing...</div>
@@ -259,6 +283,13 @@
         <button id="sendBtn">Send</button>
       </div>
     </div>
+
+    <!-- RIGHT: Member List (Community Only) -->
+    <div id="memberSidebar">
+      <h3>Members</h3>
+      <!-- JS will inject members here -->
+    </div>
+
   </div>
 
 <script>
@@ -291,9 +322,12 @@ let typingTimeout = null;
 
 /* ============ INIT ============ */
 window.onload = () => {
+  
   const headerEl = document.getElementById("header");
   headerEl.innerText = mode === "community" ? "Community Chat" : "Private Chat";
-
+  if (mode === "community" && communityId) {
+  loadCommunityMembers();
+   }
   document.getElementById("sendBtn").onclick = sendMessage;
 
   // SEND TYPING STATUS
@@ -358,10 +392,50 @@ function startCommunityConversation() {
     })
     .catch(err => console.error(err));
 }
+  
+function loadCommunityMembers() {
+  fetch(`${API_URL}?module=getCommunityMembers&communityId=${encodeURIComponent(communityId)}`)
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) return;
+      renderMemberSidebar(d.members || []);
+    })
+    .catch(err => console.error(err));
+}
+function renderMemberSidebar(members) {
+  const container = document.getElementById("memberSidebar");
+  container.innerHTML = "<h3>Members</h3>";
 
+  members.forEach(email => {
+    const div = document.createElement("div");
+    div.className = "member";
+
+    const name = document.createElement("div");
+    name.innerText = email;
+    name.style.fontWeight = "bold";
+
+    const viewBtn = document.createElement("button");
+    viewBtn.innerText = "View Profile";
+    viewBtn.onclick = () => {
+      window.location.href = `profile.html?email=${encodeURIComponent(email)}`;
+    };
+
+    const chatBtn = document.createElement("button");
+    chatBtn.innerText = "Start Private Chat";
+    chatBtn.onclick = () => {
+      window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
+    };
+
+    div.appendChild(name);
+    div.appendChild(viewBtn);
+    div.appendChild(chatBtn);
+
+    container.appendChild(div);
+  });
+}  
 function startPolling() {
   loadMessages();
-  setInterval(loadMessages, 2000);
+  setInterval(loadMessages,1000);
   setInterval(loadTyping, 1000);
 }
 
@@ -496,6 +570,23 @@ function addReaction(messageId, emoji) {
     })
     .catch(err => console.error(err));
 }
+function renderMemberSidebar(members) {
+  const container = document.getElementById("memberSidebar");
+  container.innerHTML = "<h3>Members</h3>";
+
+  members.forEach(email => {
+    const div = document.createElement("div");
+    div.className = "member";
+
+    div.innerHTML = `
+      <div class="member-name">${email}</div>
+      <button onclick="window.location.href='profile.html?email=${email}'">View Profile</button>
+      <button onclick="window.location.href='messages.html?otherEmail=${email}'">Message</button>
+    `;
+
+    container.appendChild(div);
+  });
+}  
 </script>
 </body>
 </html>
