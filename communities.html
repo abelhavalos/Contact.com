@@ -155,29 +155,29 @@
 <h1 class="page-title">Communities</h1>
 
 <div class="grid">
-    <div class="card">
-        <h3>Tech Innovators</h3>
-        <p>A community for builders, coders, and creators shaping the future.</p>
-        <button>Join</button>
-    </div>
+  <div class="card" data-community="tech-innovators">
+    <h3>Tech Innovators</h3>
+    <p>A community for builders, coders, and creators shaping the future.</p>
+    <button>Join</button>
+  </div>
 
-    <div class="card">
-        <h3>Fitness & Wellness</h3>
-        <p>Stay motivated with people who share your health goals.</p>
-        <button>Join</button>
-    </div>
+  <div class="card" data-community="fitness-wellness">
+    <h3>Fitness & Wellness</h3>
+    <p>Stay motivated with people who share your health goals.</p>
+    <button>Join</button>
+  </div>
 
-    <div class="card">
-        <h3>Photography Club</h3>
-        <p>Share your shots, learn new skills, and grow your craft.</p>
-        <button>Join</button>
-    </div>
+  <div class="card" data-community="photography-club">
+    <h3>Photography Club</h3>
+    <p>Share your shots, learn new skills, and grow your craft.</p>
+    <button>Join</button>
+  </div>
 
-    <div class="card">
-        <h3>Entrepreneurs Hub</h3>
-        <p>Connect with founders, share ideas, and build together.</p>
-        <button>Join</button>
-    </div>
+  <div class="card" data-community="entrepreneurs-hub">
+    <h3>Entrepreneurs Hub</h3>
+    <p>Connect with founders, share ideas, and build together.</p>
+    <button>Join</button>
+  </div>
 </div>
 
 <script>
@@ -186,6 +186,7 @@ function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
 
+document.addEventListener("DOMContentLoaded", setupJoinButtons);
 /* FIXED dynamic navbar */
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -242,20 +243,23 @@ function loadNavbar() {
 
 // NEW: Make Join buttons redirect if not signed in
 function setupJoinButtons() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    const buttons = document.querySelectorAll(".card button");
+  const user = JSON.parse(localStorage.getItem("contact_user"));
+  const cards = document.querySelectorAll(".card");
 
-    buttons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            if (!user) {
-                window.location.href = "signup.html";
-                return;
-            }
+  cards.forEach(card => {
+    const btn = card.querySelector("button");
+    const communityId = card.getAttribute("data-community");
 
-            // Later: join community logic here
-            alert("Joined community!");
-        });
+    btn.addEventListener("click", () => {
+      if (!user || !user.email) {
+        window.location.href = "signup.html";
+        return;
+      }
+
+      // Redirect to community chatroom
+      window.location.href = `messages.html?communityId=${encodeURIComponent(communityId)}`;
     });
+  });
 }
 
 function logout() {

@@ -258,10 +258,11 @@
   </div>
 
 <script>
-  function toggleMenu() {
+function toggleMenu() {
   document.querySelector(".nav-links").classList.toggle("show");
   document.getElementById("mobileMenu").classList.toggle("show");
 }
+
 /* ============ CONFIG ============ */
 const API_URL ="https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
@@ -278,13 +279,17 @@ if (!loggedInUser || !loggedInUser.email) {
 const url = new URL(window.location.href);
 const otherEmail = url.searchParams.get("otherEmail");
 const conversationIdParam = url.searchParams.get("conversationId");
+const communityId = url.searchParams.get("communityId");
 
+let mode = communityId ? "community" : "private";
 let activeConversationId = conversationIdParam || null;
 let typingTimeout = null;
 
 /* ============ INIT ============ */
 window.onload = () => {
-  document.getElementById("header").innerText = "Private Chat";
+  const headerEl = document.getElementById("header");
+  headerEl.innerText = mode === "community" ? "Community Chat" : "Private Chat";
+
   document.getElementById("sendBtn").onclick = sendMessage;
 
   // SEND TYPING STATUS
@@ -303,14 +308,16 @@ window.onload = () => {
   // LOAD CHAT
   if (activeConversationId) {
     startPolling();
+  } else if (mode === "community" && communityId) {
+    startCommunityConversation();
   } else if (otherEmail) {
     startConversation();
   } else {
-    alert("No conversationId or otherEmail provided in URL.");
+    alert("No conversationId, communityId, or otherEmail provided in URL.");
   }
 };
 
-/* ============ CONVERSATION ============ */
+/* ============ CONVERSATION (PRIVATE) ============ */
 function startConversation() {
   fetch(
     `${API_URL}?module=startConversation` +
@@ -321,6 +328,25 @@ function startConversation() {
     .then(d => {
       if (!d.success) {
         alert(d.message || "Failed to start conversation");
+        return;
+      }
+      activeConversationId = d.conversationId;
+      startPolling();
+    })
+    .catch(err => console.error(err));
+}
+
+/* ============ CONVERSATION (COMMUNITY) ============ */
+function startCommunityConversation() {
+  fetch(
+    `${API_URL}?module=startCommunityConversation` +
+    `&communityId=${encodeURIComponent(communityId)}` +
+    `&userEmail=${encodeURIComponent(loggedInUser.email)}`
+  )
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) {
+        alert(d.message || "Failed to start community conversation");
         return;
       }
       activeConversationId = d.conversationId;
@@ -356,12 +382,14 @@ function sendMessage() {
   const text = input.value.trim();
   if (!text || !activeConversationId) return;
 
+  const receiver = mode === "community" ? "" : (otherEmail || "");
+
   fetch(
     `${API_URL}?module=sendMessage` +
-    `&conversationId=${encodeURIComponent(activeConversationId)}` +
-    `&senderEmail=${encodeURIComponent(loggedInUser.email)}` +
-    `&receiverEmail=${encodeURIComponent(otherEmail || "")}` +
-    `&text=${encodeURIComponent(text)}`
+    `&conversationId=${encodeURIComponent(activeConversationId)}`
+    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
+    + `&receiverEmail=${encodeURIComponent(receiver)}`
+    + `&text=${encodeURIComponent(text)}`
   )
     .then(r => r.json())
     .then(d => {
