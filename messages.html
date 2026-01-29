@@ -401,20 +401,19 @@ function renderMemberSidebar(members) {
   const container = document.getElementById("memberSidebar");
   container.innerHTML = "<h3>Members</h3>";
 
-  members.forEach(email => {
+  members.forEach(m => {
     const div = document.createElement("div");
     div.className = "member";
 
     div.innerHTML = `
-      <div class="member-name">${email}</div>
-      <button onclick="window.location.href='profile.html?email=${encodeURIComponent(email)}'">View Profile</button>
-      <button onclick="window.location.href='messages.html?otherEmail=${encodeURIComponent(email)}'">Message</button>
+      <div class="member-name">${m.fullName}</div>
+      <button onclick="window.location.href='profile.html?email=${encodeURIComponent(m.email)}'">View Profile</button>
+      <button onclick="window.location.href='messages.html?otherEmail=${encodeURIComponent(m.email)}'">Message</button>
     `;
 
     container.appendChild(div);
   });
 }
-
 /* ============================================================
    POLLING
 ============================================================ */
