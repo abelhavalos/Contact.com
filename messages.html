@@ -324,6 +324,11 @@ window.onload = () => {
   document.getElementById("header").innerText =
     mode === "community" ? "Community Chat" : "Private Chat";
 
+  // Hide sidebar in private chat
+  if (mode === "private") {
+    document.getElementById("memberSidebar").style.display = "none";
+  }
+
   document.getElementById("sendBtn").onclick = sendMessage;
 
   document.getElementById("messageInput").addEventListener("input", () => {
@@ -343,7 +348,7 @@ window.onload = () => {
     alert("Missing conversationId, communityId, or otherEmail.");
   }
 };
-
+  
 /* ============================================================
    PRIVATE CHAT
 ============================================================ */
