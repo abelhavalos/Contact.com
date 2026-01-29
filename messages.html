@@ -412,7 +412,8 @@ function renderMemberSidebar(members) {
 
     div.innerHTML = `
       <div class="member-name">${m.fullName}</div>
-      <button onclick="window.location.href='profile.html?email=${encodeURIComponent(m.email)}'">View Profile</button>
+    
+      <button onclick="window.location.href='public-profile.html?email=${encodeURIComponent(m.email)}'">View Profile</button>
       <button onclick="window.location.href='messages.html?otherEmail=${encodeURIComponent(m.email)}'">Message</button>
     `;
 
