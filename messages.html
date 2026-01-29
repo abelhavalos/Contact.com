@@ -291,26 +291,23 @@
     </div>
 
   </div>
-
 <script>
-function toggleMenu() {
-  document.querySelector(".nav-links").classList.toggle("show");
-  document.getElementById("mobileMenu").classList.toggle("show");
-}
+/* ============================================================
+   CONFIG + USER
+============================================================ */
+const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* ============ CONFIG ============ */
-const API_URL ="https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
-
-/* ============ USER ============ */
-let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
-if (!loggedInUser) loggedInUser = JSON.parse(localStorage.getItem("user"));
+let loggedInUser = JSON.parse(localStorage.getItem("contact_user")) 
+                || JSON.parse(localStorage.getItem("user"));
 
 if (!loggedInUser || !loggedInUser.email) {
   alert("No logged in user found. Please log in again.");
   window.location.href = "login.html";
 }
 
-/* ============ URL PARAMS ============ */
+/* ============================================================
+   URL PARAMS
+============================================================ */
 const url = new URL(window.location.href);
 const otherEmail = url.searchParams.get("otherEmail");
 const conversationIdParam = url.searchParams.get("conversationId");
@@ -320,30 +317,22 @@ let mode = communityId ? "community" : "private";
 let activeConversationId = conversationIdParam || null;
 let typingTimeout = null;
 
-/* ============ INIT ============ */
+/* ============================================================
+   INIT
+============================================================ */
 window.onload = () => {
-  
-  const headerEl = document.getElementById("header");
-  headerEl.innerText = mode === "community" ? "Community Chat" : "Private Chat";
-  if (mode === "community" && communityId) {
-  loadCommunityMembers();
-   }
+  document.getElementById("header").innerText =
+    mode === "community" ? "Community Chat" : "Private Chat";
+
   document.getElementById("sendBtn").onclick = sendMessage;
 
-  // SEND TYPING STATUS
   document.getElementById("messageInput").addEventListener("input", () => {
     showTypingLocal();
-
     if (activeConversationId) {
-      fetch(
-        `${API_URL}?module=setTyping` +
-        `&conversationId=${encodeURIComponent(activeConversationId)}` +
-        `&userEmail=${encodeURIComponent(loggedInUser.email)}`
-      );
+      fetch(`${API_URL}?module=setTyping&conversationId=${encodeURIComponent(activeConversationId)}&userEmail=${encodeURIComponent(loggedInUser.email)}`);
     }
   });
 
-  // LOAD CHAT
   if (activeConversationId) {
     startPolling();
   } else if (mode === "community" && communityId) {
@@ -351,11 +340,13 @@ window.onload = () => {
   } else if (otherEmail) {
     startConversation();
   } else {
-    alert("No conversationId, communityId, or otherEmail provided in URL.");
+    alert("Missing conversationId, communityId, or otherEmail.");
   }
 };
 
-/* ============ CONVERSATION (PRIVATE) ============ */
+/* ============================================================
+   PRIVATE CHAT
+============================================================ */
 function startConversation() {
   fetch(
     `${API_URL}?module=startConversation` +
@@ -364,17 +355,16 @@ function startConversation() {
   )
     .then(r => r.json())
     .then(d => {
-      if (!d.success) {
-        alert(d.message || "Failed to start conversation");
-        return;
-      }
+      if (!d.success) return alert(d.message || "Failed to start conversation");
       activeConversationId = d.conversationId;
       startPolling();
     })
-    .catch(err => console.error(err));
+    .catch(console.error);
 }
 
-/* ============ CONVERSATION (COMMUNITY) ============ */
+/* ============================================================
+   COMMUNITY CHAT
+============================================================ */
 function startCommunityConversation() {
   fetch(
     `${API_URL}?module=startCommunityConversation` +
@@ -383,16 +373,17 @@ function startCommunityConversation() {
   )
     .then(r => r.json())
     .then(d => {
-      if (!d.success) {
-        alert(d.message || "Failed to start community conversation");
-        return;
-      }
+      if (!d.success) return alert(d.message || "Failed to start community chat");
       activeConversationId = d.conversationId;
+
+      // Load members AFTER conversation is created
+      loadCommunityMembers();
+
       startPolling();
     })
-    .catch(err => console.error(err));
+    .catch(console.error);
 }
-  
+
 function loadCommunityMembers() {
   fetch(`${API_URL}?module=getCommunityMembers&communityId=${encodeURIComponent(communityId)}`)
     .then(r => r.json())
@@ -400,8 +391,12 @@ function loadCommunityMembers() {
       if (!d.success) return;
       renderMemberSidebar(d.members || []);
     })
-    .catch(err => console.error(err));
+    .catch(console.error);
 }
+
+/* ============================================================
+   MEMBER SIDEBAR
+============================================================ */
 function renderMemberSidebar(members) {
   const container = document.getElementById("memberSidebar");
   container.innerHTML = "<h3>Members</h3>";
@@ -410,49 +405,38 @@ function renderMemberSidebar(members) {
     const div = document.createElement("div");
     div.className = "member";
 
-    const name = document.createElement("div");
-    name.innerText = email;
-    name.style.fontWeight = "bold";
-
-    const viewBtn = document.createElement("button");
-    viewBtn.innerText = "View Profile";
-    viewBtn.onclick = () => {
-      window.location.href = `profile.html?email=${encodeURIComponent(email)}`;
-    };
-
-    const chatBtn = document.createElement("button");
-    chatBtn.innerText = "Start Private Chat";
-    chatBtn.onclick = () => {
-      window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
-    };
-
-    div.appendChild(name);
-    div.appendChild(viewBtn);
-    div.appendChild(chatBtn);
+    div.innerHTML = `
+      <div class="member-name">${email}</div>
+      <button onclick="window.location.href='profile.html?email=${encodeURIComponent(email)}'">View Profile</button>
+      <button onclick="window.location.href='messages.html?otherEmail=${encodeURIComponent(email)}'">Message</button>
+    `;
 
     container.appendChild(div);
   });
-}  
+}
+
+/* ============================================================
+   POLLING
+============================================================ */
 function startPolling() {
   loadMessages();
-  setInterval(loadMessages,1000);
+  setInterval(loadMessages, 1000);
   setInterval(loadTyping, 1000);
 }
 
-/* ============ MESSAGES ============ */
+/* ============================================================
+   MESSAGES
+============================================================ */
 function loadMessages() {
   if (!activeConversationId) return;
 
-  fetch(
-    `${API_URL}?module=getMessages` +
-    `&conversationId=${encodeURIComponent(activeConversationId)}`
-  )
+  fetch(`${API_URL}?module=getMessages&conversationId=${encodeURIComponent(activeConversationId)}`)
     .then(r => r.json())
     .then(d => {
       if (!d.success) return;
       renderMessages(d.messages || []);
     })
-    .catch(err => console.error(err));
+    .catch(console.error);
 }
 
 function sendMessage() {
@@ -464,21 +448,18 @@ function sendMessage() {
 
   fetch(
     `${API_URL}?module=sendMessage` +
-    `&conversationId=${encodeURIComponent(activeConversationId)}`
-    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-    + `&receiverEmail=${encodeURIComponent(receiver)}`
-    + `&text=${encodeURIComponent(text)}`
+    `&conversationId=${encodeURIComponent(activeConversationId)}` +
+    `&senderEmail=${encodeURIComponent(loggedInUser.email)}` +
+    `&receiverEmail=${encodeURIComponent(receiver)}` +
+    `&text=${encodeURIComponent(text)}`
   )
     .then(r => r.json())
     .then(d => {
-      if (!d.success) {
-        alert(d.message || "Failed to send message");
-        return;
-      }
+      if (!d.success) return alert(d.message || "Failed to send message");
       input.value = "";
       loadMessages();
     })
-    .catch(err => console.error(err));
+    .catch(console.error);
 }
 
 function renderMessages(messages) {
@@ -490,34 +471,17 @@ function renderMessages(messages) {
     div.className = "msg";
     if (msg.senderEmail === loggedInUser.email) div.classList.add("me");
 
-    const header = document.createElement("div");
-    header.style.fontSize = "12px";
-    header.style.color = "#666";
-    header.style.marginBottom = "4px";
-    header.innerText = msg.senderName || msg.senderEmail;
-
-    const body = document.createElement("div");
-    body.innerText = msg.text;
-
-    const footer = document.createElement("div");
-    footer.style.fontSize = "11px";
-    footer.style.color = "#aaa";
-    footer.style.marginTop = "4px";
-
-    const reactions = msg.reactions || [];
-    const counts = reactions.reduce((acc, e) => {
-      acc[e] = (acc[e] || 0) + 1;
-      return acc;
-    }, {});
-
-    footer.innerHTML =
-      `<span onclick="addReaction('${msg.messageId}','👍')" style="cursor:pointer;margin-right:6px;">👍 ${counts['👍'] || ''}</span>` +
-      `<span onclick="addReaction('${msg.messageId}','❤️')" style="cursor:pointer;margin-right:6px;">❤️ ${counts['❤️'] || ''}</span>` +
-      `<span onclick="addReaction('${msg.messageId}','😂')" style="cursor:pointer;">😂 ${counts['😂'] || ''}</span>`;
-
-    div.appendChild(header);
-    div.appendChild(body);
-    div.appendChild(footer);
+    div.innerHTML = `
+      <div style="font-size:12px;color:#666;margin-bottom:4px;">
+        ${msg.senderName || msg.senderEmail}
+      </div>
+      <div>${msg.text}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px;">
+        <span onclick="addReaction('${msg.messageId}','👍')" style="cursor:pointer;margin-right:6px;">👍 ${(msg.reactions?.filter(r => r === '👍').length || '')}</span>
+        <span onclick="addReaction('${msg.messageId}','❤️')" style="cursor:pointer;margin-right:6px;">❤️ ${(msg.reactions?.filter(r => r === '❤️').length || '')}</span>
+        <span onclick="addReaction('${msg.messageId}','😂')" style="cursor:pointer;">😂 ${(msg.reactions?.filter(r => r === '😂').length || '')}</span>
+      </div>
+    `;
 
     container.appendChild(div);
   });
@@ -525,7 +489,9 @@ function renderMessages(messages) {
   container.scrollTop = container.scrollHeight;
 }
 
-/* ============ TYPING ============ */
+/* ============================================================
+   TYPING INDICATOR
+============================================================ */
 function showTypingLocal() {
   const el = document.getElementById("typingIndicator");
   el.style.display = "block";
@@ -539,23 +505,18 @@ function showTypingLocal() {
 function loadTyping() {
   if (!activeConversationId) return;
 
-  fetch(
-    `${API_URL}?module=getTyping` +
-    `&conversationId=${encodeURIComponent(activeConversationId)}`
-  )
+  fetch(`${API_URL}?module=getTyping&conversationId=${encodeURIComponent(activeConversationId)}`)
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return;
-
-      const users = d.users || [];
       const el = document.getElementById("typingIndicator");
-
-      el.style.display = users.length > 0 ? "block" : "none";
+      el.style.display = (d.success && d.users?.length > 0) ? "block" : "none";
     })
-    .catch(err => console.error(err));
+    .catch(console.error);
 }
 
-/* ============ REACTIONS ============ */
+/* ============================================================
+   REACTIONS
+============================================================ */
 function addReaction(messageId, emoji) {
   fetch(
     `${API_URL}?module=addReaction` +
@@ -565,28 +526,18 @@ function addReaction(messageId, emoji) {
   )
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return;
-      loadMessages();
+      if (d.success) loadMessages();
     })
-    .catch(err => console.error(err));
+    .catch(console.error);
 }
-function renderMemberSidebar(members) {
-  const container = document.getElementById("memberSidebar");
-  container.innerHTML = "<h3>Members</h3>";
 
-  members.forEach(email => {
-    const div = document.createElement("div");
-    div.className = "member";
-
-    div.innerHTML = `
-      <div class="member-name">${email}</div>
-      <button onclick="window.location.href='profile.html?email=${email}'">View Profile</button>
-      <button onclick="window.location.href='messages.html?otherEmail=${email}'">Message</button>
-    `;
-
-    container.appendChild(div);
-  });
-}  
+/* ============================================================
+   NAV MENU
+============================================================ */
+function toggleMenu() {
+  document.querySelector(".nav-links").classList.toggle("show");
+  document.getElementById("mobileMenu").classList.toggle("show");
+}
 </script>
 </body>
 </html>
