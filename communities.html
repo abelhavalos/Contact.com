@@ -6,7 +6,7 @@
     <title>Contact.com – Communities</title>
 
     <style>
- * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
         body {
             background: linear-gradient(135deg, #4a6cff, #6f8cff);
@@ -182,19 +182,19 @@
 
 <script>
 /* -----------------------------------
-   YOUR API URL (REQUIRED)
+   YOUR API URL
 ----------------------------------- */
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
 /* -----------------------------------
-   MOBILE MENU TOGGLE
+   MOBILE MENU
 ----------------------------------- */
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
 
 /* -----------------------------------
-   LOAD NAVBAR (DYNAMIC)
+   NAVBAR
 ----------------------------------- */
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -249,19 +249,18 @@ function loadNavbar() {
 }
 
 /* -----------------------------------
-   BACKEND: JOIN COMMUNITY
+   BACKEND JOIN (non-blocking)
 ----------------------------------- */
 function joinCommunity(communityId, email) {
     return fetch(
         `${API_URL}?module=joinCommunity` +
         `&communityId=${encodeURIComponent(communityId)}` +
         `&email=${encodeURIComponent(email)}`
-    )
-    .then(r => r.json());
+    ).then(r => r.json());
 }
 
 /* -----------------------------------
-   SETUP JOIN BUTTONS
+   JOIN BUTTONS (Instant Redirect)
 ----------------------------------- */
 function setupJoinButtons() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -271,25 +270,22 @@ function setupJoinButtons() {
         const btn = card.querySelector("button");
         const communityId = card.getAttribute("data-community");
 
-        if (!btn) return;
-
         btn.addEventListener("click", () => {
-            // Not logged in → redirect to signup
             if (!user || !user.email) {
                 window.location.href = "signup.html";
                 return;
             }
 
-            // Logged in → join community
-            joinCommunity(communityId, user.email)
-                .then(d => {
-                    console.log("Join result:", d);
+            // Visual feedback
+            btn.innerText = "Joining...";
+            btn.disabled = true;
 
-                    // Redirect to community chatroom
-                    window.location.href =
-                        `messages.html?mode=community&communityId=${encodeURIComponent(communityId)}`;
-                })
-                .catch(err => console.error("Join error:", err));
+            // Fire join request in background
+            joinCommunity(communityId, user.email).catch(console.error);
+
+            // Redirect instantly
+            window.location.href =
+                `messages.html?mode=community&communityId=${encodeURIComponent(communityId)}`;
         });
     });
 }
@@ -303,12 +299,13 @@ function logout() {
 }
 
 /* -----------------------------------
-   PAGE INITIALIZATION
+   INIT
 ----------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
-    setupJoinButtons(); // Cards already exist in your HTML, so this works
+    setupJoinButtons();
 });
 </script>
+
 </body>
 </html>
