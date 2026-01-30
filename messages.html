@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Messages – Contact.com</title>
 
 <style>
 /* GLOBAL RESET */
@@ -96,14 +97,27 @@ body {
   font-size: 18px;
   font-weight: bold;
   border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* ============================
-   CHAT LAYOUT (FIXED + CLEAN)
-   ============================ */
+/* Toggle button (mobile only) */
+#toggleMembersBtn {
+  display: none;
+  padding: 6px 12px;
+  background: #4a6cff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* CHAT LAYOUT */
 #chat-container {
   display: flex;
-  height: calc(100dvh - 120px); /* navbar + header */
+  height: calc(100dvh - 120px);
   overflow: hidden;
 }
 
@@ -113,14 +127,14 @@ body {
   display: flex;
   flex-direction: column;
   background: #eef4ff;
-  min-height: 0; /* critical */
+  min-height: 0;
 }
 
 #messages {
   flex: 1;
   padding: 16px;
   overflow-y: auto;
-  min-height: 0; /* critical */
+  min-height: 0;
 }
 
 .msg {
@@ -165,13 +179,14 @@ body {
 }
 #sendBtn:hover { background: #3a56d6; }
 
-/* Member sidebar */
+/* MEMBER SIDEBAR */
 #memberSidebar {
   width: 260px;
   background: #ffffff;
   border-left: 1px solid #ddd;
   padding: 16px;
   overflow-y: auto;
+  transition: transform 0.25s ease;
 }
 
 #memberSidebar h3 {
@@ -201,17 +216,28 @@ body {
 }
 .member button:hover { background: #0056b3; }
 
-/* Mobile responsive */
+/* MOBILE SIDEBAR */
 @media (max-width: 768px) {
+  #toggleMembersBtn {
+    display: inline-block;
+  }
+
+  #memberSidebar {
+    position: absolute;
+    right: 0;
+    top: 120px;
+    height: calc(100dvh - 120px);
+    transform: translateX(100%);
+    z-index: 20;
+  }
+
+  #memberSidebar.show {
+    transform: translateX(0);
+  }
+
   #chat-container {
     flex-direction: column;
-    height: calc(100dvh - 160px); /* taller navbar on mobile */
-  }
-  #memberSidebar {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid #ddd;
-    height: auto;
+    height: calc(100dvh - 160px);
   }
 }
 </style>
@@ -219,56 +245,30 @@ body {
 
 <body>
 
-  <nav class="navbar">
-    <div class="hamburger" onclick="toggleMenu()">
-      <span></span>
-      <span></span>
-      <span></span>
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar"></nav>
+<div class="mobile-menu" id="mobileMenu"></div>
+
+<!-- HEADER -->
+<div id="header">
+  <span id="headerTitle"></span>
+  <button id="toggleMembersBtn">Members</button>
+</div>
+
+<!-- CHAT LAYOUT -->
+<div id="chat-container">
+  <div id="chat">
+    <div id="messages"></div>
+
+    <div id="input-area">
+      <input id="messageInput" placeholder="Type a message..." />
+      <button id="sendBtn">Send</button>
     </div>
-
-    <div class="logo">Contact<span>.</span>com</div>
-
-    <div class="nav-links">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="contacts.html">Contacts</a>
-      <a href="profile.html">Profile</a>
-      <a href="index.html">Logout</a>
-    </div>
-  </nav>
-
-  <div class="mobile-menu" id="mobileMenu">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="communities.html">Communities</a>
-    <a href="groups.html">Groups</a>
-    <a href="contacts.html">Contacts</a>
-    <a href="profile.html">Profile</a>
   </div>
 
-  <div id="header">Messages</div>
+  <div id="memberSidebar"></div>
+</div>
 
-  <!-- NEW: Two-column layout -->
-  <div id="chat-container">
-
-    <!-- LEFT: Chat -->
-    <div id="chat">
-      <div id="messages"></div>
-      <div id="typingIndicator">Someone is typing...</div>
-
-      <div id="input-area">
-        <input id="messageInput" placeholder="Type a message...">
-        <button id="sendBtn">Send</button>
-      </div>
-    </div>
-
-    <!-- RIGHT: Member List (Community Only) -->
-    <div id="memberSidebar">
-      <h3>Members</h3>
-      <!-- JS will inject members here -->
-    </div>
-
-  </div>
 <script>
 /* ============================================================
    CONFIG + USER
@@ -278,9 +278,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
 
-/* ============================================================
-   URL PARAMS
-============================================================ */
+/* URL PARAMS */
 const url = new URL(window.location.href);
 const otherEmail = url.searchParams.get("otherEmail");
 const conversationIdParam = url.searchParams.get("conversationId");
@@ -290,28 +288,27 @@ const mode = communityId ? "community" : "private";
 let activeConversationId = conversationIdParam || null;
 let messages = [];
 let lastTimestamp = 0;
-let pollingInterval = null;
 
-/* ============================================================
-   COMMUNITY NAME (auto-format from ID)
-============================================================ */
+/* COMMUNITY NAME */
 let communityName = null;
 if (communityId) {
-  communityName = communityId
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, c => c.toUpperCase());
+  communityName = communityId.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
-/* ============================================================
-   INIT
-============================================================ */
+/* INIT */
 document.addEventListener("DOMContentLoaded", () => {
+  loadNavbar();
+
   if (mode === "community") {
-    document.getElementById("header").innerText = `Community Chat – ${communityName}`;
+    document.getElementById("headerTitle").innerText = `Community Chat – ${communityName}`;
   } else {
-    document.getElementById("header").innerText = "Private Chat";
-    document.getElementById("memberSidebar").style.display = "none";
+    document.getElementById("headerTitle").innerText = "Private Chat";
+    document.getElementById("toggleMembersBtn").style.display = "none";
   }
+
+  document.getElementById("toggleMembersBtn").addEventListener("click", () => {
+    document.getElementById("memberSidebar").classList.toggle("show");
+  });
 
   document.getElementById("sendBtn").onclick = sendMessage;
 
@@ -326,9 +323,47 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-/* ============================================================
-   CACHE
-============================================================ */
+/* NAVBAR */
+function loadNavbar() {
+  const user = loggedInUser;
+
+  const loggedInNav = `
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="logo">Contact<span>.</span>com</div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="contacts.html">Contacts</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </div>
+  `;
+
+  document.getElementById("navbar").innerHTML = loggedInNav;
+
+  document.getElementById("mobileMenu").innerHTML = `
+    <a href="dashboard.html">Dashboard</a>
+    <a href="communities.html">Communities</a>
+    <a href="events.html">Events</a>
+    <a href="contacts.html">Contacts</a>
+    <a href="profile.html">Profile</a>
+    <a href="#" onclick="logout()">Logout</a>
+  `;
+}
+
+function toggleMenu() {
+  document.getElementById("mobileMenu").classList.toggle("show");
+}
+
+function logout() {
+  localStorage.removeItem("contact_user");
+  window.location.href = "index.html";
+}
+
+/* CACHE */
 function loadCachedMessages() {
   const cached = localStorage.getItem(`chat_${conversationIdParam}`);
   if (!cached) return;
@@ -339,34 +374,27 @@ function loadCachedMessages() {
     if (messages.length > 0) {
       lastTimestamp = messages[messages.length - 1].timestamp;
     }
-  } catch (e) {
-    console.warn("Cache error:", e);
-  }
+  } catch {}
 }
 
-/* ============================================================
-   PRIVATE CHAT
-============================================================ */
+/* PRIVATE CHAT */
 function startConversation() {
   fetch(`${API_URL}?module=startConversation&userEmail=${encodeURIComponent(loggedInUser.email)}&otherEmail=${encodeURIComponent(otherEmail)}`)
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return alert("Failed to start conversation");
+      if (!d.success) return;
       activeConversationId = d.conversationId;
       startPolling();
     });
 }
 
-/* ============================================================
-   COMMUNITY CHAT
-============================================================ */
+/* COMMUNITY CHAT */
 function startCommunityConversation() {
   fetch(`${API_URL}?module=startCommunityConversation&communityId=${encodeURIComponent(communityId)}&userEmail=${encodeURIComponent(loggedInUser.email)}`)
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return alert("Failed to start community chat");
+      if (!d.success) return;
       activeConversationId = d.conversationId;
-
       loadCommunityMembers();
       startPolling();
     });
@@ -376,20 +404,10 @@ function loadCommunityMembers() {
   fetch(`${API_URL}?module=getCommunityMembers&communityId=${encodeURIComponent(communityId)}`)
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return;
-
-      // If backend ever returns communityName, override auto-format
-      if (d.communityName) {
-        document.getElementById("header").innerText = `Community Chat – ${d.communityName}`;
-      }
-
-      renderMemberSidebar(d.members);
+      if (d.success) renderMemberSidebar(d.members);
     });
 }
 
-/* ============================================================
-   MEMBER SIDEBAR
-============================================================ */
 function renderMemberSidebar(members) {
   const container = document.getElementById("memberSidebar");
   container.innerHTML = "<h3>Members</h3>";
@@ -400,7 +418,7 @@ function renderMemberSidebar(members) {
 
     div.innerHTML = `
       <div class="member-name">${m.fullName}</div>
-      <button onclick="window.location.href='public-profile.html?email=${encodeURIComponent(m.email)}'">View Profile</button>
+      <button onclick="window.location.href='public-profile.html?email=${encodeURIComponent(m.email)}'">View</button>
       <button onclick="window.location.href='messages.html?otherEmail=${encodeURIComponent(m.email)}'">Message</button>
     `;
 
@@ -408,12 +426,10 @@ function renderMemberSidebar(members) {
   });
 }
 
-/* ============================================================
-   POLLING (DELTA)
-============================================================ */
+/* POLLING */
 function startPolling() {
   loadNewMessages();
-  pollingInterval = setInterval(loadNewMessages, 1500);
+  setInterval(loadNewMessages, 1500);
 }
 
 function loadNewMessages() {
@@ -426,7 +442,6 @@ function loadNewMessages() {
 
       const newList = d.messages;
 
-      // First load
       if (messages.length === 0) {
         messages = newList;
         lastTimestamp = messages[messages.length - 1]?.timestamp || 0;
@@ -435,7 +450,6 @@ function loadNewMessages() {
         return;
       }
 
-      // Only append new messages
       const fresh = newList.filter(m => m.timestamp > lastTimestamp);
 
       if (fresh.length > 0) {
@@ -444,13 +458,10 @@ function loadNewMessages() {
         lastTimestamp = messages[messages.length - 1].timestamp;
         localStorage.setItem(`chat_${activeConversationId}`, JSON.stringify(messages));
       }
-    })
-    .catch(console.error);
+    });
 }
 
-/* ============================================================
-   RENDERING (APPEND ONLY)
-============================================================ */
+/* RENDERING */
 function appendMessages(newMessages) {
   const container = document.getElementById("messages");
 
@@ -478,9 +489,7 @@ function renderMessages(list) {
   appendMessages(list);
 }
 
-/* ============================================================
-   SEND MESSAGE
-============================================================ */
+/* SEND MESSAGE */
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
@@ -494,14 +503,7 @@ function sendMessage() {
       loadNewMessages();
     });
 }
-
-/* ============================================================
-   NAV MENU
-============================================================ */
-function toggleMenu() {
-  document.querySelector(".nav-links").classList.toggle("show");
-  document.getElementById("mobileMenu").classList.toggle("show");
-}
 </script>
+
 </body>
 </html>
