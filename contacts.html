@@ -6,13 +6,15 @@
   <title>Contacts – Contact.com</title>
 
 <style>
+ * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+
   body {
-  margin: 0;
-  font-family: "Inter", sans-serif;
-  background: linear-gradient(135deg, #4a6cff, #6f8cff);
-  min-height: 100vh;
-  color: white;
-}
+    margin: 0;
+    font-family: "Inter", sans-serif;
+    background: linear-gradient(135deg, #4a6cff, #6f8cff);
+    min-height: 100vh;
+    color: white;
+  }
 
   /* NAVBAR */
   .navbar {
@@ -61,16 +63,6 @@
     font-weight: 500;
   }
 
-  .btn-primary {
-    padding: 10px 20px;
-    background: #4a6cff;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-
   /* MOBILE MENU */
   .mobile-menu {
     display: none;
@@ -78,17 +70,14 @@
     background: #4a6cff;
     padding: 10px 0;
   }
-  .mobile-menu a,
-  .mobile-menu button {
+  .mobile-menu a {
     padding: 12px 18px;
     color: white;
     text-decoration: none;
-    border: none;
-    background: transparent;
-    text-align: left;
     border-top: 1px solid rgba(255,255,255,0.2);
   }
   .mobile-menu.show { display: flex; }
+  
 
   @media (max-width: 700px) {
     .hamburger { display: flex; }
@@ -112,7 +101,7 @@
     max-width: 700px;
     margin: 40px auto;
     background: #fff;
-    padding: 25px;
+    padding: 25px 0px;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   }
@@ -142,22 +131,17 @@
     color: #222;
   }
 
-  .message-btn {
+  .message-btn,
+  .view-profile-btn {
     padding: 8px 14px;
-    background: #4a6cff;
-    color: #fff;
     border-radius: 6px;
     text-decoration: none;
     font-weight: 600;
+    color: #fff;
   }
-.view-profile-btn {
-  padding: 8px 14px;
-  background: #28c76f;
-  color: #fff;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 600;
-}
+
+  .message-btn { background: #4a6cff; }
+  .view-profile-btn { background: #28c76f; }
 </style>
 </head>
 
@@ -174,36 +158,60 @@
   <p>Select someone to start chatting.</p>
 </div>
 
+<!-- SEARCH BAR -->
+<div style="max-width:700px; margin:0px auto;">
+  <input 
+    id="searchInput"
+    type="text"
+    placeholder="Search contacts..."
+    style="
+      width:100%;
+      padding:12px;
+      border-radius:8px;
+      border:none;
+      font-size:1rem;
+      box-shadow:0 2px 8px rgba(0,0,0,0.15);
+    "
+  />
+</div>
+
 <div class="contacts-container" id="contactsList">
   Loading contacts...
 </div>
 
 <script>
+const API_URL ="https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+
+let allContacts = [];
+let filteredContacts = [];
+let renderIndex = 0;
+const BATCH_SIZE = 15;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const user = JSON.parse(localStorage.getItem("contact_user"));
+  if (!user) return (window.location.href = "login.html");
+
+  loadNavbar();
+  loadCachedContacts(user.email);
+  fetchFreshContacts(user.email);
+
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) searchInput.addEventListener("input", handleSearch);
+});
+
+// NAVBAR
 function toggleMenu() {
   document.getElementById("mobileMenu").classList.toggle("show");
 }
 
-const API_URL ="https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
-
-document.addEventListener("DOMContentLoaded", () => {
-  const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
-
-  loadNavbar();
-  loadContacts(user.email);
-});
-
 function loadNavbar() {
-  const user = JSON.parse(localStorage.getItem("contact_user"));
-
-  const loggedInNav = `
+  const nav = `
     <div class="hamburger" onclick="toggleMenu()">
       <span></span><span></span><span></span>
     </div>
+
     <div class="logo">Contact<span>.</span>com</div>
+
     <div class="nav-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="communities.html">Communities</a>
@@ -214,7 +222,7 @@ function loadNavbar() {
     </div>
   `;
 
-  document.getElementById("navbar").innerHTML = loggedInNav;
+  document.getElementById("navbar").innerHTML = nav;
 
   document.getElementById("mobileMenu").innerHTML = `
     <a href="dashboard.html">Dashboard</a>
@@ -231,27 +239,79 @@ function logout() {
   window.location.href = "index.html";
 }
 
-function loadContacts(currentUserEmail) {
+// CACHE
+function loadCachedContacts(currentUserEmail) {
+  const cached = localStorage.getItem("cached_contacts");
+
+  if (!cached) {
+    document.getElementById("contactsList").innerHTML = "Loading contacts...";
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(cached);
+    allContacts = parsed.filter(u => u.email !== currentUserEmail);
+    filteredContacts = allContacts;
+    renderIndex = 0;
+    renderNextBatch();
+  } catch (e) {
+    console.warn("Cache error:", e);
+  }
+}
+
+function fetchFreshContacts(currentUserEmail) {
+  document.getElementById("contactsList").innerHTML = "Loading contacts...";
+
   fetch(`${API_URL}?module=getAllUsers`)
     .then(r => r.json())
     .then(d => {
-      if (!d.success) {
-        document.getElementById("contactsList").innerText = "Failed to load contacts.";
-        return;
-      }
-      renderContacts(d.data, currentUserEmail);
+      if (!d.success) return;
+
+      allContacts = d.data.filter(u => u.email !== currentUserEmail);
+      allContacts.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
+
+      localStorage.setItem("cached_contacts", JSON.stringify(allContacts));
+
+      filteredContacts = allContacts;
+      renderIndex = 0;
+      document.getElementById("contactsList").innerHTML = "";
+      renderNextBatch();
     });
 }
 
-function renderContacts(users, currentUserEmail) {
-  const container = document.getElementById("contactsList");
-  container.innerHTML = "";
+// SEARCH
+function handleSearch(e) {
+  const query = e.target.value.toLowerCase().trim();
 
-  users.forEach(u => {
-    if (u.email === currentUserEmail) return;
+  if (query === "") {
+    filteredContacts = allContacts;
+  } else {
+    filteredContacts = allContacts.filter(u =>
+      (u.fullName || "").toLowerCase().includes(query) ||
+      u.email.toLowerCase().includes(query)
+    );
+  }
+
+  renderIndex = 0;
+  document.getElementById("contactsList").innerHTML = "";
+  renderNextBatch();
+}
+
+// LAZY RENDER
+function renderNextBatch() {
+  const container = document.getElementById("contactsList");
+  const fragment = document.createDocumentFragment();
+
+  const list = filteredContacts.length ? filteredContacts : allContacts;
+  const end = Math.min(renderIndex + BATCH_SIZE, list.length);
+
+  for (let i = renderIndex; i < end; i++) {
+    const u = list[i];
 
     const div = document.createElement("div");
     div.className = "contact-item";
+    div.style.opacity = "0";
+    div.style.transition = "opacity 0.4s ease";
 
     div.innerHTML = `
       <div class="contact-info">
@@ -260,26 +320,30 @@ function renderContacts(users, currentUserEmail) {
       </div>
 
       <div style="display:flex; gap:10px;">
-        <a 
-          class="view-profile-btn" 
-          href="public-profile.html?email=${encodeURIComponent(u.email)}"
-        >
-          View Profile
-        </a>
-
-        <a 
-          class="message-btn" 
-          href="messages.html?otherEmail=${encodeURIComponent(u.email)}"
-        >
-          Message
-        </a>
+        <a class="view-profile-btn" href="public-profile.html?email=${encodeURIComponent(u.email)}">View Profile</a>
+        <a class="message-btn" href="messages.html?otherEmail=${encodeURIComponent(u.email)}">Message</a>
       </div>
     `;
 
-    container.appendChild(div);
-  });
-}
-</script>
+    fragment.appendChild(div);
 
+    requestAnimationFrame(() => {
+      setTimeout(() => (div.style.opacity = "1"), 50);
+    });
+  }
+
+  container.appendChild(fragment);
+  renderIndex = end;
+}
+
+// INFINITE SCROLL
+window.addEventListener("scroll", () => {
+  const scrollBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 200;
+
+  if (scrollBottom && renderIndex < filteredContacts.length) {
+    renderNextBatch();
+  }
+});
+</script>
 </body>
 </html>
