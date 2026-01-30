@@ -298,13 +298,8 @@
 ============================================================ */
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-let loggedInUser = JSON.parse(localStorage.getItem("contact_user")) 
-                || JSON.parse(localStorage.getItem("user"));
-
-if (!loggedInUser || !loggedInUser.email) {
-  alert("No logged in user found. Please log in again.");
-  window.location.href = "login.html";
-}
+let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
+if (!loggedInUser) window.location.href = "login.html";
 
 /* ============================================================
    URL PARAMS
@@ -313,81 +308,91 @@ const url = new URL(window.location.href);
 const otherEmail = url.searchParams.get("otherEmail");
 const conversationIdParam = url.searchParams.get("conversationId");
 const communityId = url.searchParams.get("communityId");
+const mode = communityId ? "community" : "private";
 
-let mode = communityId ? "community" : "private";
 let activeConversationId = conversationIdParam || null;
-let typingTimeout = null;
+let messages = [];
+let lastTimestamp = 0;
+let pollingInterval = null;
+
+/* ============================================================
+   COMMUNITY NAME (auto-format from ID)
+============================================================ */
+let communityName = null;
+if (communityId) {
+  communityName = communityId
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
 
 /* ============================================================
    INIT
 ============================================================ */
-window.onload = () => {
-  document.getElementById("header").innerText =
-    mode === "community" ? "Community Chat" : "Private Chat";
-
-  // Hide sidebar in private chat
-  if (mode === "private") {
+document.addEventListener("DOMContentLoaded", () => {
+  if (mode === "community") {
+    document.getElementById("header").innerText = `Community Chat – ${communityName}`;
+  } else {
+    document.getElementById("header").innerText = "Private Chat";
     document.getElementById("memberSidebar").style.display = "none";
   }
 
   document.getElementById("sendBtn").onclick = sendMessage;
 
-  document.getElementById("messageInput").addEventListener("input", () => {
-    showTypingLocal();
-    if (activeConversationId) {
-      fetch(`${API_URL}?module=setTyping&conversationId=${encodeURIComponent(activeConversationId)}&userEmail=${encodeURIComponent(loggedInUser.email)}`);
-    }
-  });
+  loadCachedMessages();
 
   if (activeConversationId) {
     startPolling();
-  } else if (mode === "community" && communityId) {
+  } else if (mode === "community") {
     startCommunityConversation();
   } else if (otherEmail) {
     startConversation();
-  } else {
-    alert("Missing conversationId, communityId, or otherEmail.");
   }
-};
-  
+});
+
+/* ============================================================
+   CACHE
+============================================================ */
+function loadCachedMessages() {
+  const cached = localStorage.getItem(`chat_${conversationIdParam}`);
+  if (!cached) return;
+
+  try {
+    messages = JSON.parse(cached);
+    renderMessages(messages);
+    if (messages.length > 0) {
+      lastTimestamp = messages[messages.length - 1].timestamp;
+    }
+  } catch (e) {
+    console.warn("Cache error:", e);
+  }
+}
+
 /* ============================================================
    PRIVATE CHAT
 ============================================================ */
 function startConversation() {
-  fetch(
-    `${API_URL}?module=startConversation` +
-    `&userEmail=${encodeURIComponent(loggedInUser.email)}` +
-    `&otherEmail=${encodeURIComponent(otherEmail)}`
-  )
+  fetch(`${API_URL}?module=startConversation&userEmail=${encodeURIComponent(loggedInUser.email)}&otherEmail=${encodeURIComponent(otherEmail)}`)
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return alert(d.message || "Failed to start conversation");
+      if (!d.success) return alert("Failed to start conversation");
       activeConversationId = d.conversationId;
       startPolling();
-    })
-    .catch(console.error);
+    });
 }
 
 /* ============================================================
    COMMUNITY CHAT
 ============================================================ */
 function startCommunityConversation() {
-  fetch(
-    `${API_URL}?module=startCommunityConversation` +
-    `&communityId=${encodeURIComponent(communityId)}` +
-    `&userEmail=${encodeURIComponent(loggedInUser.email)}`
-  )
+  fetch(`${API_URL}?module=startCommunityConversation&communityId=${encodeURIComponent(communityId)}&userEmail=${encodeURIComponent(loggedInUser.email)}`)
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return alert(d.message || "Failed to start community chat");
+      if (!d.success) return alert("Failed to start community chat");
       activeConversationId = d.conversationId;
 
-      // Load members AFTER conversation is created
       loadCommunityMembers();
-
       startPolling();
-    })
-    .catch(console.error);
+    });
 }
 
 function loadCommunityMembers() {
@@ -395,9 +400,14 @@ function loadCommunityMembers() {
     .then(r => r.json())
     .then(d => {
       if (!d.success) return;
-      renderMemberSidebar(d.members || []);
-    })
-    .catch(console.error);
+
+      // If backend ever returns communityName, override auto-format
+      if (d.communityName) {
+        document.getElementById("header").innerText = `Community Chat – ${d.communityName}`;
+      }
+
+      renderMemberSidebar(d.members);
+    });
 }
 
 /* ============================================================
@@ -413,7 +423,6 @@ function renderMemberSidebar(members) {
 
     div.innerHTML = `
       <div class="member-name">${m.fullName}</div>
-    
       <button onclick="window.location.href='public-profile.html?email=${encodeURIComponent(m.email)}'">View Profile</button>
       <button onclick="window.location.href='messages.html?otherEmail=${encodeURIComponent(m.email)}'">Message</button>
     `;
@@ -421,58 +430,54 @@ function renderMemberSidebar(members) {
     container.appendChild(div);
   });
 }
-/* ============================================================
-   POLLING
-============================================================ */
-function startPolling() {
-  loadMessages();
-  setInterval(loadMessages, 1000);
-  setInterval(loadTyping, 1000);
-}
 
 /* ============================================================
-   MESSAGES
+   POLLING (DELTA)
 ============================================================ */
-function loadMessages() {
+function startPolling() {
+  loadNewMessages();
+  pollingInterval = setInterval(loadNewMessages, 1500);
+}
+
+function loadNewMessages() {
   if (!activeConversationId) return;
 
   fetch(`${API_URL}?module=getMessages&conversationId=${encodeURIComponent(activeConversationId)}`)
     .then(r => r.json())
     .then(d => {
-      if (!d.success) return;
-      renderMessages(d.messages || []);
+      if (!d.success || !d.messages) return;
+
+      const newList = d.messages;
+
+      // First load
+      if (messages.length === 0) {
+        messages = newList;
+        lastTimestamp = messages[messages.length - 1]?.timestamp || 0;
+        renderMessages(messages);
+        localStorage.setItem(`chat_${activeConversationId}`, JSON.stringify(messages));
+        return;
+      }
+
+      // Only append new messages
+      const fresh = newList.filter(m => m.timestamp > lastTimestamp);
+
+      if (fresh.length > 0) {
+        appendMessages(fresh);
+        messages.push(...fresh);
+        lastTimestamp = messages[messages.length - 1].timestamp;
+        localStorage.setItem(`chat_${activeConversationId}`, JSON.stringify(messages));
+      }
     })
     .catch(console.error);
 }
 
-function sendMessage() {
-  const input = document.getElementById("messageInput");
-  const text = input.value.trim();
-  if (!text || !activeConversationId) return;
-
-  const receiver = mode === "community" ? "" : (otherEmail || "");
-
-  fetch(
-    `${API_URL}?module=sendMessage` +
-    `&conversationId=${encodeURIComponent(activeConversationId)}` +
-    `&senderEmail=${encodeURIComponent(loggedInUser.email)}` +
-    `&receiverEmail=${encodeURIComponent(receiver)}` +
-    `&text=${encodeURIComponent(text)}`
-  )
-    .then(r => r.json())
-    .then(d => {
-      if (!d.success) return alert(d.message || "Failed to send message");
-      input.value = "";
-      loadMessages();
-    })
-    .catch(console.error);
-}
-
-function renderMessages(messages) {
+/* ============================================================
+   RENDERING (APPEND ONLY)
+============================================================ */
+function appendMessages(newMessages) {
   const container = document.getElementById("messages");
-  container.innerHTML = "";
 
-  messages.forEach(msg => {
+  newMessages.forEach(msg => {
     const div = document.createElement("div");
     div.className = "msg";
     if (msg.senderEmail === loggedInUser.email) div.classList.add("me");
@@ -482,11 +487,6 @@ function renderMessages(messages) {
         ${msg.senderName || msg.senderEmail}
       </div>
       <div>${msg.text}</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px;">
-        <span onclick="addReaction('${msg.messageId}','👍')" style="cursor:pointer;margin-right:6px;">👍 ${(msg.reactions?.filter(r => r === '👍').length || '')}</span>
-        <span onclick="addReaction('${msg.messageId}','❤️')" style="cursor:pointer;margin-right:6px;">❤️ ${(msg.reactions?.filter(r => r === '❤️').length || '')}</span>
-        <span onclick="addReaction('${msg.messageId}','😂')" style="cursor:pointer;">😂 ${(msg.reactions?.filter(r => r === '😂').length || '')}</span>
-      </div>
     `;
 
     container.appendChild(div);
@@ -495,46 +495,27 @@ function renderMessages(messages) {
   container.scrollTop = container.scrollHeight;
 }
 
-/* ============================================================
-   TYPING INDICATOR
-============================================================ */
-function showTypingLocal() {
-  const el = document.getElementById("typingIndicator");
-  el.style.display = "block";
-
-  if (typingTimeout) clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    el.style.display = "none";
-  }, 1500);
-}
-
-function loadTyping() {
-  if (!activeConversationId) return;
-
-  fetch(`${API_URL}?module=getTyping&conversationId=${encodeURIComponent(activeConversationId)}`)
-    .then(r => r.json())
-    .then(d => {
-      const el = document.getElementById("typingIndicator");
-      el.style.display = (d.success && d.users?.length > 0) ? "block" : "none";
-    })
-    .catch(console.error);
+function renderMessages(list) {
+  const container = document.getElementById("messages");
+  container.innerHTML = "";
+  appendMessages(list);
 }
 
 /* ============================================================
-   REACTIONS
+   SEND MESSAGE
 ============================================================ */
-function addReaction(messageId, emoji) {
-  fetch(
-    `${API_URL}?module=addReaction` +
-    `&messageId=${encodeURIComponent(messageId)}` +
-    `&userEmail=${encodeURIComponent(loggedInUser.email)}` +
-    `&emoji=${encodeURIComponent(emoji)}`
-  )
+function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  fetch(`${API_URL}?module=sendMessage&conversationId=${encodeURIComponent(activeConversationId)}&senderEmail=${encodeURIComponent(loggedInUser.email)}&text=${encodeURIComponent(text)}`)
     .then(r => r.json())
     .then(d => {
-      if (d.success) loadMessages();
-    })
-    .catch(console.error);
+      if (!d.success) return;
+      input.value = "";
+      loadNewMessages();
+    });
 }
 
 /* ============================================================
