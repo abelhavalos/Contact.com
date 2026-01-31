@@ -16,7 +16,6 @@
     color: white;
   }
 
-  /* NAVBAR */
   .navbar {
     width: 100%;
     padding: 20px 40px;
@@ -63,7 +62,6 @@
     font-weight: 500;
   }
 
-  /* MOBILE MENU */
   .mobile-menu {
     display: none;
     flex-direction: column;
@@ -77,14 +75,12 @@
     border-top: 1px solid rgba(255,255,255,0.2);
   }
   .mobile-menu.show { display: flex; }
-  
 
   @media (max-width: 700px) {
     .hamburger { display: flex; }
     .nav-links { display: none; }
   }
 
-  /* PAGE HEADER */
   .header {
     text-align: center;
     margin-top: 40px;
@@ -96,7 +92,6 @@
     color: white;
   }
 
-  /* CONTACT LIST */
   .contacts-container {
     max-width: 700px;
     margin: 40px auto;
@@ -147,10 +142,7 @@
 
 <body>
 
-<!-- NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
-
-<!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu"></div>
 
 <div class="header">
@@ -158,7 +150,6 @@
   <p>Select someone to start chatting.</p>
 </div>
 
-<!-- SEARCH BAR -->
 <div style="max-width:700px; margin:0px auto;">
   <input 
     id="searchInput"
@@ -180,26 +171,25 @@
 </div>
 
 <script>
-const API_URL ="https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
 let allContacts = [];
 let filteredContacts = [];
-let renderIndex = 0;
-const BATCH_SIZE = 15;
 
 document.addEventListener("DOMContentLoaded", () => {
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) return (window.location.href = "login.html");
+  if (!user || !user.email) return (window.location.href = "login.html");
 
   loadNavbar();
-  loadCachedContacts(user.email);
-  fetchFreshContacts(user.email);
+  loadContacts(user.email);
 
   const searchInput = document.getElementById("searchInput");
   if (searchInput) searchInput.addEventListener("input", handleSearch);
 });
 
-// NAVBAR
+/* -------------------------
+   NAVBAR + MOBILE MENU
+------------------------- */
 function toggleMenu() {
   document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -209,9 +199,7 @@ function loadNavbar() {
     <div class="hamburger" onclick="toggleMenu()">
       <span></span><span></span><span></span>
     </div>
-
     <div class="logo">Contact<span>.</span>com</div>
-
     <div class="nav-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="communities.html">Communities</a>
@@ -222,9 +210,7 @@ function loadNavbar() {
     </div>
   `;
 
-  document.getElementById("navbar").innerHTML = nav;
-
-  document.getElementById("mobileMenu").innerHTML = `
+  const mobile = `
     <a href="dashboard.html">Dashboard</a>
     <a href="communities.html">Communities</a>
     <a href="events.html">Events</a>
@@ -232,6 +218,9 @@ function loadNavbar() {
     <a href="profile.html">Profile</a>
     <a href="#" onclick="logout()">Logout</a>
   `;
+
+  document.getElementById("navbar").innerHTML = nav;
+  document.getElementById("mobileMenu").innerHTML = mobile;
 }
 
 function logout() {
@@ -239,84 +228,85 @@ function logout() {
   window.location.href = "index.html";
 }
 
-// CACHE
-function loadCachedContacts(currentUserEmail) {
-  const cached = localStorage.getItem("cached_contacts");
+/* -------------------------
+   FETCH CONTACTS
+------------------------- */
+function loadContacts(ownerEmail) {
+  const listEl = document.getElementById("contactsList");
+  listEl.innerHTML = "Loading contacts...";
 
-  if (!cached) {
-    document.getElementById("contactsList").innerHTML = "Loading contacts...";
-    return;
-  }
-
-  try {
-    const parsed = JSON.parse(cached);
-    allContacts = parsed.filter(u => u.email !== currentUserEmail);
-    filteredContacts = allContacts;
-    renderIndex = 0;
-    renderNextBatch();
-  } catch (e) {
-    console.warn("Cache error:", e);
-  }
-}
-
-function fetchFreshContacts(currentUserEmail) {
-  document.getElementById("contactsList").innerHTML = "Loading contacts...";
-
-  fetch(`${API_URL}?module=getAllUsers`)
+  fetch(`${API_URL}?module=getUserContacts&email=${encodeURIComponent(ownerEmail)}`)
     .then(r => r.json())
-    .then(d => {
-      if (!d.success) return;
+    .then(async d => {
+      if (!d.success || !Array.isArray(d.contacts)) {
+        listEl.innerHTML = "No contacts found.";
+        return;
+      }
 
-      allContacts = d.data.filter(u => u.email !== currentUserEmail);
-      allContacts.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
+      const profiles = await Promise.all(
+        d.contacts.map(email => fetchUserProfile(email))
+      );
 
-      localStorage.setItem("cached_contacts", JSON.stringify(allContacts));
+      allContacts = profiles.filter(Boolean);
+      allContacts.sort((a, b) =>
+        (a.fullName || "").localeCompare(b.fullName || "")
+      );
 
-      filteredContacts = allContacts;
-      renderIndex = 0;
-      document.getElementById("contactsList").innerHTML = "";
-      renderNextBatch();
+      filteredContacts = [...allContacts];
+      renderContacts(filteredContacts);
+    })
+    .catch(err => {
+      console.error("Error loading contacts:", err);
+      listEl.innerHTML = "Error loading contacts.";
     });
 }
 
-// SEARCH
+/* -------------------------
+   FETCH PROFILE
+------------------------- */
+function fetchUserProfile(email) {
+  return fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`)
+    .then(r => r.json())
+    .then(d => d.user || null)
+    .catch(() => null);
+}
+
+/* -------------------------
+   SEARCH
+------------------------- */
 function handleSearch(e) {
   const query = e.target.value.toLowerCase().trim();
 
-  if (query === "") {
-    filteredContacts = allContacts;
-  } else {
-    filteredContacts = allContacts.filter(u =>
-      (u.fullName || "").toLowerCase().includes(query) ||
-      u.email.toLowerCase().includes(query)
-    );
-  }
+  filteredContacts = !query
+    ? [...allContacts]
+    : allContacts.filter(u =>
+        (u.fullName || "").toLowerCase().includes(query) ||
+        (u.email || "").toLowerCase().includes(query)
+      );
 
-  renderIndex = 0;
-  document.getElementById("contactsList").innerHTML = "";
-  renderNextBatch();
+  renderContacts(filteredContacts);
 }
 
-// LAZY RENDER
-function renderNextBatch() {
+/* -------------------------
+   RENDER CONTACTS
+------------------------- */
+function renderContacts(list) {
   const container = document.getElementById("contactsList");
-  const fragment = document.createDocumentFragment();
+  container.innerHTML = "";
 
-  const list = filteredContacts.length ? filteredContacts : allContacts;
-  const end = Math.min(renderIndex + BATCH_SIZE, list.length);
+  if (!list.length) {
+    container.innerHTML = "<div style='padding:15px 10px; text-align:center; color:#555;'>No contacts found.</div>";
+    return;
+  }
 
-  for (let i = renderIndex; i < end; i++) {
-    const u = list[i];
-
+  list.forEach(u => {
     const div = document.createElement("div");
     div.className = "contact-item";
-    div.style.opacity = "0";
-    div.style.transition = "opacity 0.4s ease";
 
     div.innerHTML = `
       <div class="contact-info">
-        <div class="contact-name">${u.fullName || "(No name)"}</div>
-        <div class="contact-email">${u.email}</div>
+        <div class="contact-name">${u.fullName || u.FullName || "(No name)"}</div>
+        <div class="contact-email">${u.email || u.Email || "unknown"}</div>
       </div>
 
       <div style="display:flex; gap:10px;">
@@ -325,25 +315,9 @@ function renderNextBatch() {
       </div>
     `;
 
-    fragment.appendChild(div);
-
-    requestAnimationFrame(() => {
-      setTimeout(() => (div.style.opacity = "1"), 50);
-    });
-  }
-
-  container.appendChild(fragment);
-  renderIndex = end;
+    container.appendChild(div);
+  });
 }
-
-// INFINITE SCROLL
-window.addEventListener("scroll", () => {
-  const scrollBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 200;
-
-  if (scrollBottom && renderIndex < filteredContacts.length) {
-    renderNextBatch();
-  }
-});
 </script>
 </body>
 </html>
