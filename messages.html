@@ -482,7 +482,10 @@ function appendMessages(newMessages) {
 
   container.scrollTop = container.scrollHeight;
 }
+  
 function updateHeaderNameFromMessages(list) {
+  if (mode !== "private") return; // 🔥 prevents community header changes
+
   const other = list.find(m => m.senderEmail !== loggedInUser.email);
   if (other && other.senderName) {
     document.getElementById("headerTitle").innerText =
@@ -491,7 +494,7 @@ function updateHeaderNameFromMessages(list) {
 }
   
 function renderMessages(list) {
-  /*updateHeaderNameFromMessages(list);*/
+  updateHeaderNameFromMessages(list);
   const container = document.getElementById("messages");
   container.innerHTML = "";
   appendMessages(list);
