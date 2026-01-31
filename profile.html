@@ -6,8 +6,7 @@
     <title>Contact.com – Profile</title>
 
     <style>
-
- * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
         body {
             background: linear-gradient(135deg, #4a6cff, #6f8cff);
@@ -62,16 +61,6 @@
             font-weight: 500;
         }
 
-        .btn-primary {
-            padding: 10px 20px;
-            background: #4a6cff;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
         /* MOBILE MENU */
         .mobile-menu {
             display: none;
@@ -79,14 +68,10 @@
             background: #4a6cff;
             padding: 10px 0;
         }
-        .mobile-menu a,
-        .mobile-menu button {
+        .mobile-menu a {
             padding: 12px 18px;
             color: white;
             text-decoration: none;
-            border: none;
-            background: transparent;
-            text-align: left;
             border-top: 1px solid rgba(255,255,255,0.2);
         }
         .mobile-menu.show { display: flex; }
@@ -137,6 +122,39 @@
             cursor: pointer;
             margin-top: 10px;
             font-weight: 600;
+        }
+
+        /* POPUP */
+        .popup-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .popup {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 22px;
+            max-width: 320px;
+            width: 90%;
+            box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+            text-align: center;
+        }
+
+        .popup-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .popup-message {
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 18px;
         }
     </style>
 </head>
@@ -201,6 +219,233 @@
     <button id="editBtn" onclick="enableEditing()">Edit Profile</button>
     <button id="saveBtn" onclick="saveProfile()" style="display:none;">Save Changes</button>
 </div>
+
+<!-- POPUP -->
+<div id="popupBackdrop" class="popup-backdrop">
+    <div class="popup">
+        <div id="popupTitle" class="popup-title"></div>
+        <div id="popupMessage" class="popup-message"></div>
+        <button onclick="hidePopup()">OK</button>
+    </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+
+/* POPUP SYSTEM */
+function showPopup(title, message) {
+    document.getElementById("popupTitle").innerText = title;
+    document.getElementById("popupMessage").innerText = message;
+    document.getElementById("popupBackdrop").style.display = "flex";
+}
+
+function hidePopup() {
+    document.getElementById("popupBackdrop").style.display = "none";
+}
+
+/* NAVBAR */
+function toggleMenu() {
+    document.getElementById("mobileMenu").classList.toggle("show");
+}
+
+function loadNavbar() {
+    const nav = `
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="logo">Contact<span>.</span>com</div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="communities.html">Communities</a>
+            <a href="events.html">Events</a>
+            <a href="contacts.html">Contacts</a>
+            <a href="profile.html">Profile</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    `;
+    document.getElementById("navbar").innerHTML = nav;
+
+    document.getElementById("mobileMenu").innerHTML = `
+        <a href="dashboard.html">Dashboard</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="contacts.html">Contacts</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
+    `;
+}
+
+/* LOAD PROFILE */
+document.addEventListener("DOMContentLoaded", () => {
+    loadNavbar();
+    loadProfile();
+});
+
+function loadProfile() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) return window.location.href = "login.html";
+
+    setValue("fullNameDisplay", user.fullName);
+    setValue("professionDisplay", user.profession || "Your profession");
+
+    setInput("fullName", user.fullName);
+    setInput("profession", user.profession);
+    setInput("about", user.about);
+    setInput("skills", user.skills);
+    setInput("workLife", user.workLife);
+}
+
+function setValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = value;
+}
+
+function setInput(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value || "";
+}
+
+/* ENABLE EDITING */
+function enableEditing() {
+    document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
+        .forEach(el => el.disabled = false);
+
+    document.getElementById("saveBtn").style.display = "inline-block";
+    document.getElementById("editBtn").style.display = "none";
+}
+
+/* SAVE PROFILE */
+async function saveProfile() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+
+    const url =
+        `${API_URL}?module=saveProfile`
+        + `&email=${encodeURIComponent(user.email)}`
+        + `&fullName=${encodeURIComponent(getVal("fullName"))}`
+        + `&profession=${encodeURIComponent(getVal("profession"))}`
+        + `&about=${encodeURIComponent(getVal("about"))}`
+        + `&skills=${encodeURIComponent(getVal("skills"))}`
+        + `&workLife=${encodeURIComponent(getVal("workLife"))}`;
+
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        if (result.user) {
+            localStorage.setItem("contact_user", JSON.stringify(result.user));
+        }
+        showPopup("Profile Updated", "Your profile has been successfully saved.");
+        setTimeout(() => window.location.reload(), 800);
+        return;
+    }
+
+    // Fallback check
+    try {
+        const checkUrl = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(user.email)}`;
+        const checkRes = await fetch(checkUrl);
+        const checkData = await checkRes.json();
+
+        if (checkData.success && checkData.user) {
+            const updatedUser = { ...user, ...checkData.user };
+            localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+            showPopup("Profile Updated", "Your profile has been updated successfully.");
+            setTimeout(() => window.location.reload(), 800);
+            return;
+        }
+    } catch (e) {}
+
+    showPopup("Update Failed", result.message || "Failed to update profile.");
+}
+
+function getVal(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+}
+
+/* CHANGE EMAIL */
+async function changeEmail() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const newEmail = getVal("newEmail").trim();
+
+    if (!newEmail) {
+        showPopup("Missing Email", "Please enter a new email.");
+        return;
+    }
+
+    const url = `${API_URL}?module=changeEmail&oldEmail=${encodeURIComponent(user.email)}&newEmail=${encodeURIComponent(newEmail)}`;
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        const updatedUser = result.user || { ...user, email: newEmail };
+        localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+        showPopup("Email Updated", "Your email has been successfully changed.");
+        setTimeout(() => window.location.reload(), 800);
+        return;
+    }
+
+    // Fallback check
+    try {
+        const checkUrl = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(newEmail)}`;
+        const checkRes = await fetch(checkUrl);
+        const checkData = await checkRes.json();
+
+        if (checkData.success && checkData.user) {
+            const updatedUser = { ...user, ...checkData.user, email: newEmail };
+            localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+            showPopup("Email Updated", "Your email has been successfully changed.");
+            setTimeout(() => window.location.reload(), 800);
+            return;
+        }
+    } catch (e) {}
+
+    showPopup("Update Failed", result.message || "Failed to update email.");
+}
+
+/* CHANGE PASSWORD */
+async function changePassword() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const newPass = getVal("newPassword");
+    const confirmPass = getVal("confirmPassword");
+
+    if (newPass !== confirmPass) {
+        showPopup("Mismatch", "Passwords do not match.");
+        return;
+    }
+
+    const url = `${API_URL}?module=changePassword&email=${encodeURIComponent(user.email)}&newPassword=${encodeURIComponent(newPass)}`;
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (result.success) {
+        showPopup("Password Updated", "Your password has been successfully changed.");
+        return;
+    }
+
+    // Fallback login test
+    try {
+        const loginUrl = `${API_URL}?module=login&email=${encodeURIComponent(user.email)}&password=${encodeURIComponent(newPass)}`;
+        const loginRes = await fetch(loginUrl);
+        const loginData = await loginRes.json();
+
+        if (loginData.success) {
+            showPopup("Password Updated", "Your password has been successfully changed.");
+            return;
+        }
+    } catch (e) {}
+
+    showPopup("Update Failed", result.message || "Failed to update password.");
+}
+
+/* LOGOUT */
+function logout() {
+    localStorage.removeItem("contact_user");
+    window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -295,40 +540,33 @@ async function saveProfile() {
     const res = await fetch(url);
     const result = await res.json();
 
-    // Backend says success → normal path
     if (result.success) {
         if (result.user) {
             localStorage.setItem("contact_user", JSON.stringify(result.user));
         }
-        alert("Profile updated");
-        window.location.reload();
+        showPopup("Profile Updated", "Your profile has been successfully saved.");
+        setTimeout(() => window.location.reload(), 800);
         return;
     }
 
-    // Fallback: backend says fail, but sheet might still be updated.
-    // Try to fetch the latest profile by email.
+    // Fallback check
     try {
         const checkUrl = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(user.email)}`;
         const checkRes = await fetch(checkUrl);
         const checkData = await checkRes.json();
 
         if (checkData.success && checkData.user) {
-            // Treat as success: update localStorage with fresh data
-            const updatedUser = {
-                ...user,
-                ...checkData.user
-            };
+            const updatedUser = { ...user, ...checkData.user };
             localStorage.setItem("contact_user", JSON.stringify(updatedUser));
-            alert("Profile updated");
-            window.location.reload();
+            showPopup("Profile Updated", "Your profile has been updated successfully.");
+            setTimeout(() => window.location.reload(), 800);
             return;
         }
-    } catch (e) {
-        // ignore and fall through
-    }
+    } catch (e) {}
 
-    alert(result.message || "Failed to update profile");
+    showPopup("Update Failed", result.message || "Failed to update profile.");
 }
+
 function getVal(id) {
     const el = document.getElementById(id);
     return el ? el.value : "";
@@ -338,44 +576,39 @@ function getVal(id) {
 async function changeEmail() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     const newEmail = getVal("newEmail").trim();
-    if (!newEmail) return alert("Please enter a new email");
+    if (!newEmail) {
+        showPopup("Missing Email", "Please enter a new email.");
+        return;
+    }
 
     const url = `${API_URL}?module=changeEmail&oldEmail=${encodeURIComponent(user.email)}&newEmail=${encodeURIComponent(newEmail)}`;
     const res = await fetch(url);
     const result = await res.json();
 
-    // If backend says success, use it directly
     if (result.success) {
         const updatedUser = result.user || { ...user, email: newEmail };
         localStorage.setItem("contact_user", JSON.stringify(updatedUser));
-        alert("Email updated");
-        window.location.reload();
+        showPopup("Email Updated", "Your email has been successfully changed.");
+        setTimeout(() => window.location.reload(), 800);
         return;
     }
 
-    // Fallback: backend says fail, but sheet might still be updated.
-    // Try to load the user by the *new* email.
+    // Fallback check
     try {
         const checkUrl = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(newEmail)}`;
         const checkRes = await fetch(checkUrl);
         const checkData = await checkRes.json();
 
         if (checkData.success && checkData.user) {
-            const updatedUser = {
-                ...user,
-                ...checkData.user,
-                email: newEmail
-            };
+            const updatedUser = { ...user, ...checkData.user, email: newEmail };
             localStorage.setItem("contact_user", JSON.stringify(updatedUser));
-            alert("Email updated");
-            window.location.reload();
+            showPopup("Email Updated", "Your email has been successfully changed.");
+            setTimeout(() => window.location.reload(), 800);
             return;
         }
-    } catch (e) {
-        // ignore and fall through to error alert
-    }
+    } catch (e) {}
 
-    alert(result.message || "Failed to update email");
+    showPopup("Update Failed", result.message || "Failed to update email.");
 }
 
 /* CHANGE PASSWORD – ROBUST VERSION */
@@ -385,7 +618,7 @@ async function changePassword() {
     const confirmPass = getVal("confirmPassword");
 
     if (newPass !== confirmPass) {
-        alert("Passwords do not match");
+        showPopup("Mismatch", "Passwords do not match.");
         return;
     }
 
@@ -393,29 +626,27 @@ async function changePassword() {
     const res = await fetch(url);
     const result = await res.json();
 
-    // If backend reports success, normal flow
     if (result.success) {
-        alert("Password updated");
+        showPopup("Password Updated", "Your password has been successfully changed.");
         return;
     }
 
-    // Fallback: backend says fail, but sheet may still be updated.
-    // Try logging in with the new password to verify.
+    // Fallback login test
     try {
         const loginUrl = `${API_URL}?module=login&email=${encodeURIComponent(user.email)}&password=${encodeURIComponent(newPass)}`;
         const loginRes = await fetch(loginUrl);
         const loginData = await loginRes.json();
 
         if (loginData.success) {
-            alert("Password updated");
+            showPopup("Password Updated", "Your password has been successfully changed.");
             return;
         }
-    } catch (e) {
-        // ignore
-    }
+    } catch (e) {}
 
-    alert(result.message || "Failed to update password");
-}    /* LOGOUT */
+    showPopup("Update Failed", result.message || "Failed to update password.");
+}
+
+/* LOGOUT */
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";

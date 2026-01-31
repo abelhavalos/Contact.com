@@ -7,8 +7,7 @@
 
     <style>
 /* RESET */
- * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
-
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
 /* GLOBAL */
 body {
@@ -146,6 +145,39 @@ button {
     font-weight: 600;
     text-decoration: none;
 }
+
+/* POPUP */
+.popup-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.popup {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 22px;
+    max-width: 320px;
+    width: 90%;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+    text-align: center;
+}
+
+.popup-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.popup-message {
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 18px;
+}
     </style>
 </head>
 
@@ -157,6 +189,7 @@ button {
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu"></div>
 
+<!-- LOGIN CARD -->
 <div class="container">
     <h2>Login</h2>
 
@@ -170,44 +203,32 @@ button {
     </div>
 </div>
 
+<!-- POPUP -->
+<div id="popupBackdrop" class="popup-backdrop">
+    <div class="popup">
+        <div id="popupTitle" class="popup-title"></div>
+        <div id="popupMessage" class="popup-message"></div>
+        <button onclick="hidePopup()">OK</button>
+    </div>
+</div>
+
 <script>
 const WEBAPP_URL ="https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-function toggleMenu() {
-    document.getElementById("mobileMenu").classList.toggle("show");
+/* POPUP SYSTEM */
+function showPopup(title, message) {
+    document.getElementById("popupTitle").innerText = title;
+    document.getElementById("popupMessage").innerText = message;
+    document.getElementById("popupBackdrop").style.display = "flex";
 }
 
-async function loginUser() {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const loginBtn = document.querySelector("button");
+function hidePopup() {
+    document.getElementById("popupBackdrop").style.display = "none";
+}
 
-    if (!email || !password) {
-        alert("Please enter both email and password.");
-        return;
-    }
-
-    loginBtn.disabled = true;
-    loginBtn.innerText = "Logging in...";
-
-    const url = `${WEBAPP_URL}?module=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
-
-    try {
-        const res = await fetch(url);
-        const result = await res.json();
-
-        if (result.success) {
-            localStorage.setItem("contact_user", JSON.stringify(result.user));
-            window.location.href = "dashboard.html";
-        } else {
-            alert(result.message);
-        }
-    } catch (err) {
-        alert("Network error. Please try again.");
-    }
-
-    loginBtn.disabled = false;
-    loginBtn.innerText = "Login";
+/* NAVBAR */
+function toggleMenu() {
+    document.getElementById("mobileMenu").classList.toggle("show");
 }
 
 function loadNavbar() {
@@ -260,6 +281,41 @@ function loadNavbar() {
         `;
 }
 
+/* LOGIN */
+async function loginUser() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const loginBtn = document.querySelector("button");
+
+    if (!email || !password) {
+        showPopup("Missing Fields", "Please enter both email and password.");
+        return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.innerText = "Logging in...";
+
+    const url = `${WEBAPP_URL}?module=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+
+    try {
+        const res = await fetch(url);
+        const result = await res.json();
+
+        if (result.success) {
+            localStorage.setItem("contact_user", JSON.stringify(result.user));
+            window.location.href = "dashboard.html";
+        } else {
+            showPopup("Login Failed", result.message);
+        }
+    } catch (err) {
+        showPopup("Network Error", "Unable to connect. Please try again.");
+    }
+
+    loginBtn.disabled = false;
+    loginBtn.innerText = "Login";
+}
+
+/* LOGOUT */
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
