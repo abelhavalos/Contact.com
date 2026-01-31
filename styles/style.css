@@ -129,10 +129,10 @@ body {
     font-weight: 600;
 }
 .btn-secondary {
-    padding: 10px 20px;
-    background: transparent;
-    border: 2px solid #4a6cff;
-    color: #4a6cff;
+        padding: 10px 20px;
+    background: #4a6cff;
+    color: #fff;
+    border: none;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
