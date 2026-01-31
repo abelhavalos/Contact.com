@@ -88,7 +88,52 @@
             border-top: 1px solid rgba(255,255,255,0.2);
         }
         .mobile-menu.show { display: flex; }
+/*Popup overlay */
+    .popup-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
 
+    .popup {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px 22px;
+      max-width: 320px;
+      width: 90%;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+      text-align: center;
+    }
+
+    .popup-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .popup-message {
+      font-size: 14px;
+      color: #444;
+      margin-bottom: 18px;
+    }
+
+    .popup button {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 18px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .popup button:hover {
+      background: #1d4ed8;
+    }
         /* RESPONSIVE */
         @media (max-width: 700px) {
             .hamburger { display: flex; }
@@ -149,26 +194,36 @@
     <div class="card">
         <h3>Startup Meetup</h3>
         <p>Connect with founders and innovators in your city.</p>
-        <button>View Event</button>
+        <button onclick="showComingSoon()">View Event</button>
     </div>
 
     <div class="card">
         <h3>Photography Walk</h3>
         <p>Explore scenic spots and capture amazing shots together.</p>
-        <button>View Event</button>
+        <button onclick="showComingSoon()">View Event</button>
     </div>
 
     <div class="card">
         <h3>Fitness Bootcamp</h3>
         <p>Join a high‑energy outdoor workout session.</p>
-        <button>View Event</button>
+      <button onclick="showComingSoon()">View Event</button>
     </div>
 
     <div class="card">
         <h3>Tech Workshop</h3>
         <p>Learn new skills and build something awesome.</p>
-        <button>View Event</button>
+        <button onclick="showComingSoon()">View Event</button>
     </div>
+  <!-- Reusable popup -->
+  <div id="comingSoonBackdrop" class="popup-backdrop">
+    <div class="popup">
+      <div class="popup-title">Event Coming Soon!</div>
+      <div class="popup-message">
+        This event isn’t live yet, but it’s on the way.
+      </div>
+      <button onclick="hideComingSoon()">OK</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -229,22 +284,13 @@ function loadNavbar() {
 }
 
 // NEW: Make View Event buttons redirect if not signed in
-function setupViewEventButtons() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    const buttons = document.querySelectorAll(".card button");
+function showComingSoon() {
+      document.getElementById('comingSoonBackdrop').style.display = 'flex';
+    }
 
-    buttons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            if (!user) {
-                window.location.href = "signup.html";
-                return;
-            }
-
-            // Later: Event logic here
-            alert("Event Comming Soon!");
-        });
-    });
-}
+    function hideComingSoon() {
+      document.getElementById('comingSoonBackdrop').style.display = 'none';
+    }
 
 function logout() {
     localStorage.removeItem("contact_user");
