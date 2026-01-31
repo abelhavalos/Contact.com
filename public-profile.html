@@ -76,6 +76,53 @@
         }
         .mobile-menu.show { display: flex; }
 
+        /* Popup overlay */
+        .popup-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .popup {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 22px;
+            max-width: 320px;
+            width: 90%;
+            box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+            text-align: center;
+        }
+
+        .popup-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .popup-message {
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 18px;
+        }
+
+        .popup button {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 18px;
+            background: #2563eb;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .popup button:hover {
+            background: #1d4ed8;
+        }
+
         @media (max-width: 700px) {
             .hamburger { display: flex; }
             .nav-links { display: none; }
@@ -162,12 +209,21 @@
         <button class="btn btn-message" onclick="openChat()">Message</button>
         <button class="btn btn-add" onclick="addToContacts()">Add to Contacts</button>
     </div>
+
+    <!-- SINGLE REUSABLE POPUP -->
+    <div id="popupBackdrop" class="popup-backdrop">
+        <div class="popup">
+            <div id="popupTitle" class="popup-title"></div>
+            <div id="popupMessage" class="popup-message"></div>
+            <button onclick="hidePopup()">OK</button>
+        </div>
+    </div>
 </div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-// NAVBAR
+/* NAVBAR */
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -202,16 +258,28 @@ function loadNavbar() {
     `;
 }
 
+/* POPUP SYSTEM */
+function showPopup(title, message) {
+    document.getElementById("popupTitle").innerText = title;
+    document.getElementById("popupMessage").innerText = message;
+    document.getElementById("popupBackdrop").style.display = "flex";
+}
+
+function hidePopup() {
+    document.getElementById("popupBackdrop").style.display = "none";
+}
+
+/* LOGOUT */
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
 }
 
-// GET ?email=
+/* GET ?email= */
 const params = new URLSearchParams(window.location.search);
 const profileEmail = params.get("email");
 
-// LOAD PROFILE
+/* LOAD PROFILE */
 async function loadPublicProfile() {
     if (!profileEmail) return alert("No profile specified");
 
@@ -230,12 +298,12 @@ async function loadPublicProfile() {
     document.getElementById("workLife").innerText = u.workLife || "";
 }
 
-// MESSAGE BUTTON
+/* MESSAGE BUTTON */
 function openChat() {
     window.location.href = `messages.html?otherEmail=${encodeURIComponent(profileEmail)}`;
 }
 
-// ADD TO CONTACTS
+/* ADD TO CONTACTS */
 async function addToContacts() {
     const me = JSON.parse(localStorage.getItem("contact_user"));
     if (!me) return window.location.href = "login.html";
@@ -249,13 +317,13 @@ async function addToContacts() {
     const result = await res.json();
 
     if (result.success) {
-        alert("Added to contacts");
+        showPopup("Contact Added", "This person has been added to your contacts.");
     } else {
         alert(result.message || "Failed to add contact");
     }
 }
 
-// INIT
+/* INIT */
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
     loadPublicProfile();
