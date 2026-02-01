@@ -251,15 +251,20 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0
 function showPopup(title, message) {
     document.getElementById("popupTitle").innerText = title;
     document.getElementById("popupMessage").innerText = message;
+
+    document.getElementById("deleteConfirmPopup").style.display = "none";
+    document.getElementById("mainPopup").style.display = "block";
     document.getElementById("popupBackdrop").style.display = "flex";
 }
 
 function hidePopup() {
+    document.getElementById("mainPopup").style.display = "none";
     document.getElementById("popupBackdrop").style.display = "none";
 }
 
 /* DELETE CONFIRMATION POPUP */
 function showDeleteConfirm() {
+    document.getElementById("mainPopup").style.display = "none";
     document.getElementById("deleteConfirmPopup").style.display = "block";
     document.getElementById("popupBackdrop").style.display = "flex";
 }
