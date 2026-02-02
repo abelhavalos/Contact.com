@@ -179,6 +179,21 @@
             cursor: pointer;
             font-weight: 600;
         }
+    .event-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.event-content {
+    flex-grow: 1;
+}
+
+.event-button {
+    margin-top: 16px;
+    width: 100%;
+}
 
         @media (max-width: 700px) {
             .hamburger { display: flex; }
@@ -409,18 +424,40 @@ function renderEvents(events) {
         const isMine = currentUser && ev.creator === currentUser.email;
 
         grid.innerHTML += `
-            <div class="card">
-                <h3>${ev.title}</h3>
-                <p>${ev.description}</p>
-                <p style="font-size:0.85rem; color:#ccc;">Created by: ${ev.creatorName}</p>
-        <button class="btn-primary" onclick="startPrivateMessage('${ev.creator}')">Contact Me</button>
-               
+            <div class="card event-card">
+                <div class="event-content">
+                    <h3>${ev.title}</h3>
+                    <p>${ev.description}</p>
+                    <p style="font-size:0.85rem; color:#4a6cff;">Created by: ${ev.creatorName}</p>
+                </div>
+
+                <button class="btn-primary event-button" onclick="startPrivateMessage('${ev.creator}')">
+                    Contact Me
+                </button>
             </div>
         `;
     });
 }
     
     
+async function autoAddContact(otherEmail) {
+    const me = JSON.parse(localStorage.getItem("contact_user"));
+    if (!me) return;
+
+    const url =
+        `${EVENTS_API}?module=addContact`
+        + `&userEmail=${encodeURIComponent(me.email)}`
+        + `&contactEmail=${encodeURIComponent(otherEmail)}`;
+
+    try {
+        const res = await fetch(url);
+        const result = await res.json();
+        console.log("Auto-add contact:", result);
+    } catch (err) {
+        console.error("Auto-add contact failed:", err);
+    }
+}   
+
 function startPrivateMessage(email) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) {
@@ -428,23 +465,11 @@ function startPrivateMessage(email) {
         return;
     }
 
-    window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
-    
-    fetch(url)
-        .then(res => res.json())
-        .then(data => {
-            if (data.success && data.conversationId) {
-                window.location.href = `chat.html?conversationId=${data.conversationId}`;
-            } else {
-                alert("Failed to start conversation.");
-            }
-        })
-        .catch(err => {
-            console.error("Error starting chat:", err);
-            alert("Network error.");
-        });
-}
+    autoAddContact(email);
 
+    window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
+}
+    
 /* ============================
    LOGOUT
 ============================ */
