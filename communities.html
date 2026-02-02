@@ -464,7 +464,8 @@ async function loadCommunities() {
                 <p>${c.description}</p>
 
                 ${isCreator
-                    ? `<button style="background:#ff4a4a;" onclick="deleteCommunity('${c.id}')">Delete</button>`
+                    ? `<button style="background:#ff4a4a;" onclick="deleteCommunity('${c.id}')">Delete</button>
+                       <button onclick="joinCommunity('${c.id}')">Join</button>`
                     : `<button onclick="joinCommunity('${c.id}')">Join</button>`
                 }
             </div>
@@ -517,6 +518,5 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCommunities();
 });
 </script>
-
 </body>
 </html>

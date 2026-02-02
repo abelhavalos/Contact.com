@@ -295,12 +295,31 @@ if (communityId) {
   communityName = communityId.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
+/* FETCH REAL COMMUNITY NAME */
+async function loadRealCommunityName() {
+  if (!communityId) return;
+
+  try {
+    const res = await fetch(`${API_URL}?module=getCommunity&communityId=${encodeURIComponent(communityId)}`);
+    const data = await res.json();
+
+    if (data.success && data.name) {
+      communityName = data.name;
+      document.getElementById("headerTitle").innerText = `Community Chat – ${communityName}`;
+    }
+  } catch (err) {
+    console.error("Failed to load community name", err);
+  }
+}  
+
+/* INIT */
 /* INIT */
 document.addEventListener("DOMContentLoaded", () => {
   loadNavbar();
 
   if (mode === "community") {
     document.getElementById("headerTitle").innerText = `Community Chat – ${communityName}`;
+    loadRealCommunityName(); // 🔥 fetch real name from backend
   } else {
     document.getElementById("headerTitle").innerText = `Private Chat`;
     document.getElementById("toggleMembersBtn").style.display = "none";
