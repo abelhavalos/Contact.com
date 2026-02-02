@@ -424,18 +424,19 @@ function renderEvents(events) {
         const isMine = currentUser && ev.creator === currentUser.email;
 
         grid.innerHTML += `
-            <div class="card event-card">
-                <div class="event-content">
-                    <h3>${ev.title}</h3>
-                    <p>${ev.description}</p>
-                    <p style="font-size:0.85rem; color:#4a6cff;">Created by: ${ev.creatorName}</p>
-                </div>
+    <div class="card event-card">
+        <div class="event-content">
+            <h3>${ev.title}</h3>
+            <p>${ev.description}</p>
+            <p style="font-size:0.85rem; color:#4a6cff;">Created by: ${ev.creatorName}</p>
+        </div>
 
-                <button class="btn-primary event-button" onclick="startPrivateMessage('${ev.creator}')">
-                    Contact Me
-                </button>
-            </div>
-        `;
+        ${isMine
+            ? `<button class="btn-danger event-button" onclick="deleteEvent('${ev.id}')">Delete Event</button>`
+            : `<button class="btn-primary event-button" onclick="startPrivateMessage('${ev.creator}')">Contact Me</button>`
+        }
+    </div>
+`;
     });
 }
     
@@ -469,7 +470,33 @@ function startPrivateMessage(email) {
 
     window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
 }
-    
+
+async function deleteEvent(eventId) {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    const confirmed = confirm("Are you sure you want to delete this event?");
+    if (!confirmed) return;
+
+    const url = `${EVENTS_API}?module=deleteEvent&id=${encodeURIComponent(eventId)}&email=${encodeURIComponent(user.email)}`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.success) {
+            alert("Event deleted.");
+            loadEvents();
+        } else {
+            alert("Failed to delete event.");
+        }
+    } catch (err) {
+        alert("Network error.");
+    }
+}
 /* ============================
    LOGOUT
 ============================ */
