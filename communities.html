@@ -83,10 +83,104 @@
             text-align: left;
             border-top: 1px solid rgba(255,255,255,0.2);
         }
+    
+        #createCommunityContainer button {
+    padding: 10px 20px;
+    background: #4a6cff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: background 0.2s ease;
+}
 
+#createCommunityContainer button:hover {
+    background: #3a5be0;
+}
+    
+    .card button[onclick^="deleteCommunity"] {
+    background: #ff4a4a;
+}
+
+.card button[onclick^="deleteCommunity"]:hover {
+    background: #e03c3c;
+}
+    
+#createCommunityContainer button {
+    padding: 10px 20px;
+    background: #4a6cff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: background 0.2s ease;
+}
+
+#createCommunityContainer button:hover {
+    background: #3a5be0;
+}
+#createCommunityBackdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+#createCommunityBackdrop .popup {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 22px;
+    max-width: 360px;
+    width: 90%;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+    text-align: center;
+}
+
+#createCommunityBackdrop .popup-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 16px;
+    color: #222;
+}
+
+#createCommunityBackdrop input,
+#createCommunityBackdrop textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+#createCommunityBackdrop button {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 18px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+#createCommunityBackdrop button:hover {
+    background: #1d4ed8;
+}
+
+#createCommunityBackdrop .cancel-btn {
+    background: #aaa !important;
+    margin-top: 10px;
+}
         .mobile-menu.show { display: flex; }
 
-        /* RESPONSIVE */
         @media (max-width: 700px) {
             .hamburger { display: flex; }
             .nav-links { display: none; }
@@ -98,6 +192,11 @@
             margin-top: 40px;
             font-size: 2.4rem;
             font-weight: 700;
+        }
+
+        #createCommunityContainer {
+            text-align: center;
+            margin-top: 10px;
         }
 
         .grid {
@@ -132,14 +231,57 @@
             font-weight: 600;
         }
 
-        .btn-primary {
-            padding: 10px 20px;
-            background: #4a6cff;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+        /* POPUPS */
+        .popup-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .popup {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 22px;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+            text-align: center;
+        }
+
+        .popup-title {
             font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: #222;
+        }
+
+        .popup-message {
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 18px;
+        }
+
+        .popup button {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 18px;
+            background: #2563eb;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .popup button:hover {
+            background: #1d4ed8;
+        }
+
+        .cancel-btn {
+            background: #aaa !important;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -154,48 +296,53 @@
 
 <h1 class="page-title">Communities</h1>
 
-<div class="grid">
-  <div class="card" data-community="tech-innovators">
-    <h3>Tech Innovators</h3>
-    <p>A community for builders, coders, and creators shaping the future.</p>
-    <button>Join</button>
-  </div>
+<div id="createCommunityContainer">
+    <button class="btn-primary" onclick="openCreateCommunityPopup()">Create Community</button>
+</div>
 
-  <div class="card" data-community="fitness-wellness">
-    <h3>Fitness & Wellness</h3>
-    <p>Stay motivated with people who share your health goals.</p>
-    <button>Join</button>
-  </div>
+<!-- COMMUNITY GRID -->
+<div class="grid" id="communityGrid"></div>
 
-  <div class="card" data-community="photography-club">
-    <h3>Photography Club</h3>
-    <p>Share your shots, learn new skills, and grow your craft.</p>
-    <button>Join</button>
-  </div>
+<!-- CREATE COMMUNITY POPUP -->
+<div id="createCommunityBackdrop" class="popup-backdrop">
+    <div class="popup">
+        <div class="popup-title">Create Community</div>
 
-  <div class="card" data-community="entrepreneurs-hub">
-    <h3>Entrepreneurs Hub</h3>
-    <p>Connect with founders, share ideas, and build together.</p>
-    <button>Join</button>
-  </div>
+        <input id="communityTitle" placeholder="Community Name">
+        <textarea id="communityDescription" placeholder="Description"></textarea>
+
+        <button onclick="submitCommunity()">Create</button>
+        <button class="cancel-btn" onclick="closeCreateCommunityPopup()">Cancel</button>
+    </div>
+</div>
+
+<!-- UNIVERSAL POPUP -->
+<div id="messageBackdrop" class="popup-backdrop">
+    <div class="popup">
+        <div id="messageTitle" class="popup-title"></div>
+        <div id="messageText" class="popup-message"></div>
+        <button onclick="hideMessagePopup()">OK</button>
+    </div>
 </div>
 
 <script>
-/* -----------------------------------
-   YOUR API URL
------------------------------------ */
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* -----------------------------------
-   MOBILE MENU
------------------------------------ */
+/* POPUP HELPERS */
+function showMessagePopup(title, message) {
+    document.getElementById("messageTitle").innerText = title;
+    document.getElementById("messageText").innerText = message;
+    document.getElementById("messageBackdrop").style.display = "flex";
+}
+function hideMessagePopup() {
+    document.getElementById("messageBackdrop").style.display = "none";
+}
+
+/* NAVBAR */
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
 
-/* -----------------------------------
-   NAVBAR
------------------------------------ */
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
@@ -248,62 +395,126 @@ function loadNavbar() {
         `;
 }
 
-/* -----------------------------------
-   BACKEND JOIN (non-blocking)
------------------------------------ */
-function joinCommunity(communityId, email) {
-    return fetch(
-        `${API_URL}?module=joinCommunity` +
-        `&communityId=${encodeURIComponent(communityId)}` +
-        `&email=${encodeURIComponent(email)}`
-    ).then(r => r.json());
+/* CREATE COMMUNITY POPUP */
+function openCreateCommunityPopup() {
+    document.getElementById("createCommunityBackdrop").style.display = "flex";
+}
+function closeCreateCommunityPopup() {
+    document.getElementById("createCommunityBackdrop").style.display = "none";
 }
 
-/* -----------------------------------
-   JOIN BUTTONS (Instant Redirect)
------------------------------------ */
-function setupJoinButtons() {
+/* CREATE COMMUNITY */
+async function submitCommunity() {
+    const name = document.getElementById("communityTitle").value.trim();
+    const description = document.getElementById("communityDescription").value.trim();
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    const cards = document.querySelectorAll(".card");
 
-    cards.forEach(card => {
-        const btn = card.querySelector("button");
-        const communityId = card.getAttribute("data-community");
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
 
-        btn.addEventListener("click", () => {
-            if (!user || !user.email) {
-                window.location.href = "signup.html";
-                return;
-            }
+    if (!name || !description) {
+        showMessagePopup("Missing Fields", "Please fill out all fields.");
+        return;
+    }
 
-            // Visual feedback
-            btn.innerText = "Joining...";
-            btn.disabled = true;
+    const url =
+        `${API_URL}?module=createCommunity` +
+        `&name=${encodeURIComponent(name)}` +
+        `&description=${encodeURIComponent(description)}` +
+        `&email=${encodeURIComponent(user.email)}`;
 
-            // Fire join request in background
-            joinCommunity(communityId, user.email).catch(console.error);
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
 
-            // Redirect instantly
-            window.location.href =
-                `messages.html?mode=community&communityId=${encodeURIComponent(communityId)}`;
-        });
+        if (!data.success) {
+            showMessagePopup("Error", "Failed to create community.");
+            return;
+        }
+
+        closeCreateCommunityPopup();
+        showMessagePopup("Success", "Community created!");
+        loadCommunities();
+
+    } catch (err) {
+        showMessagePopup("Network Error", "Please try again.");
+    }
+}
+
+/* LOAD COMMUNITIES */
+async function loadCommunities() {
+    const res = await fetch(`${API_URL}?module=getAllCommunities`);
+    const data = await res.json();
+
+    if (!data.success) return;
+
+    const grid = document.getElementById("communityGrid");
+    grid.innerHTML = "";
+
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+
+    data.communities.forEach(c => {
+        const isCreator = user && user.email === c.creator;
+
+        grid.innerHTML += `
+            <div class="card" data-community="${c.id}">
+                <h3>${c.name}</h3>
+                <p>${c.description}</p>
+
+                ${isCreator
+                    ? `<button style="background:#ff4a4a;" onclick="deleteCommunity('${c.id}')">Delete</button>`
+                    : `<button onclick="joinCommunity('${c.id}')">Join</button>`
+                }
+            </div>
+        `;
     });
 }
 
-/* -----------------------------------
-   LOGOUT
------------------------------------ */
+/* JOIN COMMUNITY */
+async function joinCommunity(id) {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) {
+        window.location.href = "signup.html";
+        return;
+    }
+
+    fetch(`${API_URL}?module=joinCommunity&communityId=${id}&email=${user.email}`)
+        .catch(console.error);
+
+    window.location.href = `messages.html?mode=community&communityId=${id}`;
+}
+
+/* DELETE COMMUNITY */
+async function deleteCommunity(id) {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) return;
+
+    const res = await fetch(
+        `${API_URL}?module=deleteCommunity&communityId=${id}&email=${user.email}`
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+        showMessagePopup("Deleted", "Community removed.");
+        loadCommunities();
+    } else {
+        showMessagePopup("Error", data.message || "Failed to delete.");
+    }
+}
+
+/* LOGOUT */
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
 }
 
-/* -----------------------------------
-   INIT
------------------------------------ */
+/* INIT */
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
-    setupJoinButtons();
+    loadCommunities();
 });
 </script>
 
