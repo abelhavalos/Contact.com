@@ -76,9 +76,6 @@
   }
   .mobile-menu.show { display: flex; }
 
-  
-  
-  
   @media (max-width: 700px) {
     .hamburger { display: flex; }
     .nav-links { display: none; }
@@ -173,12 +170,19 @@
   Loading contacts...
 </div>
 
-  </div>
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
 let allContacts = [];
 let filteredContacts = [];
+
+/* Normalize user object so search never breaks */
+function normalizeUser(u) {
+  return {
+    fullName: u.fullName || u.FullName || "",
+    email: u.email || u.Email || ""
+  };
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -191,9 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (searchInput) searchInput.addEventListener("input", handleSearch);
 });
 
-/* -------------------------
-   NAVBAR + MOBILE MENU
-------------------------- */
+/* NAVBAR */
 function toggleMenu() {
   document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -232,9 +234,7 @@ function logout() {
   window.location.href = "index.html";
 }
 
-/* -------------------------
-   FETCH CONTACTS
-------------------------- */
+/* FETCH CONTACTS */
 function loadContacts(ownerEmail) {
   const listEl = document.getElementById("contactsList");
   listEl.innerHTML = "Loading contacts...";
@@ -253,7 +253,7 @@ function loadContacts(ownerEmail) {
 
       allContacts = profiles.filter(Boolean);
       allContacts.sort((a, b) =>
-        (a.fullName || "").localeCompare(b.fullName || "")
+        a.fullName.localeCompare(b.fullName)
       );
 
       filteredContacts = [...allContacts];
@@ -265,35 +265,29 @@ function loadContacts(ownerEmail) {
     });
 }
 
-/* -------------------------
-   FETCH PROFILE
-------------------------- */
+/* FETCH PROFILE */
 function fetchUserProfile(email) {
   return fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`)
     .then(r => r.json())
-    .then(d => d.user || null)
+    .then(d => normalizeUser(d.user || {}))
     .catch(() => null);
 }
 
-/* -------------------------
-   SEARCH
-------------------------- */
+/* SEARCH */
 function handleSearch(e) {
   const query = e.target.value.toLowerCase().trim();
 
   filteredContacts = !query
     ? [...allContacts]
     : allContacts.filter(u =>
-        (u.fullName || "").toLowerCase().includes(query) ||
-        (u.email || "").toLowerCase().includes(query)
+        u.fullName.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query)
       );
 
   renderContacts(filteredContacts);
 }
 
-/* -------------------------
-   RENDER CONTACTS
-------------------------- */
+/* RENDER CONTACTS */
 function renderContacts(list) {
   const container = document.getElementById("contactsList");
   container.innerHTML = "";
@@ -307,24 +301,23 @@ function renderContacts(list) {
   }
 
   list.forEach(u => {
-    const email = u.email || u.Email;   // <-- unified, safe email reference
-
     const div = document.createElement("div");
     div.className = "contact-item";
 
     div.innerHTML = `
       <div class="contact-info">
-        <div class="contact-name">${u.fullName || u.FullName || "(No name)"}</div>
+        <div class="contact-name">${u.fullName || "(No name)"}</div>
+        <div class="contact-email">${u.email}</div>
       </div>
 
       <div style="display:flex; gap:10px;">
         <a class="view-profile-btn" 
-           href="public-profile.html?email=${encodeURIComponent(email)}">
+           href="public-profile.html?email=${encodeURIComponent(u.email)}">
            View Profile
         </a>
 
         <a class="message-btn" 
-           href="messages.html?otherEmail=${encodeURIComponent(email)}">
+           href="messages.html?otherEmail=${encodeURIComponent(u.email)}">
            Message
         </a>
       </div>
