@@ -223,7 +223,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  pointer-events: none; /* 🔥 does NOT block UI */
+  pointer-events: none;
   z-index: 999;
 }
 
@@ -313,7 +313,8 @@ body {
 /* ============================================================
    CONFIG + USER
 ============================================================ */
-const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
@@ -326,34 +327,82 @@ const communityId = url.searchParams.get("communityId");
 const mode = communityId ? "community" : "private";
 
 let activeConversationId = conversationIdParam || null;
+let messages = [];
 let lastTimestamp = 0;
+
+/* COMMUNITY NAME */
+let communityName = null;
+if (communityId) {
+  communityName = communityId
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/* FETCH REAL COMMUNITY NAME */
+async function loadRealCommunityName() {
+  if (!communityId) return;
+
+  try {
+    const res = await fetch(
+      `${API_URL}?module=getCommunity&communityId=${encodeURIComponent(
+        communityId
+      )}`
+    );
+    const data = await res.json();
+
+    if (data.success && data.name) {
+      communityName = data.name;
+      document.getElementById(
+        "headerTitle"
+      ).innerText = `Community Chat – ${communityName}`;
+    }
+  } catch (err) {
+    console.error("Failed to load community name", err);
+  }
+}
 
 /* ============================================================
    INIT
 ============================================================ */
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("chatLoader").style.display = "flex"; // 🔥 show loader instantly
+
   loadNavbar();
 
   if (mode === "community") {
-    document.getElementById("headerTitle").innerText = "Community Chat";
-    loadCommunityName();
+    document.getElementById(
+      "headerTitle"
+    ).innerText = `Community Chat – ${communityName}`;
+    loadRealCommunityName();
   } else {
-    document.getElementById("headerTitle").innerText = "Private Chat";
+    document.getElementById("headerTitle").innerText = `Private Chat`;
     document.getElementById("toggleMembersBtn").style.display = "none";
   }
 
+  document
+    .getElementById("toggleMembersBtn")
+    .addEventListener("click", () => {
+      document.getElementById("memberSidebar").classList.toggle("show");
+    });
+
   document.getElementById("sendBtn").onclick = sendMessage;
 
-  await resolveConversationId();
+  loadCachedMessages();
 
-  startPolling();
+  if (activeConversationId) {
+    startPolling();
+  } else if (mode === "community") {
+    startCommunityConversation();
+  } else if (otherEmail) {
+    startConversation();
+  }
 });
 
 /* ============================================================
    NAVBAR
 ============================================================ */
 function loadNavbar() {
-  const nav = `
+  const desktopNav = `
     <div class="hamburger" onclick="toggleMenu()">
       <span></span><span></span><span></span>
     </div>
@@ -367,8 +416,19 @@ function loadNavbar() {
       <a href="#" onclick="logout()">Logout</a>
     </div>
   `;
-  document.getElementById("navbar").innerHTML = nav;
-  document.getElementById("mobileMenu").innerHTML = nav;
+
+  document.getElementById("navbar").innerHTML = desktopNav;
+
+  const mobileNav = `
+    <a href="dashboard.html">Dashboard</a>
+    <a href="communities.html">Communities</a>
+    <a href="events.html">Events</a>
+    <a href="contacts.html">Contacts</a>
+    <a href="profile.html">Profile</a>
+    <a href="#" onclick="logout()">Logout</a>
+  `;
+
+  document.getElementById("mobileMenu").innerHTML = mobileNav;
 }
 
 function toggleMenu() {
@@ -381,100 +441,185 @@ function logout() {
 }
 
 /* ============================================================
-   RESOLVE CONVERSATION ID
+   CACHE
 ============================================================ */
-async function resolveConversationId() {
-  if (activeConversationId) return;
+function loadCachedMessages() {
+  const cached = localStorage.getItem(`chat_${conversationIdParam}`);
+  if (!cached) return;
 
-  if (mode === "private") {
-    const res = await fetch(
-      `${API_URL}?module=startConversation`
-      + `&userEmail=${encodeURIComponent(loggedInUser.email)}`
-      + `&otherEmail=${encodeURIComponent(otherEmail)}`
-    );
-    const data = await res.json();
-    if (data.success) activeConversationId = data.conversationId;
-    return;
-  }
-
-  if (mode === "community") {
-    const res = await fetch(
-      `${API_URL}?module=startCommunityConversation`
-      + `&communityId=${encodeURIComponent(communityId)}`
-      + `&userEmail=${encodeURIComponent(loggedInUser.email)}`
-    );
-    const data = await res.json();
-    if (data.success) activeConversationId = data.conversationId;
-  }
-}
-
-/* ============================================================
-   COMMUNITY NAME
-============================================================ */
-async function loadCommunityName() {
-  if (!communityId) return;
   try {
-    const res = await fetch(`${API_URL}?module=getCommunity&communityId=${encodeURIComponent(communityId)}`);
-    const data = await res.json();
-    if (data.success && data.name) {
-      document.getElementById("headerTitle").innerText = `Community Chat – ${data.name}`;
+    messages = JSON.parse(cached);
+    renderMessages(messages);
+    if (messages.length > 0) {
+      lastTimestamp = messages[messages.length - 1].timestamp;
     }
   } catch {}
 }
 
 /* ============================================================
-   POLLING — LINE BY LINE
+   PRIVATE CHAT
+============================================================ */
+function startConversation() {
+  fetch(
+    `${API_URL}?module=startConversation&userEmail=${encodeURIComponent(
+      loggedInUser.email
+    )}&otherEmail=${encodeURIComponent(otherEmail)}`
+  )
+    .then((r) => r.json())
+    .then((d) => {
+      if (!d.success) return;
+      activeConversationId = d.conversationId;
+      startPolling();
+    });
+}
+
+/* ============================================================
+   COMMUNITY CHAT
+============================================================ */
+function startCommunityConversation() {
+  fetch(
+    `${API_URL}?module=startCommunityConversation&communityId=${encodeURIComponent(
+      communityId
+    )}&userEmail=${encodeURIComponent(loggedInUser.email)}`
+  )
+    .then((r) => r.json())
+    .then((d) => {
+      if (!d.success) return;
+      activeConversationId = d.conversationId;
+      loadCommunityMembers();
+      startPolling();
+    });
+}
+
+function loadCommunityMembers() {
+  fetch(
+    `${API_URL}?module=getCommunityMembers&communityId=${encodeURIComponent(
+      communityId
+    )}`
+  )
+    .then((r) => r.json())
+    .then((d) => {
+      if (d.success) renderMemberSidebar(d.members);
+    });
+}
+
+function renderMemberSidebar(members) {
+  const container = document.getElementById("memberSidebar");
+  container.innerHTML = "<h3>Members</h3>";
+
+  members.forEach((m) => {
+    const div = document.createElement("div");
+    div.className = "member";
+
+    div.innerHTML = `
+      <div class="member-name">${m.fullName}</div>
+      <button onclick="window.location.href='public-profile.html?email=${encodeURIComponent(
+        m.email
+      )}'">View</button>
+      <button onclick="window.location.href='messages.html?otherEmail=${encodeURIComponent(
+        m.email
+      )}'">Message</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+/* ============================================================
+   POLLING (FASTEST POSSIBLE)
 ============================================================ */
 function startPolling() {
   loadNewMessages();
   setInterval(loadNewMessages, 1500);
 }
 
-async function loadNewMessages() {
+function loadNewMessages() {
   if (!activeConversationId) return;
 
-  try {
-    const res = await fetch(
-      `${API_URL}?module=getMessages&conversationId=${encodeURIComponent(activeConversationId)}`
-    );
-    const data = await res.json();
-    if (!data.success || !data.messages) return;
+  fetch(
+    `${API_URL}?module=getMessages&conversationId=${encodeURIComponent(
+      activeConversationId
+    )}`
+  )
+    .then((r) => r.json())
+    .then((d) => {
+      if (!d.success || !d.messages) return;
 
-    const list = data.messages;
+      const newList = d.messages;
 
-    // Hide loader on first successful load
-    const loader = document.getElementById("chatLoader");
-    if (loader) loader.style.display = "none";
+      // First load
+      if (messages.length === 0) {
+        messages = newList;
+        lastTimestamp = messages[messages.length - 1]?.timestamp || 0;
+        renderMessages(messages);
 
-    for (let i = 0; i < list.length; i++) {
-      const msg = list[i];
+        document.getElementById("chatLoader").style.display = "none"; // hide loader
 
-      if (!msg.timestamp || msg.timestamp <= lastTimestamp) continue;
+        localStorage.setItem(
+          `chat_${activeConversationId}`,
+          JSON.stringify(messages)
+        );
+        return;
+      }
 
-      appendMessage(msg);
-      lastTimestamp = msg.timestamp;
-    }
-  } catch (e) {}
+      // Only new messages
+      const fresh = newList.filter((m) => m.timestamp > lastTimestamp);
+
+      if (fresh.length > 0) {
+        appendMessages(fresh);
+        messages.push(...fresh);
+        lastTimestamp = messages[messages.length - 1].timestamp;
+
+        localStorage.setItem(
+          `chat_${activeConversationId}`,
+          JSON.stringify(messages)
+        );
+      }
+    });
 }
 
 /* ============================================================
-   RENDERING
+   RENDERING (FASTEST)
 ============================================================ */
-function appendMessage(msg) {
+function appendMessages(newMessages) {
   const container = document.getElementById("messages");
-  if (!container) return;
+  const frag = document.createDocumentFragment(); // 🔥 fastest DOM method
 
-  const div = document.createElement("div");
-  div.className = "msg";
-  if (msg.senderEmail === loggedInUser.email) div.classList.add("me");
+  newMessages.forEach((msg) => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    if (msg.senderEmail === loggedInUser.email) div.classList.add("me");
 
-  div.innerHTML = `
-    <div class="msg-name">${msg.senderName || msg.senderEmail}</div>
-    <div>${msg.text}</div>
-  `;
+    div.innerHTML = `
+      <div style="font-size:12px;color:#666;margin-bottom:4px;">
+        ${msg.senderName || msg.senderEmail}
+      </div>
+      <div>${msg.text}</div>
+    `;
 
-  container.appendChild(div);
+    frag.appendChild(div);
+  });
+
+  container.appendChild(frag);
   container.scrollTop = container.scrollHeight;
+}
+
+function updateHeaderNameFromMessages(list) {
+  if (mode !== "private") return;
+
+  const other = list.find((m) => m.senderEmail !== loggedInUser.email);
+  if (other && other.senderName) {
+    document.getElementById(
+      "headerTitle"
+    ).innerText = `Private Chat with ${other.senderName}`;
+  }
+}
+
+function renderMessages(list) {
+  updateHeaderNameFromMessages(list);
+  const container = document.getElementById("messages");
+  container.innerHTML = "";
+  appendMessages(list);
 }
 
 /* ============================================================
@@ -483,21 +628,23 @@ function appendMessage(msg) {
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
-  if (!text || !activeConversationId) return;
+  if (!text) return;
 
   fetch(
-    `${API_URL}?module=sendMessage`
-    + `&conversationId=${encodeURIComponent(activeConversationId)}`
-    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-    + `&text=${encodeURIComponent(text)}`
+    `${API_URL}?module=sendMessage&conversationId=${encodeURIComponent(
+      activeConversationId
+    )}&senderEmail=${encodeURIComponent(
+      loggedInUser.email
+    )}&text=${encodeURIComponent(text)}`
   )
-    .then(r => r.json())
-    .then(d => {
+    .then((r) => r.json())
+    .then((d) => {
       if (!d.success) return;
       input.value = "";
       loadNewMessages();
     });
 }
 </script>
+
 </body>
 </html>
