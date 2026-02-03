@@ -157,37 +157,43 @@
             margin-bottom: 18px;
         }
     
-.profile-animation {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(10, 10, 10, 0.85);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    transition: opacity 0.3s ease;
-}
-
-.profile-animation.hidden {
-    opacity: 0;
-    pointer-events: none;
+.profile-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 999;
 }
 
 .spinner {
-    width: 55px;
-    height: 55px;
-    border: 5px solid #444;
-    border-top-color: #00c3ff;
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
+  width: 42px;
+  height: 42px;
+  border: 4px solid rgba(255,255,255,0.25);
+  border-top-color: #00c3ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite, glow 1.2s ease-in-out infinite;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 4px #00c3ff; }
+  50% { box-shadow: 0 0 14px #00c3ff; }
+  100% { box-shadow: 0 0 4px #00c3ff; }
+}
+
+.loading-text {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #00c3ff;
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(0,195,255,0.6);
 }
 
 .profile-text {
@@ -200,9 +206,9 @@
 </head>
 
 <body>
-<div id="profileAnimation" class="profile-animation hidden">
-    <div class="spinner"></div>
-    <div class="profile-text" id="profileAnimText">Saving...</div>
+<div id="profileLoader" class="profile-loader">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading profile…</div>
 </div>
 <!-- NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
@@ -355,16 +361,32 @@ function loadNavbar() {
 }
 
 /* ============================
-   LOAD PROFILE (Instant)
+   LOADER HELPERS (New System)
+============================ */
+function showLoader(text) {
+    const loader = document.getElementById("profileLoader");
+    const loaderText = loader.querySelector(".loading-text");
+    loaderText.innerText = text;
+    loader.style.display = "flex";
+}
+
+function hideLoader() {
+    document.getElementById("profileLoader").style.display = "none";
+}
+
+/* ============================
+   LOAD PROFILE
 ============================ */
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
     loadProfile();
 });
 
-function loadProfile() {
+async function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return window.location.href = "login.html";
+
+    hideLoader();
 
     setText("fullNameDisplay", user.fullName);
     setText("professionDisplay", user.profession || "Your profession");
@@ -375,7 +397,6 @@ function loadProfile() {
     setInput("skills", user.skills);
     setInput("workLife", user.workLife);
 }
-
 function setText(id, value) {
     const el = document.getElementById(id);
     if (el) el.innerText = value || "";
@@ -403,21 +424,7 @@ function enableEditing() {
 }
 
 /* ============================
-   ANIMATION HELPERS
-============================ */
-function showAnim(text) {
-    const anim = document.getElementById("profileAnimation");
-    const animText = document.getElementById("profileAnimText");
-    animText.innerText = text;
-    anim.classList.remove("hidden");
-}
-
-function hideAnim() {
-    document.getElementById("profileAnimation").classList.add("hidden");
-}
-
-/* ============================
-   SAVE PROFILE (Animated)
+   SAVE PROFILE
 ============================ */
 async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -436,8 +443,7 @@ async function saveProfile() {
     localStorage.setItem("contact_user", JSON.stringify(updatedUser));
     loadProfile();
 
-    // Animation
-    showAnim("Saving changes...");
+    showLoader("Saving changes…");
 
     const url =
         `${API_URL}?module=saveProfile`
@@ -453,20 +459,20 @@ async function saveProfile() {
         const result = await res.json();
 
         if (result.success) {
-            document.getElementById("profileAnimText").innerText = "Profile updated!";
-            setTimeout(hideAnim, 600);
+            showLoader("Profile updated!");
+            setTimeout(hideLoader, 600);
         } else {
-            hideAnim();
+            hideLoader();
             showPopup("Update Failed", result.message || "Failed to update profile.");
         }
     } catch (e) {
-        hideAnim();
+        hideLoader();
         showPopup("Network Error", "Could not reach the server.");
     }
 }
 
 /* ============================
-   CHANGE EMAIL (Animated)
+   CHANGE EMAIL
 ============================ */
 async function changeEmail() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -481,7 +487,7 @@ async function changeEmail() {
     const updatedUser = { ...user, email: newEmail };
     localStorage.setItem("contact_user", JSON.stringify(updatedUser));
 
-    showAnim("Updating email...");
+    showLoader("Updating email…");
 
     const url =
         `${API_URL}?module=changeEmail`
@@ -493,22 +499,22 @@ async function changeEmail() {
         const result = await res.json();
 
         if (result.success) {
-            document.getElementById("profileAnimText").innerText = "Email updated!";
-            setTimeout(hideAnim, 600);
+            showLoader("Email updated!");
+            setTimeout(hideLoader, 600);
         } else {
             localStorage.setItem("contact_user", JSON.stringify(user));
-            hideAnim();
+            hideLoader();
             showPopup("Update Failed", result.message || "Failed to update email.");
         }
     } catch (e) {
         localStorage.setItem("contact_user", JSON.stringify(user));
-        hideAnim();
+        hideLoader();
         showPopup("Network Error", "Could not reach the server.");
     }
 }
 
 /* ============================
-   CHANGE PASSWORD (Animated)
+   CHANGE PASSWORD
 ============================ */
 async function changePassword() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -527,7 +533,7 @@ async function changePassword() {
         return;
     }
 
-    showAnim("Updating password...");
+    showLoader("Updating password…");
 
     const url =
         `${API_URL}?module=changePassword`
@@ -539,20 +545,20 @@ async function changePassword() {
         const result = await res.json();
 
         if (result.success) {
-            document.getElementById("profileAnimText").innerText = "Password updated!";
-            setTimeout(hideAnim, 600);
+            showLoader("Password updated!");
+            setTimeout(hideLoader, 600);
         } else {
-            hideAnim();
+            hideLoader();
             showPopup("Update Failed", result.message || "Failed to update password.");
         }
     } catch (e) {
-        hideAnim();
+        hideLoader();
         showPopup("Network Error", "Could not reach the server.");
     }
 }
 
 /* ============================
-   DELETE ACCOUNT (Animated)
+   DELETE ACCOUNT
 ============================ */
 async function confirmDeleteAccount() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -563,7 +569,7 @@ async function confirmDeleteAccount() {
         return;
     }
 
-    showAnim("Deleting account...");
+    showLoader("Deleting account…");
 
     const url = `${API_URL}?module=deleteAccount&email=${encodeURIComponent(user.email)}`;
 
@@ -573,14 +579,14 @@ async function confirmDeleteAccount() {
 
         if (result.success) {
             localStorage.removeItem("contact_user");
-            document.getElementById("profileAnimText").innerText = "Account deleted";
+            showLoader("Account deleted");
             setTimeout(() => window.location.href = "signup.html", 700);
         } else {
-            hideAnim();
+            hideLoader();
             showPopup("Delete Failed", result.message || "Could not delete account.");
         }
     } catch (err) {
-        hideAnim();
+        hideLoader();
         showPopup("Network Error", "Could not reach the server.");
     }
 }

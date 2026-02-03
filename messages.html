@@ -215,7 +215,44 @@ body {
   cursor: pointer;
 }
 .member button:hover { background: #0056b3; }
+.chat-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none; /* 🔥 does NOT block UI */
+  z-index: 999;
+}
 
+.spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid rgba(255,255,255,0.25);
+  border-top-color: #00c3ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite, glow 1.2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 4px #00c3ff; }
+  50% { box-shadow: 0 0 14px #00c3ff; }
+  100% { box-shadow: 0 0 4px #00c3ff; }
+}
+
+.loading-text {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #00c3ff;
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(0,195,255,0.6);
+}
 /* MOBILE SIDEBAR */
 @media (max-width: 768px) {
   #toggleMembersBtn {
@@ -244,7 +281,10 @@ body {
 </head>
 
 <body>
-
+<div id="chatLoader" class="chat-loader">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading conversation…</div>
+</div>
 <!-- NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
 <div class="mobile-menu" id="mobileMenu"></div>
@@ -288,57 +328,25 @@ const mode = communityId ? "community" : "private";
 let activeConversationId = conversationIdParam || null;
 let lastTimestamp = 0;
 
-/* COMMUNITY NAME (basic) */
-let communityName = communityId
-  ? communityId.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
-  : null;
-
-async function loadCommunityName() {
-  if (!communityId) return;
-  try {
-    const res = await fetch(`${API_URL}?module=getCommunity&communityId=${encodeURIComponent(communityId)}`);
-    const data = await res.json();
-    if (data.success && data.name) {
-      communityName = data.name;
-      document.getElementById("headerTitle").innerText = `Community Chat – ${communityName}`;
-    }
-  } catch (e) {}
-}
-
 /* ============================================================
    INIT
 ============================================================ */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
 
   if (mode === "community") {
-    document.getElementById("headerTitle").innerText = communityName
-      ? `Community Chat – ${communityName}`
-      : "Community Chat";
+    document.getElementById("headerTitle").innerText = "Community Chat";
     loadCommunityName();
   } else {
     document.getElementById("headerTitle").innerText = "Private Chat";
-    const toggleBtn = document.getElementById("toggleMembersBtn");
-    if (toggleBtn) toggleBtn.style.display = "none";
+    document.getElementById("toggleMembersBtn").style.display = "none";
   }
 
-  const sendBtn = document.getElementById("sendBtn");
-  if (sendBtn) sendBtn.onclick = sendMessage;
+  document.getElementById("sendBtn").onclick = sendMessage;
 
-  const toggleBtn = document.getElementById("toggleMembersBtn");
-  if (toggleBtn) {
-    toggleBtn.addEventListener("click", () => {
-      document.getElementById("memberSidebar").classList.toggle("show");
-    });
-  }
+  await resolveConversationId();
 
-  if (activeConversationId) {
-    startPolling();
-  } else if (mode === "community" && communityId) {
-    startCommunityConversation();
-  } else if (otherEmail) {
-    startConversation();
-  }
+  startPolling();
 });
 
 /* ============================================================
@@ -359,20 +367,8 @@ function loadNavbar() {
       <a href="#" onclick="logout()">Logout</a>
     </div>
   `;
-
   document.getElementById("navbar").innerHTML = nav;
-
-  const mobileMenu = document.getElementById("mobileMenu");
-  if (mobileMenu) {
-    mobileMenu.innerHTML = `
-      <a href="dashboard.html">Dashboard</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="contacts.html">Contacts</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" onclick="logout()">Logout</a>
-    `;
-  }
+  document.getElementById("mobileMenu").innerHTML = nav;
 }
 
 function toggleMenu() {
@@ -385,71 +381,49 @@ function logout() {
 }
 
 /* ============================================================
-   START PRIVATE CHAT
+   RESOLVE CONVERSATION ID
 ============================================================ */
-function startConversation() {
-  fetch(
-    `${API_URL}?module=startConversation`
-    + `&userEmail=${encodeURIComponent(loggedInUser.email)}`
-    + `&otherEmail=${encodeURIComponent(otherEmail)}`
-  )
-    .then(r => r.json())
-    .then(d => {
-      if (!d.success) return;
-      activeConversationId = d.conversationId;
-      startPolling();
-    });
+async function resolveConversationId() {
+  if (activeConversationId) return;
+
+  if (mode === "private") {
+    const res = await fetch(
+      `${API_URL}?module=startConversation`
+      + `&userEmail=${encodeURIComponent(loggedInUser.email)}`
+      + `&otherEmail=${encodeURIComponent(otherEmail)}`
+    );
+    const data = await res.json();
+    if (data.success) activeConversationId = data.conversationId;
+    return;
+  }
+
+  if (mode === "community") {
+    const res = await fetch(
+      `${API_URL}?module=startCommunityConversation`
+      + `&communityId=${encodeURIComponent(communityId)}`
+      + `&userEmail=${encodeURIComponent(loggedInUser.email)}`
+    );
+    const data = await res.json();
+    if (data.success) activeConversationId = data.conversationId;
+  }
 }
 
 /* ============================================================
-   START COMMUNITY CHAT
+   COMMUNITY NAME
 ============================================================ */
-function startCommunityConversation() {
-  fetch(
-    `${API_URL}?module=startCommunityConversation`
-    + `&communityId=${encodeURIComponent(communityId)}`
-    + `&userEmail=${encodeURIComponent(loggedInUser.email)}`
-  )
-    .then(r => r.json())
-    .then(d => {
-      if (!d.success) return;
-      activeConversationId = d.conversationId;
-      loadCommunityMembers();
-      startPolling();
-    });
-}
-
-function loadCommunityMembers() {
-  fetch(`${API_URL}?module=getCommunityMembers&communityId=${encodeURIComponent(communityId)}`)
-    .then(r => r.json())
-    .then(d => {
-      if (d.success) renderMemberSidebar(d.members);
-    });
-}
-
-function renderMemberSidebar(members) {
-  const container = document.getElementById("memberSidebar");
-  if (!container) return;
-
-  container.innerHTML = "<h3>Members</h3>";
-  const frag = document.createDocumentFragment();
-
-  members.forEach(m => {
-    const div = document.createElement("div");
-    div.className = "member";
-    div.innerHTML = `
-      <div class="member-name">${m.fullName}</div>
-      <button onclick="window.location.href='public-profile.html?email=${encodeURIComponent(m.email)}'">View</button>
-      <button onclick="window.location.href='messages.html?otherEmail=${encodeURIComponent(m.email)}'">Message</button>
-    `;
-    frag.appendChild(div);
-  });
-
-  container.appendChild(frag);
+async function loadCommunityName() {
+  if (!communityId) return;
+  try {
+    const res = await fetch(`${API_URL}?module=getCommunity&communityId=${encodeURIComponent(communityId)}`);
+    const data = await res.json();
+    if (data.success && data.name) {
+      document.getElementById("headerTitle").innerText = `Community Chat – ${data.name}`;
+    }
+  } catch {}
 }
 
 /* ============================================================
-   POLLING – READ LINE BY LINE
+   POLLING — LINE BY LINE
 ============================================================ */
 function startPolling() {
   loadNewMessages();
@@ -468,16 +442,19 @@ async function loadNewMessages() {
 
     const list = data.messages;
 
+    // Hide loader on first successful load
+    const loader = document.getElementById("chatLoader");
+    if (loader) loader.style.display = "none";
+
     for (let i = 0; i < list.length; i++) {
       const msg = list[i];
+
       if (!msg.timestamp || msg.timestamp <= lastTimestamp) continue;
 
       appendMessage(msg);
       lastTimestamp = msg.timestamp;
     }
-  } catch (e) {
-    // silent fail, try again next poll
-  }
+  } catch (e) {}
 }
 
 /* ============================================================
@@ -505,8 +482,6 @@ function appendMessage(msg) {
 ============================================================ */
 function sendMessage() {
   const input = document.getElementById("messageInput");
-  if (!input) return;
-
   const text = input.value.trim();
   if (!text || !activeConversationId) return;
 
@@ -520,7 +495,6 @@ function sendMessage() {
     .then(d => {
       if (!d.success) return;
       input.value = "";
-      // Let polling pick it up; or force one read:
       loadNewMessages();
     });
 }
