@@ -283,16 +283,6 @@
             background: #aaa !important;
             margin-top: 10px;
         }
-    /* BUTTONS */
-.btn-primary {
-    padding: 10px 20px;
-    background: #4a6cff;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-}
     </style>
 </head>
 
@@ -429,6 +419,26 @@ async function submitCommunity() {
         return;
     }
 
+    // 1. Close the form immediately
+    closeCreateCommunityPopup();
+
+    // 2. Create a temporary ID for optimistic UI
+    const tempId = "temp-" + Date.now();
+
+    // 3. Insert the new community card instantly
+    const grid = document.getElementById("communityGrid");
+    grid.insertAdjacentHTML("afterbegin", `
+        <div class="card" data-community="${tempId}">
+            <h3>${name}</h3>
+            <p>${description}</p>
+            <button disabled>Saving...</button>
+        </div>
+    `);
+
+    // 4. Show success message immediately
+    showMessagePopup("Success", "Community created!");
+
+    // 5. Save to backend in the background
     const url =
         `${API_URL}?module=createCommunity` +
         `&name=${encodeURIComponent(name)}` +
@@ -440,32 +450,88 @@ async function submitCommunity() {
         const data = await res.json();
 
         if (!data.success) {
-            showMessagePopup("Error", "Failed to create community.");
+            // Backend failed → remove temp card
+            document.querySelector(`[data-community="${tempId}"]`)?.remove();
+            showMessagePopup("Error", "Failed to save community.");
             return;
         }
 
-        closeCreateCommunityPopup();
-        showMessagePopup("Success", "Community created!");
-        loadCommunities();
+        // 6. Replace temp card with real one
+        const tempCard = document.querySelector(`[data-community="${tempId}"]`);
+        if (tempCard) {
+            tempCard.outerHTML = `
+                <div class="card" data-community="${data.id}">
+                    <h3>${name}</h3>
+                    <p>${description}</p>
+                    <button onclick="joinCommunity('${data.id}')">Join</button>
+                    <button style="background:#ff4a4a;" onclick="deleteCommunity('${data.id}')">Delete</button>
+                </div>
+            `;
+        }
 
     } catch (err) {
+        // Network error → remove temp card
+        document.querySelector(`[data-community="${tempId}"]`)?.remove();
         showMessagePopup("Network Error", "Please try again.");
     }
 }
+/* ============================
+   FAST COMMUNITIES LOADING
+============================ */
+let allCommunities = [];
+let index = 0;
+const BATCH = 20;
 
-/* LOAD COMMUNITIES */
-async function loadCommunities() {
+/* 1. Render cached communities instantly */
+function loadCachedCommunities() {
+    const cached = localStorage.getItem("cached_communities");
+    if (!cached) return;
+
+    allCommunities = JSON.parse(cached);
+    index = 0;
+
+    const grid = document.getElementById("communityGrid");
+    grid.innerHTML = "";
+// Fade-in effect for smoother perception of speed
+grid.style.opacity = "0";
+setTimeout(() => grid.style.opacity = "1", 50);
+    renderNextBatch();
+}
+
+/* 2. Fetch fresh communities in background */
+async function fetchCommunities(force = false) {
     const res = await fetch(`${API_URL}?module=getAllCommunities`);
     const data = await res.json();
 
     if (!data.success) return;
 
+    // Save cache
+    localStorage.setItem("cached_communities", JSON.stringify(data.communities));
+
+    // If not forced and cache exists, don't flicker UI
+    if (!force && localStorage.getItem("cached_communities")) return;
+
+    allCommunities = data.communities;
+    index = 0;
+
     const grid = document.getElementById("communityGrid");
     grid.innerHTML = "";
 
+    renderNextBatch();
+}
+
+/* 3. Lazy loading (20 at a time) */
+function renderNextBatch() {
+    const slice = allCommunities.slice(index, index + BATCH);
+    appendCommunities(slice);
+    index += BATCH;
+}
+
+function appendCommunities(list) {
+    const grid = document.getElementById("communityGrid");
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
-    data.communities.forEach(c => {
+    list.forEach(c => {
         const isCreator = user && user.email === c.creator;
 
         grid.innerHTML += `
@@ -482,6 +548,13 @@ async function loadCommunities() {
         `;
     });
 }
+
+/* 4. Infinite scroll */
+window.addEventListener("scroll", () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+        renderNextBatch();
+    }
+});
 
 /* JOIN COMMUNITY */
 async function joinCommunity(id) {
@@ -502,17 +575,51 @@ async function deleteCommunity(id) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return;
 
+    const card = document.querySelector(`[data-community="${id}"]`);
+
+    // 1. Remove card instantly
+    if (card) card.remove();
+
+    // 2. Remove from cache instantly
+    let cached = JSON.parse(localStorage.getItem("cached_communities") || "[]");
+    cached = cached.filter(c => c.id !== id);
+    localStorage.setItem("cached_communities", JSON.stringify(cached));
+
+    // 3. Remove from in-memory list
+    allCommunities = allCommunities.filter(c => c.id !== id);
+
+    // 4. Show success popup immediately
+    showMessagePopup("Deleted", "Community removed.");
+
+    // 5. Backend delete in background
     const res = await fetch(
         `${API_URL}?module=deleteCommunity&communityId=${id}&email=${user.email}`
     );
-
     const data = await res.json();
 
-    if (data.success) {
-        showMessagePopup("Deleted", "Community removed.");
-        loadCommunities();
-    } else {
-        showMessagePopup("Error", data.message || "Failed to delete.");
+    // 6. If backend failed → restore card + restore cache
+    if (!data.success) {
+        const grid = document.getElementById("communityGrid");
+
+        grid.insertAdjacentHTML("afterbegin", `
+            <div class="card" data-community="${id}">
+                <h3>${data.name || "Community"}</h3>
+                <p>${data.description || ""}</p>
+                <button style="background:#ff4a4a;" onclick="deleteCommunity('${id}')">Delete</button>
+                <button onclick="joinCommunity('${id}')">Join</button>
+            </div>
+        `);
+
+        // Restore cache
+        cached.push({
+            id,
+            name: data.name,
+            description: data.description,
+            creator: user.email
+        });
+        localStorage.setItem("cached_communities", JSON.stringify(cached));
+
+        showMessagePopup("Error", data.message || "Failed to delete community.");
     }
 }
 
@@ -525,7 +632,10 @@ function logout() {
 /* INIT */
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
-    loadCommunities();
+
+    // FAST LOAD
+    loadCachedCommunities();  // instant
+    fetchCommunities();       // background refresh
 });
 </script>
 </body>

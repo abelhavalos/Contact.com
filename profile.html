@@ -156,11 +156,54 @@
             color: #444;
             margin-bottom: 18px;
         }
+    
+.profile-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 10, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+.profile-animation.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.spinner {
+    width: 55px;
+    height: 55px;
+    border: 5px solid #444;
+    border-top-color: #00c3ff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.profile-text {
+    margin-top: 20px;
+    color: white;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
     </style>
 </head>
 
 <body>
-
+<div id="profileAnimation" class="profile-animation hidden">
+    <div class="spinner"></div>
+    <div class="profile-text" id="profileAnimText">Saving...</div>
+</div>
 <!-- NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
 
@@ -244,10 +287,13 @@
     </div>
 
 </div>
+
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* POPUP SYSTEM */
+/* ============================
+   POPUP SYSTEM (Errors only)
+============================ */
 function showPopup(title, message) {
     document.getElementById("popupTitle").innerText = title;
     document.getElementById("popupMessage").innerText = message;
@@ -274,34 +320,9 @@ function hideDeleteConfirm() {
     document.getElementById("popupBackdrop").style.display = "none";
 }
 
-async function confirmDeleteAccount() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    hideDeleteConfirm();
-
-    if (!user || !user.email) {
-        showPopup("Error", "User not found. Please log in again.");
-        return;
-    }
-
-    const url = `${API_URL}?module=deleteAccount&email=${encodeURIComponent(user.email)}`;
-
-    try {
-        const res = await fetch(url);
-        const result = await res.json();
-
-        if (result.success) {
-            localStorage.removeItem("contact_user");
-            showPopup("Account Deleted", "Your account has been permanently removed.");
-            setTimeout(() => window.location.href = "signup.html", 1000);
-        } else {
-            showPopup("Delete Failed", result.message || "Could not delete account.");
-        }
-    } catch (err) {
-        showPopup("Network Error", "Could not reach the server.");
-    }
-}
-
-/* NAVBAR */
+/* ============================
+   NAVBAR
+============================ */
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -333,7 +354,9 @@ function loadNavbar() {
     `;
 }
 
-/* LOAD PROFILE */
+/* ============================
+   LOAD PROFILE (Instant)
+============================ */
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
     loadProfile();
@@ -368,7 +391,9 @@ function getVal(id) {
     return el ? el.value : "";
 }
 
-/* ENABLE EDITING */
+/* ============================
+   ENABLE EDITING
+============================ */
 function enableEditing() {
     document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
         .forEach(el => el.disabled = false);
@@ -377,45 +402,72 @@ function enableEditing() {
     document.getElementById("editBtn").style.display = "none";
 }
 
-/* SAVE PROFILE */
+/* ============================
+   ANIMATION HELPERS
+============================ */
+function showAnim(text) {
+    const anim = document.getElementById("profileAnimation");
+    const animText = document.getElementById("profileAnimText");
+    animText.innerText = text;
+    anim.classList.remove("hidden");
+}
+
+function hideAnim() {
+    document.getElementById("profileAnimation").classList.add("hidden");
+}
+
+/* ============================
+   SAVE PROFILE (Animated)
+============================ */
 async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return window.location.href = "login.html";
 
+    const updatedUser = {
+        ...user,
+        fullName: getVal("fullName"),
+        profession: getVal("profession"),
+        about: getVal("about"),
+        skills: getVal("skills"),
+        workLife: getVal("workLife")
+    };
+
+    // Optimistic UI
+    localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+    loadProfile();
+
+    // Animation
+    showAnim("Saving changes...");
+
     const url =
         `${API_URL}?module=saveProfile`
         + `&email=${encodeURIComponent(user.email)}`
-        + `&fullName=${encodeURIComponent(getVal("fullName"))}`
-        + `&profession=${encodeURIComponent(getVal("profession"))}`
-        + `&about=${encodeURIComponent(getVal("about"))}`
-        + `&skills=${encodeURIComponent(getVal("skills"))}`
-        + `&workLife=${encodeURIComponent(getVal("workLife"))}`;
+        + `&fullName=${encodeURIComponent(updatedUser.fullName)}`
+        + `&profession=${encodeURIComponent(updatedUser.profession)}`
+        + `&about=${encodeURIComponent(updatedUser.about)}`
+        + `&skills=${encodeURIComponent(updatedUser.skills)}`
+        + `&workLife=${encodeURIComponent(updatedUser.workLife)}`;
 
     try {
         const res = await fetch(url);
         const result = await res.json();
 
         if (result.success) {
-            const updatedUser = result.user || {
-                ...user,
-                fullName: getVal("fullName"),
-                profession: getVal("profession"),
-                about: getVal("about"),
-                skills: getVal("skills"),
-                workLife: getVal("workLife")
-            };
-            localStorage.setItem("contact_user", JSON.stringify(updatedUser));
-            showPopup("Profile Updated", "Your profile has been successfully saved.");
-            setTimeout(() => window.location.reload(), 800);
+            document.getElementById("profileAnimText").innerText = "Profile updated!";
+            setTimeout(hideAnim, 600);
         } else {
+            hideAnim();
             showPopup("Update Failed", result.message || "Failed to update profile.");
         }
     } catch (e) {
+        hideAnim();
         showPopup("Network Error", "Could not reach the server.");
     }
 }
 
-/* CHANGE EMAIL */
+/* ============================
+   CHANGE EMAIL (Animated)
+============================ */
 async function changeEmail() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return window.location.href = "login.html";
@@ -425,6 +477,11 @@ async function changeEmail() {
         showPopup("Missing Email", "Please enter a new email.");
         return;
     }
+
+    const updatedUser = { ...user, email: newEmail };
+    localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+
+    showAnim("Updating email...");
 
     const url =
         `${API_URL}?module=changeEmail`
@@ -436,19 +493,23 @@ async function changeEmail() {
         const result = await res.json();
 
         if (result.success) {
-            const updatedUser = result.user || { ...user, email: newEmail };
-            localStorage.setItem("contact_user", JSON.stringify(updatedUser));
-            showPopup("Email Updated", "Your email has been successfully changed.");
-            setTimeout(() => window.location.reload(), 800);
+            document.getElementById("profileAnimText").innerText = "Email updated!";
+            setTimeout(hideAnim, 600);
         } else {
+            localStorage.setItem("contact_user", JSON.stringify(user));
+            hideAnim();
             showPopup("Update Failed", result.message || "Failed to update email.");
         }
     } catch (e) {
+        localStorage.setItem("contact_user", JSON.stringify(user));
+        hideAnim();
         showPopup("Network Error", "Could not reach the server.");
     }
 }
 
-/* CHANGE PASSWORD */
+/* ============================
+   CHANGE PASSWORD (Animated)
+============================ */
 async function changePassword() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return window.location.href = "login.html";
@@ -466,6 +527,8 @@ async function changePassword() {
         return;
     }
 
+    showAnim("Updating password...");
+
     const url =
         `${API_URL}?module=changePassword`
         + `&email=${encodeURIComponent(user.email)}`
@@ -476,25 +539,61 @@ async function changePassword() {
         const result = await res.json();
 
         if (result.success) {
-            showPopup("Password Updated", "Your password has been successfully changed.");
+            document.getElementById("profileAnimText").innerText = "Password updated!";
+            setTimeout(hideAnim, 600);
         } else {
+            hideAnim();
             showPopup("Update Failed", result.message || "Failed to update password.");
         }
     } catch (e) {
+        hideAnim();
         showPopup("Network Error", "Could not reach the server.");
     }
 }
 
-/* LOGOUT */
+/* ============================
+   DELETE ACCOUNT (Animated)
+============================ */
+async function confirmDeleteAccount() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    hideDeleteConfirm();
+
+    if (!user || !user.email) {
+        showPopup("Error", "User not found. Please log in again.");
+        return;
+    }
+
+    showAnim("Deleting account...");
+
+    const url = `${API_URL}?module=deleteAccount&email=${encodeURIComponent(user.email)}`;
+
+    try {
+        const res = await fetch(url);
+        const result = await res.json();
+
+        if (result.success) {
+            localStorage.removeItem("contact_user");
+            document.getElementById("profileAnimText").innerText = "Account deleted";
+            setTimeout(() => window.location.href = "signup.html", 700);
+        } else {
+            hideAnim();
+            showPopup("Delete Failed", result.message || "Could not delete account.");
+        }
+    } catch (err) {
+        hideAnim();
+        showPopup("Network Error", "Could not reach the server.");
+    }
+}
+
+/* ============================
+   LOGOUT
+============================ */
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
 }
 </script>
-
 </body>
 </html>
 
 
-</body>
-</html>

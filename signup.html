@@ -176,11 +176,54 @@
             color: #444;
             margin-bottom: 18px;
         }
+    
+    .signup-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 10, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+.signup-animation.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.spinner {
+    width: 55px;
+    height: 55px;
+    border: 5px solid #444;
+    border-top-color: #00c3ff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.signup-text {
+    margin-top: 20px;
+    color: white;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
     </style>
 </head>
 
 <body>
-
+<div id="signupAnimation" class="signup-animation hidden">
+    <div class="spinner"></div>
+    <div class="signup-text" id="signupText">Creating your account...</div>
+</div>
 <!-- NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
 
@@ -193,7 +236,7 @@
     <input id="fullName" type="text" placeholder="Full Name" required />
     <input id="email" type="email" placeholder="Email" required />
     <input id="password" type="password" placeholder="Password" required />
-    <button onclick="signupUser()">Sign Up</button>
+    <button id="signupBtn" onclick="signupUser()">Sign Up</button>
 
     <div class="toggle">
         Already have an account?
@@ -211,7 +254,7 @@
 </div>
 
 <script>
-/* POPUP SYSTEM */
+/* POPUP SYSTEM (only for errors) */
 function showPopup(title, message) {
     document.getElementById("popupTitle").innerText = title;
     document.getElementById("popupMessage").innerText = message;
@@ -229,16 +272,29 @@ function toggleMenu() {
 
 const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* SIGNUP */
+/* ============================
+   OPTIMIZED SIGNUP (Instant UI)
+============================ */
 async function signupUser() {
     const fullName = document.getElementById("fullName").value.trim();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
+    const signupBtn = document.getElementById("signupBtn");
 
     if (!fullName || !email || !password) {
         showPopup("Missing Fields", "Please fill out all fields.");
         return;
     }
+
+    // 1. Instant button feedback
+    signupBtn.disabled = true;
+    signupBtn.innerText = "Creating...";
+
+    // 2. Show animation instantly
+    const anim = document.getElementById("signupAnimation");
+    const animText = document.getElementById("signupText");
+    anim.classList.remove("hidden");
+    animText.innerText = "Creating your account...";
 
     const url = `${WEBAPP_URL}?module=signup&fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
 
@@ -247,12 +303,30 @@ async function signupUser() {
         const result = await res.json();
 
         if (result.success) {
-            showPopup("Signup Successful", "Your account has been created.");
-            setTimeout(() => window.location.href = "login.html", 900);
+            // Success animation
+            animText.innerText = "Welcome to Contact.com!";
+
+            // Smooth redirect
+            setTimeout(() => {
+                window.location.href = "login.html";
+            }, 700);
+
         } else {
+            // Hide animation
+            anim.classList.add("hidden");
+
+            signupBtn.disabled = false;
+            signupBtn.innerText = "Sign Up";
+
             showPopup("Signup Failed", result.message);
         }
+
     } catch (err) {
+        anim.classList.add("hidden");
+
+        signupBtn.disabled = false;
+        signupBtn.innerText = "Sign Up";
+
         showPopup("Network Error", "Unable to connect. Please try again.");
     }
 }

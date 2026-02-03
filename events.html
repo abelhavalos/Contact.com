@@ -239,6 +239,9 @@
 ============================ */
 const EVENTS_API = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
+/* In-memory event list */
+let allEvents = [];
+
 
 /* ============================
    UNIVERSAL POPUP
@@ -330,19 +333,6 @@ function showCreateEventButton() {
 /* ============================
    POPUPS
 ============================ */
-function showComingSoon() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) {
-        window.location.href = "signup.html";
-        return;
-    }
-    document.getElementById('comingSoonBackdrop').style.display = 'flex';
-}
-
-function hideComingSoon() {
-    document.getElementById('comingSoonBackdrop').style.display = 'none';
-}
-
 function openCreateEventPopup() {
     document.getElementById("createEventBackdrop").style.display = "flex";
 }
@@ -353,7 +343,7 @@ function closeCreateEventPopup() {
 
 
 /* ============================
-   CREATE EVENT
+   OPTIMISTIC CREATE EVENT
 ============================ */
 async function submitEvent() {
     const title = document.getElementById("eventTitle").value.trim();
@@ -370,6 +360,35 @@ async function submitEvent() {
         return;
     }
 
+    // 1. Close popup instantly
+    closeCreateEventPopup();
+
+    // 2. Create optimistic temp event
+    const tempId = "temp-" + Date.now();
+    const grid = document.getElementById("eventsGrid");
+
+    grid.insertAdjacentHTML("afterbegin", `
+        <div class="card" data-event="${tempId}">
+            <h3>${title}</h3>
+            <p>${description}</p>
+            <p style="font-size:0.85rem; color:#ccc;">Saving...</p>
+            <button disabled>Saving...</button>
+        </div>
+    `);
+
+    // 3. Add to in-memory list
+    allEvents.unshift({
+        id: tempId,
+        title,
+        description,
+        creator: user.email,
+        creatorName: user.name || user.email
+    });
+
+    // 4. Show success immediately
+    showMessagePopup("Success", "Your event has been created!");
+
+    // 5. Save to backend in background
     const url = `${EVENTS_API}?module=createEvent&email=${encodeURIComponent(user.email)}&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`;
 
     try {
@@ -377,13 +396,83 @@ async function submitEvent() {
         const data = await res.json();
 
         if (!data.success) {
-            showMessagePopup("Error", "Failed to create event.");
+            document.querySelector(`[data-event="${tempId}"]`)?.remove();
+            showMessagePopup("Error", "Failed to save event.");
             return;
         }
 
-        closeCreateEventPopup();
-        showMessagePopup("Success", "Your event has been created!");
-        loadEvents();
+        // 6. Replace temp card with real event
+        const tempCard = document.querySelector(`[data-event="${tempId}"]`);
+        if (tempCard) {
+            tempCard.outerHTML = `
+                <div class="card" data-event="${data.id}">
+                    <h3>${title}</h3>
+                    <p>${description}</p>
+                    <p style="font-size:0.85rem; color:#ccc;">Created by: ${data.creatorName}</p>
+                    <button style="background:#ff4a4a;" onclick="deleteEvent('${data.id}')">Delete Event</button>
+                </div>
+            `;
+        }
+
+        // Update in-memory list
+        allEvents = allEvents.map(ev => ev.id === tempId ? { ...ev, id: data.id } : ev);
+
+    } catch (err) {
+        document.querySelector(`[data-event="${tempId}"]`)?.remove();
+        showMessagePopup("Network Error", "Please try again.");
+    }
+}
+
+
+/* ============================
+   OPTIMISTIC DELETE EVENT
+============================ */
+async function deleteEvent(id) {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) return;
+
+    const card = document.querySelector(`[data-event="${id}"]`);
+
+    // 1. Remove card instantly
+    if (card) card.remove();
+
+    // 2. Remove from in-memory list
+    allEvents = allEvents.filter(ev => ev.id !== id);
+
+    // 3. Show success immediately
+    showMessagePopup("Deleted", "Your event has been removed.");
+
+    // 4. Backend delete in background
+    const url = `${EVENTS_API}?module=deleteEvent&id=${id}&email=${encodeURIComponent(user.email)}`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.success) {
+            // Restore card if backend failed
+            const grid = document.getElementById("eventsGrid");
+
+            grid.insertAdjacentHTML("afterbegin", `
+                <div class="card" data-event="${id}">
+                    <h3>${data.title || "Event"}</h3>
+                    <p>${data.description || ""}</p>
+                    <p style="font-size:0.85rem; color:#ccc;">Created by: ${data.creatorName || user.email}</p>
+                    <button style="background:#ff4a4a;" onclick="deleteEvent('${id}')">Delete Event</button>
+                </div>
+            `);
+
+            // Restore in-memory list
+            allEvents.unshift({
+                id,
+                title: data.title,
+                description: data.description,
+                creator: user.email,
+                creatorName: data.creatorName
+            });
+
+            showMessagePopup("Error", data.message || "Failed to delete event.");
+        }
 
     } catch (err) {
         showMessagePopup("Network Error", "Please try again.");
@@ -392,21 +481,34 @@ async function submitEvent() {
 
 
 /* ============================
-   LOAD EVENTS
+   LOAD EVENTS (cache-first)
 ============================ */
 async function loadEvents() {
+    const grid = document.getElementById("eventsGrid");
+
+    // 1. Load cached events instantly
+    const cached = localStorage.getItem("cached_events");
+    if (cached) {
+        allEvents = JSON.parse(cached);
+        renderEvents(allEvents);
+    }
+
+    // 2. Fetch fresh events in background
     const url = `${EVENTS_API}?module=getEvents`;
 
     try {
         const res = await fetch(url);
         const data = await res.json();
 
-        if (!data.success) {
-            console.error("Failed to load events");
-            return;
-        }
+        if (!data.success) return;
 
-        renderEvents(data.events);
+        allEvents = data.events;
+
+        // Update cache
+        localStorage.setItem("cached_events", JSON.stringify(allEvents));
+
+        // Re-render with fresh data
+        renderEvents(allEvents);
 
     } catch (err) {
         console.error("Network error loading events");
@@ -432,7 +534,7 @@ function renderEvents(events) {
         const isMine = currentUser && ev.creator === currentUser.email;
 
         grid.innerHTML += `
-            <div class="card">
+            <div class="card" data-event="${ev.id}">
                 <h3>${ev.title}</h3>
                 <p>${ev.description}</p>
                 <p style="font-size:0.85rem; color:#ccc;">Created by: ${ev.creatorName}</p>
@@ -444,33 +546,6 @@ function renderEvents(events) {
             </div>
         `;
     });
-}
-
-
-/* ============================
-   DELETE EVENT
-============================ */
-async function deleteEvent(id) {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) return;
-
-    const url = `${EVENTS_API}?module=deleteEvent&id=${id}&email=${encodeURIComponent(user.email)}`;
-
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (!data.success) {
-            showMessagePopup("Error", "Failed to delete event.");
-            return;
-        }
-
-        showMessagePopup("Deleted", "Your event has been removed.");
-        loadEvents();
-
-    } catch (err) {
-        showMessagePopup("Network Error", "Please try again.");
-    }
 }
 
 
@@ -506,6 +581,5 @@ document.addEventListener("DOMContentLoaded", () => {
     loadEvents();
 });
 </script>
-
 </body>
 </html>

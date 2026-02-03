@@ -183,11 +183,54 @@
 
         .btn-message { background: #4a6cff; }
         .btn-add { background: #28c76f; }
+    .public-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 10, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+.public-animation.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.spinner {
+    width: 55px;
+    height: 55px;
+    border: 5px solid #444;
+    border-top-color: #00c3ff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.public-text {
+    margin-top: 20px;
+    color: white;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
+    
     </style>
 </head>
 
 <body>
-
+<div id="publicProfileAnimation" class="public-animation hidden">
+    <div class="spinner"></div>
+    <div class="public-text" id="publicAnimText">Loading profile...</div>
+</div>
 <!-- UNIFIED NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
 <div class="mobile-menu" id="mobileMenu"></div>
@@ -223,7 +266,9 @@
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* NAVBAR */
+/* ============================
+   NAVBAR
+============================ */
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -258,7 +303,9 @@ function loadNavbar() {
     `;
 }
 
-/* POPUP SYSTEM */
+/* ============================
+   POPUP (Errors only)
+============================ */
 function showPopup(title, message) {
     document.getElementById("popupTitle").innerText = title;
     document.getElementById("popupMessage").innerText = message;
@@ -269,61 +316,110 @@ function hidePopup() {
     document.getElementById("popupBackdrop").style.display = "none";
 }
 
-/* LOGOUT */
+/* ============================
+   LOGOUT
+============================ */
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
 }
 
-/* GET ?email= */
+/* ============================
+   GET ?email=
+============================ */
 const params = new URLSearchParams(window.location.search);
 const profileEmail = params.get("email");
 
-/* LOAD PROFILE */
+/* ============================
+   LOAD PUBLIC PROFILE (FAST)
+============================ */
 async function loadPublicProfile() {
-    if (!profileEmail) return alert("No profile specified");
+    if (!profileEmail) {
+        showPopup("Error", "No profile specified.");
+        return;
+    }
 
-    const url = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(profileEmail)}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    // 1. Load cached profile instantly
+    const cached = localStorage.getItem("cached_public_profile_" + profileEmail);
+    if (cached) {
+        fillProfile(JSON.parse(cached));
+    }
 
-    if (!data.success) return alert("Profile not found");
+    // 2. Fetch fresh profile in background
+    try {
+        const url = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(profileEmail)}`;
+        const res = await fetch(url);
+        const data = await res.json();
 
-    const u = data.user;
+        if (!data.success) {
+            if (!cached) showPopup("Not Found", "This profile does not exist.");
+            return;
+        }
 
-    document.getElementById("name").innerText = u.fullName;
+        const u = data.user;
+
+        // Update UI instantly
+        fillProfile(u);
+
+        // Update cache
+        localStorage.setItem("cached_public_profile_" + profileEmail, JSON.stringify(u));
+
+    } catch (err) {
+        if (!cached) showPopup("Network Error", "Unable to load profile.");
+    }
+}
+
+/* ============================
+   FILL PROFILE FIELDS
+============================ */
+function fillProfile(u) {
+    document.getElementById("name").innerText = u.fullName || "";
     document.getElementById("profession").innerText = u.profession || "";
     document.getElementById("about").innerText = u.about || "";
     document.getElementById("skills").innerText = u.skills || "";
     document.getElementById("workLife").innerText = u.workLife || "";
 }
 
-/* MESSAGE BUTTON */
+/* ============================
+   MESSAGE BUTTON
+============================ */
 function openChat() {
     window.location.href = `messages.html?otherEmail=${encodeURIComponent(profileEmail)}`;
 }
 
-/* ADD TO CONTACTS */
+/* ============================
+   ADD TO CONTACTS (FAST)
+============================ */
 async function addToContacts() {
     const me = JSON.parse(localStorage.getItem("contact_user"));
     if (!me) return window.location.href = "login.html";
 
-    const url =
-        `${API_URL}?module=addContact`
-        + `&userEmail=${encodeURIComponent(me.email)}`
-        + `&contactEmail=${encodeURIComponent(profileEmail)}`;
+    // Instant UI feedback
+    showPopup("Adding...", "Adding this contact...");
 
-    const res = await fetch(url);
-    const result = await res.json();
+    try {
+        const url =
+            `${API_URL}?module=addContact`
+            + `&userEmail=${encodeURIComponent(me.email)}`
+            + `&contactEmail=${encodeURIComponent(profileEmail)}`;
 
-    if (result.success) {
-        showPopup("Contact Added", "This person has been added to your contacts.");
-    } else {
-        alert(result.message || "Failed to add contact");
+        const res = await fetch(url);
+        const result = await res.json();
+
+        if (result.success) {
+            showPopup("Contact Added", "This person is now in your contacts.");
+        } else {
+            showPopup("Error", result.message || "Failed to add contact.");
+        }
+
+    } catch (err) {
+        showPopup("Network Error", "Unable to add contact.");
     }
 }
 
-/* INIT */
+/* ============================
+   INIT
+============================ */
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
     loadPublicProfile();

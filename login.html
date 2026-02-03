@@ -178,11 +178,54 @@ button {
     color: #444;
     margin-bottom: 18px;
 }
+    
+.login-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 10, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+.login-animation.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.spinner {
+    width: 55px;
+    height: 55px;
+    border: 5px solid #444;
+    border-top-color: #00c3ff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.login-text {
+    margin-top: 20px;
+    color: white;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
     </style>
 </head>
 
 <body>
-
+<div id="loginAnimation" class="login-animation hidden">
+    <div class="spinner"></div>
+    <div class="login-text" id="loginText">Logging in...</div>
+</div>
 <!-- NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
 
@@ -195,7 +238,7 @@ button {
 
     <input id="email" type="email" placeholder="Email" required />
     <input id="password" type="password" placeholder="Password" required />
-    <button onclick="loginUser()">Login</button>
+    <button id="loginBtn" onclick="loginUser()">Login</button>
 
     <div class="toggle">
         Don't have an account?
@@ -215,7 +258,9 @@ button {
 <script>
 const WEBAPP_URL ="https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* POPUP SYSTEM */
+/* ============================
+   POPUP SYSTEM
+============================ */
 function showPopup(title, message) {
     document.getElementById("popupTitle").innerText = title;
     document.getElementById("popupMessage").innerText = message;
@@ -226,7 +271,9 @@ function hidePopup() {
     document.getElementById("popupBackdrop").style.display = "none";
 }
 
-/* NAVBAR */
+/* ============================
+   NAVBAR
+============================ */
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -281,19 +328,28 @@ function loadNavbar() {
         `;
 }
 
-/* LOGIN */
+/* ============================
+   OPTIMIZED LOGIN (Instant UI)
+============================ */
 async function loginUser() {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
-    const loginBtn = document.querySelector("button");
+    const loginBtn = document.getElementById("loginBtn");
+    const anim = document.getElementById("loginAnimation");
+    const animText = document.getElementById("loginText");
 
     if (!email || !password) {
         showPopup("Missing Fields", "Please enter both email and password.");
         return;
     }
 
+    // Disable button instantly
     loginBtn.disabled = true;
-    loginBtn.innerText = "Logging in...";
+    loginBtn.innerText = "Checking...";
+
+    // Show animation instantly
+    anim.classList.remove("hidden");
+    animText.innerText = "Checking credentials...";
 
     const url = `${WEBAPP_URL}?module=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
 
@@ -302,20 +358,40 @@ async function loginUser() {
         const result = await res.json();
 
         if (result.success) {
+            // Save user instantly
             localStorage.setItem("contact_user", JSON.stringify(result.user));
-            window.location.href = "dashboard.html";
+
+            // Success animation
+            animText.innerText = "Welcome back!";
+
+            // Smooth redirect
+            setTimeout(() => {
+                window.location.href = "dashboard.html";
+            }, 600);
+
         } else {
+            // Hide animation
+            anim.classList.add("hidden");
+
+            loginBtn.disabled = false;
+            loginBtn.innerText = "Login";
+
             showPopup("Login Failed", result.message);
         }
+
     } catch (err) {
+        anim.classList.add("hidden");
+
+        loginBtn.disabled = false;
+        loginBtn.innerText = "Login";
+
         showPopup("Network Error", "Unable to connect. Please try again.");
     }
-
-    loginBtn.disabled = false;
-    loginBtn.innerText = "Login";
 }
 
-/* LOGOUT */
+/* ============================
+   LOGOUT
+============================ */
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
