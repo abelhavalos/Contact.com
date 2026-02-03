@@ -630,18 +630,38 @@ function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
+  // Create optimistic message
+  const optimisticMsg = {
+    senderEmail: loggedInUser.email,
+    senderName: loggedInUser.fullName,
+    text,
+    timestamp: Date.now()
+  };
+
+  // Display immediately
+  appendMessages([optimisticMsg]);
+
+  // Update local cache
+  messages.push(optimisticMsg);
+  lastTimestamp = optimisticMsg.timestamp;
+  localStorage.setItem(`chat_${activeConversationId}`, JSON.stringify(messages));
+
+  // Clear input instantly
+  input.value = "";
+
+  // Send to backend (async)
   fetch(
-    `${API_URL}?module=sendMessage&conversationId=${encodeURIComponent(
-      activeConversationId
-    )}&senderEmail=${encodeURIComponent(
-      loggedInUser.email
-    )}&text=${encodeURIComponent(text)}`
+    `${API_URL}?module=sendMessage`
+    + `&conversationId=${encodeURIComponent(activeConversationId)}`
+    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
+    + `&text=${encodeURIComponent(text)}`
   )
-    .then((r) => r.json())
-    .then((d) => {
-      if (!d.success) return;
-      input.value = "";
-      loadNewMessages();
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) {
+        console.warn("Message failed to send:", text);
+        // Optional: mark message as failed
+      }
     });
 }
 </script>
