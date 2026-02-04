@@ -210,3 +210,22 @@ body {
         max-width: none;
     }
 }
+/* --------------------------------------------------
+   FOOTER
+-------------------------------------------------- */
+
+.footer {
+  padding: 40px 24px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.footer-brand {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.footer-note {
+  margin-top: 10px;
+  color: #64748b;
+}
