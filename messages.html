@@ -641,16 +641,25 @@ function sendMessage() {
 
   input.value = "";
 
-  // Send to backend (backend encrypts)
-  fetch(
-  `${API_URL}?module=sendMessage`
-  + `&conversationId=${encodeURIComponent(activeConversationId)}`
-  + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-  + `&receiverEmail=${encodeURIComponent(otherEmail)}`
-  + `&senderName=${encodeURIComponent(loggedInUser.fullName)}`
-  + `&otherEmail=${encodeURIComponent(otherEmail)}`
-  + `&text=${encodeURIComponent(text)}`
-)    .then((r) => r.json())
+  // 🔥 Build URL depending on mode
+  let url =
+    `${API_URL}?module=sendMessage`
+    + `&conversationId=${encodeURICom
+                         ponent(activeConversationId)}`
+    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
+    + `&senderName=${encodeURIComponent(loggedInUser.fullName)}`
+    + `&text=${encodeURIComponent(text)}`;
+
+  if (mode === "private") {
+    url +=
+      `&receiverEmail=${encodeURIComponent(otherEmail)}`
+      + `&otherEmail=${encodeURIComponent(otherEmail)}`;
+  }
+
+  // Community mode: no receiverEmail, no otherEmail
+
+  fetch(url)
+    .then((r) => r.json())
     .then((d) => {
       if (!d.success) {
         console.warn("Message failed to send:", text);
