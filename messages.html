@@ -619,7 +619,13 @@ function renderMessages(list) {
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
-  if (!text || !activeConversationId) return;
+
+  if (!text) return;
+
+  if (!activeConversationId) {
+    console.warn("Cannot send: conversation not ready yet");
+    return;
+  }
 
   // Optimistic message
   const optimisticMsg = {
@@ -629,28 +635,24 @@ function sendMessage() {
     timestamp: Date.now()
   };
 
-  // Display immediately
   appendMessages([optimisticMsg]);
-
-  // Update in-memory list + timestamp
   messages.push(optimisticMsg);
   lastTimestamp = optimisticMsg.timestamp;
 
-  // Clear input
   input.value = "";
 
-  // Send to backend (backend will encrypt before storing)
+  // Send to backend (backend encrypts)
   fetch(
-    `${API_URL}?module=sendMessage` +
-      `&conversationId=${encodeURIComponent(activeConversationId)}` +
-      `&senderEmail=${encodeURIComponent(loggedInUser.email)}` +
-      `&text=${encodeURIComponent(text)}`
+    `${API_URL}?module=sendMessage`
+    + `&conversationId=${encodeURIComponent(activeConversationId)}`
+    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
+    + `&receiverEmail=${encodeURIComponent(otherEmail)}`
+    + `&text=${encodeURIComponent(text)}`
   )
     .then((r) => r.json())
     .then((d) => {
       if (!d.success) {
         console.warn("Message failed to send:", text);
-        // Optional: visually mark as failed
       }
     })
     .catch((err) => console.error("sendMessage failed", err));
