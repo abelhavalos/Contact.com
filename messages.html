@@ -329,8 +329,9 @@ const mode = communityId ? "community" : "private";
 let activeConversationId = conversationIdParam || null;
 let messages = [];
 let lastTimestamp = 0;
+let pollingIntervalId = null;
 
-/* COMMUNITY NAME */
+/* COMMUNITY NAME (FALLBACK FROM ID) */
 let communityName = null;
 if (communityId) {
   communityName = communityId
@@ -338,7 +339,7 @@ if (communityId) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/* FETCH REAL COMMUNITY NAME */
+/* FETCH REAL COMMUNITY NAME (FROM BACKEND) */
 async function loadRealCommunityName() {
   if (!communityId) return;
 
@@ -365,7 +366,8 @@ async function loadRealCommunityName() {
    INIT
 ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("chatLoader").style.display = "flex"; // 🔥 show loader instantly
+  // Show loader immediately
+  document.getElementById("chatLoader").style.display = "flex";
 
   loadNavbar();
 
@@ -387,14 +389,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("sendBtn").onclick = sendMessage;
 
-  loadCachedMessages();
-
+  // Start conversation / polling
   if (activeConversationId) {
     startPolling();
   } else if (mode === "community") {
     startCommunityConversation();
   } else if (otherEmail) {
     startConversation();
+  } else {
+    // No conversation context at all
+    document.getElementById("chatLoader").style.display = "none";
   }
 });
 
@@ -441,22 +445,6 @@ function logout() {
 }
 
 /* ============================================================
-   CACHE
-============================================================ */
-function loadCachedMessages() {
-  const cached = localStorage.getItem(`chat_${conversationIdParam}`);
-  if (!cached) return;
-
-  try {
-    messages = JSON.parse(cached);
-    renderMessages(messages);
-    if (messages.length > 0) {
-      lastTimestamp = messages[messages.length - 1].timestamp;
-    }
-  } catch {}
-}
-
-/* ============================================================
    PRIVATE CHAT
 ============================================================ */
 function startConversation() {
@@ -467,10 +455,11 @@ function startConversation() {
   )
     .then((r) => r.json())
     .then((d) => {
-      if (!d.success) return;
+      if (!d.success || !d.conversationId) return;
       activeConversationId = d.conversationId;
       startPolling();
-    });
+    })
+    .catch((err) => console.error("startConversation failed", err));
 }
 
 /* ============================================================
@@ -484,11 +473,12 @@ function startCommunityConversation() {
   )
     .then((r) => r.json())
     .then((d) => {
-      if (!d.success) return;
+      if (!d.success || !d.conversationId) return;
       activeConversationId = d.conversationId;
       loadCommunityMembers();
       startPolling();
-    });
+    })
+    .catch((err) => console.error("startCommunityConversation failed", err));
 }
 
 function loadCommunityMembers() {
@@ -499,8 +489,11 @@ function loadCommunityMembers() {
   )
     .then((r) => r.json())
     .then((d) => {
-      if (d.success) renderMemberSidebar(d.members);
-    });
+      if (d.success && Array.isArray(d.members)) {
+        renderMemberSidebar(d.members);
+      }
+    })
+    .catch((err) => console.error("loadCommunityMembers failed", err));
 }
 
 function renderMemberSidebar(members) {
@@ -512,7 +505,7 @@ function renderMemberSidebar(members) {
     div.className = "member";
 
     div.innerHTML = `
-      <div class="member-name">${m.fullName}</div>
+      <div class="member-name">${m.fullName || m.email}</div>
       <button onclick="window.location.href='public-profile.html?email=${encodeURIComponent(
         m.email
       )}'">View</button>
@@ -526,11 +519,16 @@ function renderMemberSidebar(members) {
 }
 
 /* ============================================================
-   POLLING (FASTEST POSSIBLE)
+   POLLING (FAST)
 ============================================================ */
 function startPolling() {
+  if (!activeConversationId) return;
+
+  // Avoid multiple intervals
+  if (pollingIntervalId) clearInterval(pollingIntervalId);
+
   loadNewMessages();
-  setInterval(loadNewMessages, 1500);
+  pollingIntervalId = setInterval(loadNewMessages, 1500);
 }
 
 function loadNewMessages() {
@@ -543,7 +541,7 @@ function loadNewMessages() {
   )
     .then((r) => r.json())
     .then((d) => {
-      if (!d.success || !d.messages) return;
+      if (!d.success || !Array.isArray(d.messages)) return;
 
       const newList = d.messages;
 
@@ -553,37 +551,29 @@ function loadNewMessages() {
         lastTimestamp = messages[messages.length - 1]?.timestamp || 0;
         renderMessages(messages);
 
-        document.getElementById("chatLoader").style.display = "none"; // hide loader
-
-        localStorage.setItem(
-          `chat_${activeConversationId}`,
-          JSON.stringify(messages)
-        );
+        // Hide loader after first render
+        document.getElementById("chatLoader").style.display = "none";
         return;
       }
 
-      // Only new messages
+      // Only messages newer than lastTimestamp
       const fresh = newList.filter((m) => m.timestamp > lastTimestamp);
 
       if (fresh.length > 0) {
         appendMessages(fresh);
         messages.push(...fresh);
         lastTimestamp = messages[messages.length - 1].timestamp;
-
-        localStorage.setItem(
-          `chat_${activeConversationId}`,
-          JSON.stringify(messages)
-        );
       }
-    });
+    })
+    .catch((err) => console.error("loadNewMessages failed", err));
 }
 
 /* ============================================================
-   RENDERING (FASTEST)
+   RENDERING
 ============================================================ */
 function appendMessages(newMessages) {
   const container = document.getElementById("messages");
-  const frag = document.createDocumentFragment(); // 🔥 fastest DOM method
+  const frag = document.createDocumentFragment();
 
   newMessages.forEach((msg) => {
     const div = document.createElement("div");
@@ -624,13 +614,14 @@ function renderMessages(list) {
 
 /* ============================================================
    SEND MESSAGE
+   (Backend handles encryption; frontend stays plaintext)
 ============================================================ */
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
-  if (!text) return;
+  if (!text || !activeConversationId) return;
 
-  // Create optimistic message
+  // Optimistic message
   const optimisticMsg = {
     senderEmail: loggedInUser.email,
     senderName: loggedInUser.fullName,
@@ -641,30 +632,29 @@ function sendMessage() {
   // Display immediately
   appendMessages([optimisticMsg]);
 
-  // Update local cache
+  // Update in-memory list + timestamp
   messages.push(optimisticMsg);
   lastTimestamp = optimisticMsg.timestamp;
-  localStorage.setItem(`chat_${activeConversationId}`, JSON.stringify(messages));
 
-  // Clear input instantly
+  // Clear input
   input.value = "";
 
-  // Send to backend (async)
+  // Send to backend (backend will encrypt before storing)
   fetch(
-    `${API_URL}?module=sendMessage`
-    + `&conversationId=${encodeURIComponent(activeConversationId)}`
-    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-    + `&text=${encodeURIComponent(text)}`
+    `${API_URL}?module=sendMessage` +
+      `&conversationId=${encodeURIComponent(activeConversationId)}` +
+      `&senderEmail=${encodeURIComponent(loggedInUser.email)}` +
+      `&text=${encodeURIComponent(text)}`
   )
-    .then(r => r.json())
-    .then(d => {
+    .then((r) => r.json())
+    .then((d) => {
       if (!d.success) {
         console.warn("Message failed to send:", text);
-        // Optional: mark message as failed
+        // Optional: visually mark as failed
       }
-    });
+    })
+    .catch((err) => console.error("sendMessage failed", err));
 }
 </script>
-
 </body>
 </html>
