@@ -643,13 +643,14 @@ function sendMessage() {
 
   // Send to backend (backend encrypts)
   fetch(
-    `${API_URL}?module=sendMessage`
-    + `&conversationId=${encodeURIComponent(activeConversationId)}`
-    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-    + `&receiverEmail=${encodeURIComponent(otherEmail)}`
-    + `&text=${encodeURIComponent(text)}`
-  )
-    .then((r) => r.json())
+  `${API_URL}?module=sendMessage`
+  + `&conversationId=${encodeURIComponent(activeConversationId)}`
+  + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
+  + `&receiverEmail=${encodeURIComponent(otherEmail)}`
+  + `&senderName=${encodeURIComponent(loggedInUser.fullName)}`
+  + `&otherEmail=${encodeURIComponent(otherEmail)}`
+  + `&text=${encodeURIComponent(text)}`
+)    .then((r) => r.json())
     .then((d) => {
       if (!d.success) {
         console.warn("Message failed to send:", text);
