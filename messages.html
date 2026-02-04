@@ -642,20 +642,18 @@ function sendMessage() {
   input.value = "";
 
   // 🔥 Build URL depending on mode
-  let url =
-    `${API_URL}?module=sendMessage`
-    + `&conversationId=${encodeURICom
-                         ponent(activeConversationId)}`
-    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-    + `&senderName=${encodeURIComponent(loggedInUser.fullName)}`
-    + `&text=${encodeURIComponent(text)}`;
+  let url = API_URL
+  + "?module=sendMessage"
+  + "&conversationId=" + encodeURIComponent(String(activeConversationId))
+  + "&senderEmail=" + encodeURIComponent(String(loggedInUser.email))
+  + "&senderName=" + encodeURIComponent(String(loggedInUser.fullName))
+  + "&text=" + encodeURIComponent(String(text));
 
-  if (mode === "private") {
-    url +=
-      `&receiverEmail=${encodeURIComponent(otherEmail)}`
-      + `&otherEmail=${encodeURIComponent(otherEmail)}`;
-  }
-
+if (mode === "private") {
+  url +=
+    "&receiverEmail=" + encodeURIComponent(String(otherEmail))
+    + "&otherEmail=" + encodeURIComponent(String(otherEmail));
+}
   // Community mode: no receiverEmail, no otherEmail
 
   fetch(url)
