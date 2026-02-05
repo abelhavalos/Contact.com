@@ -299,7 +299,7 @@ async function confirmDeleteAccount() {
     }
   } catch (err) {
     hideLoader();
-    showPopup("Network Error", "Picture Resolution not Compatible.");
+    showPopup("Network Error", "Could not reach the server.");
   }
 }
 
@@ -313,6 +313,9 @@ function logout() {
 
 /* ============================
    PROFILE PICTURE HANDLING
+============================ */
+/* ============================
+   PROFILE PICTURE HANDLING (FINAL VERSION)
 ============================ */
 function initProfilePictureHandler() {
   const profilePicPreview = document.getElementById("profilePicPreview");
@@ -328,13 +331,36 @@ function initProfilePictureHandler() {
     const file = profilePicFileInput.files[0];
     if (!file) return;
 
+    const img = new Image();
     const reader = new FileReader();
-    reader.onload = function(e) {
-      const base64 = e.target.result;
 
-      profilePicPreview.src = base64;
-      saveProfilePic(base64);
+    reader.onload = function(e) {
+      img.src = e.target.result;
     };
+
+    img.onload = function() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // ⭐ Resize large phone images
+      const MAX_WIDTH = 600;
+      const scale = MAX_WIDTH / img.width;
+
+      canvas.width = MAX_WIDTH;
+      canvas.height = img.height * scale;
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // ⭐ Compress to JPEG at 70% quality
+      const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+      // Instant preview
+      profilePicPreview.src = compressedBase64;
+
+      // Save to backend
+      saveProfilePic(compressedBase64);
+    };
+
     reader.readAsDataURL(file);
   });
 }
