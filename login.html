@@ -345,11 +345,9 @@ async function loginUser() {
         return;
     }
 
-    // Disable button
     loginBtn.disabled = true;
     loginBtn.innerText = "Checking…";
 
-    // Show loader
     loader.style.display = "flex";
     loaderText.innerText = "Checking credentials…";
 
@@ -362,7 +360,23 @@ async function loginUser() {
         if (result.success) {
             loaderText.innerText = "Welcome back!";
 
-            localStorage.setItem("contact_user", JSON.stringify(result.user));
+            const u = result.user;
+
+            const normalizedPic =
+                Array.isArray(u.profilePic) ? u.profilePic[0] :
+                u.profilePic ? u.profilePic :
+                "default-avatar.png";
+
+            localStorage.setItem("contact_user", JSON.stringify({
+                fullName: u.fullName,
+                email: u.email,
+                about: u.about,
+                profession: u.profession,
+                skills: u.skills,
+                workLife: u.workLife,
+                profilePic: normalizedPic,
+                gallery: u.gallery || []
+            }));
 
             setTimeout(() => {
                 window.location.href = "dashboard.html";
@@ -370,7 +384,6 @@ async function loginUser() {
 
         } else {
             loader.style.display = "none";
-
             loginBtn.disabled = false;
             loginBtn.innerText = "Login";
 
@@ -379,7 +392,6 @@ async function loginUser() {
 
     } catch (err) {
         loader.style.display = "none";
-
         loginBtn.disabled = false;
         loginBtn.innerText = "Login";
 
