@@ -299,7 +299,7 @@ async function confirmDeleteAccount() {
     }
   } catch (err) {
     hideLoader();
-    showPopup("Network Error", "Could not reach the server.");
+    showPopup("Network Error", "Picture Resolution not Compatible.");
   }
 }
 
