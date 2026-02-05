@@ -312,7 +312,7 @@ function logout() {
 }
 
 /* ============================
-   PROFILE PICTURE HANDLING (ULTRA COMPRESSION)
+   PROFILE PICTURE HANDLING (MAX COMPRESSION)
 ============================ */
 function initProfilePictureHandler() {
   const profilePicPreview = document.getElementById("profilePicPreview");
@@ -347,8 +347,8 @@ function compressAndUpload(img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // ⭐ Reduce width even more for guaranteed small size
-  const MAX_WIDTH = 400;
+  // ⭐ Reduce width even more for maximum compression
+  const MAX_WIDTH = 300;
   const scale = MAX_WIDTH / img.width;
 
   canvas.width = MAX_WIDTH;
@@ -357,16 +357,21 @@ function compressAndUpload(img) {
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   // ⭐ First compression pass
-  let base64 = canvas.toDataURL("image/jpeg", 0.55);
+  let base64 = canvas.toDataURL("image/jpeg", 0.25);
 
   // ⭐ If still too large, compress again
-  if (base64.length > 150000) {
-    base64 = canvas.toDataURL("image/jpeg", 0.4);
+  if (base64.length > 120000) {
+    base64 = canvas.toDataURL("image/jpeg", 0.20);
   }
 
-  // ⭐ If STILL too large, compress even more
-  if (base64.length > 150000) {
-    base64 = canvas.toDataURL("image/jpeg", 0.3);
+  // ⭐ Third pass if needed
+  if (base64.length > 120000) {
+    base64 = canvas.toDataURL("image/jpeg", 0.18);
+  }
+
+  // ⭐ Final fallback (super compressed)
+  if (base64.length > 120000) {
+    base64 = canvas.toDataURL("image/jpeg", 0.15);
   }
 
   // Instant preview
