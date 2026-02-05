@@ -328,31 +328,37 @@ function initProfilePictureHandler() {
     const file = profilePicFileInput.files[0];
     if (!file) return;
 
-    const localUrl = URL.createObjectURL(file);
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64 = e.target.result;
 
-    profilePicPreview.src = localUrl;
-
-    saveProfilePic(localUrl);
+      profilePicPreview.src = base64;
+      saveProfilePic(base64);
+    };
+    reader.readAsDataURL(file);
   });
 }
 
-async function saveProfilePic(localUrl) {
+async function saveProfilePic(base64) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) return;
 
   showLoader("Updating picture…");
 
-  const url =
-    `${API_URL}?module=updateProfilePicURL` +
-    `&email=${encodeURIComponent(user.email)}` +
-    `&profilePic=${encodeURIComponent(localUrl)}`;
-
   try {
-    const res = await fetch(url);
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        module: "updateProfilePicURL",
+        email: user.email,
+        profilePic: base64
+      })
+    });
+
     const data = await res.json();
 
     if (data.success) {
-      user.profilePic = localUrl;
+      user.profilePic = base64;
       localStorage.setItem("contact_user", JSON.stringify(user));
       showLoader("Picture updated!");
       setTimeout(hideLoader, 600);
