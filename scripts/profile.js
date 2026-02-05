@@ -312,10 +312,7 @@ function logout() {
 }
 
 /* ============================
-   PROFILE PICTURE HANDLING
-============================ */
-/* ============================
-   PROFILE PICTURE HANDLING (FINAL VERSION)
+   PROFILE PICTURE HANDLING (ULTRA COMPRESSION)
 ============================ */
 function initProfilePictureHandler() {
   const profilePicPreview = document.getElementById("profilePicPreview");
@@ -339,30 +336,44 @@ function initProfilePictureHandler() {
     };
 
     img.onload = function() {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-
-      // ⭐ Resize large phone images
-      const MAX_WIDTH = 600;
-      const scale = MAX_WIDTH / img.width;
-
-      canvas.width = MAX_WIDTH;
-      canvas.height = img.height * scale;
-
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // ⭐ Compress to JPEG at 70% quality
-      const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
-
-      // Instant preview
-      profilePicPreview.src = compressedBase64;
-
-      // Save to backend
-      saveProfilePic(compressedBase64);
+      compressAndUpload(img);
     };
 
     reader.readAsDataURL(file);
   });
+}
+
+function compressAndUpload(img) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  // ⭐ Reduce width even more for guaranteed small size
+  const MAX_WIDTH = 400;
+  const scale = MAX_WIDTH / img.width;
+
+  canvas.width = MAX_WIDTH;
+  canvas.height = img.height * scale;
+
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // ⭐ First compression pass
+  let base64 = canvas.toDataURL("image/jpeg", 0.55);
+
+  // ⭐ If still too large, compress again
+  if (base64.length > 150000) {
+    base64 = canvas.toDataURL("image/jpeg", 0.4);
+  }
+
+  // ⭐ If STILL too large, compress even more
+  if (base64.length > 150000) {
+    base64 = canvas.toDataURL("image/jpeg", 0.3);
+  }
+
+  // Instant preview
+  document.getElementById("profilePicPreview").src = base64;
+
+  // Upload
+  saveProfilePic(base64);
 }
 
 async function saveProfilePic(base64) {
