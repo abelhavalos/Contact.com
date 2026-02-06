@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupSearch();
 });
 
-/* LOAD FROM CACHE (instant UI) */
+/* LOAD FROM CACHE */
 function loadFromCache() {
   const cached = localStorage.getItem("contact_cache_contacts");
   if (!cached) return;
@@ -77,7 +77,7 @@ function showLoader(show) {
   document.getElementById("contactsLoader").style.display = show ? "flex" : "none";
 }
 
-/* FETCH CONTACTS — cache-first + background refresh */
+/* FETCH CONTACTS */
 async function fetchContacts() {
   try {
     const r = await fetch(
@@ -93,28 +93,26 @@ async function fetchContacts() {
       return;
     }
 
-    // Create placeholder list
     const placeholder = d.contacts.map(email => ({
       email,
       fullName: "Loading..."
     }));
 
-    // If no cache was shown earlier, show placeholders
     if (!allContacts.length) {
       allContacts = placeholder;
       renderContacts(allContacts);
     }
 
-    // Hydrate each profile in parallel
     const hydrated = await Promise.all(
       d.contacts.map(email =>
         fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`)
           .then(r => r.json())
           .then(data => ({
             email,
-            fullName: data?.user?.fullName || data?.user?.FullName || "Unknown"
+            fullName: data?.user?.fullName || data?.user?.FullName || "Unknown",
+            profilePic: data?.user?.profilePic || null
           }))
-          .catch(() => ({ email, fullName: "Unknown" }))
+          .catch(() => ({ email, fullName: "Unknown", profilePic: null }))
       )
     );
 
@@ -146,7 +144,7 @@ function updateEmptyState(show) {
   document.getElementById("emptyState").style.display = show ? "block" : "none";
 }
 
-/* RENDER CONTACTS — full name only */
+/* RENDER CONTACTS */
 function renderContacts(list) {
   const container = document.getElementById("contactsContainer");
   container.innerHTML = "";
@@ -180,11 +178,15 @@ function renderContacts(list) {
           .substring(0, 2)
           .toUpperCase();
 
+        const avatarHTML = c.profilePic
+          ? `<img class="contact-avatar-img" src="${c.profilePic}" alt="avatar">`
+          : `<div class="contact-avatar">${initials}</div>`;
+
         const card = document.createElement("div");
         card.className = "contact-card";
 
         card.innerHTML = `
-          <div class="contact-avatar">${initials}</div>
+          ${avatarHTML}
           <div class="contact-info">
             <div class="contact-name">${c.fullName}</div>
           </div>
