@@ -110,7 +110,12 @@ async function fetchContacts() {
           .then(data => ({
             email,
             fullName: data?.user?.fullName || data?.user?.FullName || "Unknown",
-            profilePic: data?.user?.profilePic || null
+
+            // FIXED: read both profilePic and ProfilePic
+            profilePic:
+              data?.user?.profilePic ||
+              data?.user?.ProfilePic ||
+              null
           }))
           .catch(() => ({ email, fullName: "Unknown", profilePic: null }))
       )
