@@ -7,12 +7,14 @@ loggedInUser.fullName =
   loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
 loggedInUser.profilePic =
   loggedInUser.profilePic || loggedInUser.ProfilePic || null;
+
 /* URL PARAMS */
 const url = new URL(window.location.href);
 const otherEmail = url.searchParams.get("otherEmail");
 const conversationIdParam = url.searchParams.get("conversationId");
 const communityId = url.searchParams.get("communityId");
 const mode = communityId ? "community" : "private";
+
 let activeConversationId = conversationIdParam || null;
 let messages = [];
 let otherUser = null;
@@ -24,6 +26,14 @@ const BUBBLE_PALETTE = [
   { bg: "#AFC0FF", text: "#000000" },
   { bg: "#D1DDFF", text: "#000000" }
 ];
+
+/* ⭐⭐ INSERT THE BUTTON-HIDE CODE RIGHT HERE ⭐⭐ */
+if (mode === "private") {
+  const btn = document.getElementById("toggleMembers");
+  if (btn) btn.style.display = "none";
+}
+/* ⭐⭐ END INSERT ⭐⭐ */
+
 function getUserColor(email) {
   if (!email) return BUBBLE_PALETTE[0];
   let hash = 0;
@@ -34,8 +44,10 @@ function getUserColor(email) {
   const index = Math.abs(hash) % BUBBLE_PALETTE.length;
   return BUBBLE_PALETTE[index];
 }
+
 document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
+  
   if (mode === "private") {
     const sidebar = document.getElementById("memberSidebar");
     if (sidebar) sidebar.style.display = "none";
@@ -45,6 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (mode === "community") {
     await loadCommunityInfo();
   }
+
   const sendBtn = document.getElementById("sendBtn");
   if (sendBtn) sendBtn.onclick = sendMessage;
 
@@ -200,6 +213,10 @@ async function loadCommunityMembers() {
   });
 }
 
+document.getElementById("toggleMembers").addEventListener("click", () => {
+  const sidebar = document.getElementById("memberSidebar");
+  sidebar.classList.toggle("show");
+});
 function startPolling() {
   loadMessages();
   setInterval(loadMessages, 1500);
