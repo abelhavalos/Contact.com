@@ -14,7 +14,6 @@
             min-height: 100vh;
         }
 
-        /* NAVBAR */
         .navbar {
             width: 100%;
             padding: 20px 40px;
@@ -61,7 +60,6 @@
             font-weight: 500;
         }
 
-        /* MOBILE MENU */
         .mobile-menu {
             display: none;
             flex-direction: column;
@@ -76,7 +74,6 @@
         }
         .mobile-menu.show { display: flex; }
 
-        /* Popup overlay */
         .popup-backdrop {
             position: fixed;
             inset: 0;
@@ -128,7 +125,6 @@
             .nav-links { display: none; }
         }
 
-        /* PROFILE CARD */
         .profile-card {
             background: #fff;
             color: #222;
@@ -183,46 +179,46 @@
 
         .btn-message { background: #4a6cff; }
         .btn-add { background: #28c76f; }
-    .public-animation {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(10, 10, 10, 0.85);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    transition: opacity 0.3s ease;
-}
 
-.public-animation.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
+        .public-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
 
-.spinner {
-    width: 55px;
-    height: 55px;
-    border: 5px solid #444;
-    border-top-color: #00c3ff;
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-}
+        .public-animation.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+        .spinner {
+            width: 55px;
+            height: 55px;
+            border: 5px solid #444;
+            border-top-color: #00c3ff;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
 
-.public-text {
-    margin-top: 20px;
-    color: white;
-    font-size: 1.2rem;
-    letter-spacing: 0.5px;
-}
-    
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .public-text {
+            margin-top: 20px;
+            color: white;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 
@@ -231,11 +227,24 @@
     <div class="spinner"></div>
     <div class="public-text" id="publicAnimText">Loading profile...</div>
 </div>
-<!-- UNIFIED NAVBAR -->
+
 <nav class="navbar" id="navbar"></nav>
 <div class="mobile-menu" id="mobileMenu"></div>
 
 <div class="profile-card">
+
+    <img id="publicProfilePic"
+         src=""
+         alt="Profile Picture"
+         style="
+            width:120px;
+            height:120px;
+            border-radius:50%;
+            object-fit:cover;
+            margin:0 auto 20px auto;
+            display:block;
+         ">
+
     <h1 id="name">Loading...</h1>
     <p id="profession">Loading...</p>
 
@@ -253,7 +262,6 @@
         <button class="btn btn-add" onclick="addToContacts()">Add to Contacts</button>
     </div>
 
-    <!-- SINGLE REUSABLE POPUP -->
     <div id="popupBackdrop" class="popup-backdrop">
         <div class="popup">
             <div id="popupTitle" class="popup-title"></div>
