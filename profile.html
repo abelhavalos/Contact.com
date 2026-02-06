@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contact.com – Public Profile</title>
+    <title>Contact.com – Profile</title>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
@@ -14,6 +14,7 @@
             min-height: 100vh;
         }
 
+        /* NAVBAR */
         .navbar {
             width: 100%;
             padding: 20px 40px;
@@ -60,6 +61,7 @@
             font-weight: 500;
         }
 
+        /* MOBILE MENU */
         .mobile-menu {
             display: none;
             flex-direction: column;
@@ -74,6 +76,55 @@
         }
         .mobile-menu.show { display: flex; }
 
+        @media (max-width: 700px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
+        }
+
+        /* PROFILE PAGE */
+        .hero {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .hero h1 { font-size: 2.4rem; }
+        .hero p { opacity: 0.9; }
+
+        .section {
+            background: #fff;
+            color: #222;
+            padding: 20px;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            margin-bottom: 10px;
+            color: #4a6cff;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #4a6cff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        /* POPUP */
         .popup-backdrop {
             position: fixed;
             inset: 0;
@@ -106,171 +157,146 @@
             margin-bottom: 18px;
         }
 
-        .popup button {
-            border: none;
-            border-radius: 999px;
-            padding: 8px 18px;
-            background: #2563eb;
-            color: #fff;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .popup button:hover {
-            background: #1d4ed8;
-        }
-
-        @media (max-width: 700px) {
-            .hamburger { display: flex; }
-            .nav-links { display: none; }
-        }
-
-        .profile-card {
-            background: #fff;
-            color: #222;
-            width: 90%;
-            max-width: 600px;
-            margin: 40px auto;
-            padding: 30px;
-            border-radius: 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            text-align: center;
-        }
-
-        .profile-card h1 {
-            font-size: 2rem;
-            margin-bottom: 5px;
-        }
-
-        .profile-card p {
-            opacity: 0.8;
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            color: #4a6cff;
-            font-weight: 700;
-            margin-top: 20px;
-            margin-bottom: 6px;
-            text-align: left;
-        }
-
-        .section-text {
-            text-align: left;
-            opacity: 0.9;
-            line-height: 1.5;
-        }
-
-        .btn-row {
-            margin-top: 25px;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .btn {
-            padding: 12px 22px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .btn-message { background: #4a6cff; }
-        .btn-add { background: #28c76f; }
-
-        .public-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 10, 10, 0.85);
-            display: flex;
+        /* LOADER */
+        .profile-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            z-index: 9999;
-            transition: opacity 0.3s ease;
-        }
-
-        .public-animation.hidden {
-            opacity: 0;
             pointer-events: none;
+            z-index: 999;
         }
 
         .spinner {
-            width: 55px;
-            height: 55px;
-            border: 5px solid #444;
+            width: 42px;
+            height: 42px;
+            border: 4px solid rgba(255,255,255,0.25);
             border-top-color: #00c3ff;
             border-radius: 50%;
-            animation: spin 0.9s linear infinite;
+            animation: spin 0.8s linear infinite, glow 1.2s ease-in-out infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes glow {
+            0% { box-shadow: 0 0 4px #00c3ff; }
+            50% { box-shadow: 0 0 14px #00c3ff; }
+            100% { box-shadow: 0 0 4px #00c3ff; }
         }
 
-        .public-text {
-            margin-top: 20px;
-            color: white;
-            font-size: 1.2rem;
-            letter-spacing: 0.5px;
+        .loading-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #00c3ff;
+            font-weight: 500;
+            text-shadow: 0 0 6px rgba(0,195,255,0.6);
         }
     </style>
 </head>
 
 <body>
-<div id="publicProfileAnimation" class="public-animation hidden">
-    <div class="spinner"></div>
-    <div class="public-text" id="publicAnimText">Loading profile...</div>
+<div id="profileLoader" class="profile-loader">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading profile…</div>
 </div>
 
 <nav class="navbar" id="navbar"></nav>
 <div class="mobile-menu" id="mobileMenu"></div>
 
-<div class="profile-card">
+<div class="hero">
+    <h1 id="fullNameDisplay">Your Name</h1>
+    <p id="professionDisplay">Your profession or tagline</p>
+</div>
 
-    <img id="publicProfilePic"
-         src=""
-         alt="Profile Picture"
-         style="
-            width:120px;
-            height:120px;
-            border-radius:50%;
-            object-fit:cover;
-            margin:0 auto 20px auto;
-            display:block;
-         ">
+<!-- PROFILE PICTURE -->
+<div class="section" style="text-align:center;">
+    <img id="profilePicPreview"
+         src="default-avatar.png"
+         style="width:120px;height:120px;border-radius:50%;object-fit:cover;cursor:pointer;" />
 
-    <h1 id="name">Loading...</h1>
-    <p id="profession">Loading...</p>
+    <input 
+        type="file" 
+        id="profilePicFileInput" 
+        accept="image/*" 
+        style="display:none;" 
+    />
 
-    <div class="section-title">About</div>
-    <div id="about" class="section-text"></div>
+    <p style="margin-top:10px;color:#4a6cff;font-weight:600;">
+        Tap picture to choose a photo
+    </p>
+</div>
 
-    <div class="section-title">Skills</div>
-    <div id="skills" class="section-text"></div>
+<!-- EDITABLE SECTIONS -->
+<div class="section">
+    <h2>Full Name</h2>
+    <input id="fullName" disabled />
+</div>
 
-    <div class="section-title">Work & Life</div>
-    <div id="workLife" class="section-text"></div>
+<div class="section">
+    <h2>Profession</h2>
+    <input id="profession" disabled />
+</div>
 
-    <div class="btn-row">
-        <button class="btn btn-message" onclick="openChat()">Message</button>
-        <button class="btn btn-add" onclick="addToContacts()">Add to Contacts</button>
+<div class="section">
+    <h2>About Me</h2>
+    <textarea id="about" rows="5" disabled></textarea>
+</div>
+
+<div class="section">
+    <h2>Skills</h2>
+    <input id="skills" disabled />
+</div>
+
+<div class="section">
+    <h2>Work & Life</h2>
+    <textarea id="workLife" rows="5" disabled></textarea>
+</div>
+
+<!-- CHANGE EMAIL -->
+<div class="section">
+    <h2>Change Email</h2>
+    <input id="newEmail" type="email" placeholder="Enter new email" />
+    <button onclick="changeEmail()">Update Email</button>
+</div>
+
+<!-- CHANGE PASSWORD -->
+<div class="section">
+    <h2>Change Password</h2>
+    <input id="newPassword" type="password" placeholder="New password" />
+    <input id="confirmPassword" type="password" placeholder="Confirm password" style="margin-top:10px;" />
+    <button onclick="changePassword()">Update Password</button>
+</div>
+
+<!-- ACTION BUTTONS -->
+<div class="section" style="text-align:center;">
+    <button id="editBtn" onclick="enableEditing()">Edit Profile</button>
+    <button id="saveBtn" onclick="saveProfile()" style="display:none;">Save Changes</button>
+</div>
+
+<div class="section">
+    <h2 style="color:#d9534f;">Delete Account</h2>
+    <p>This action is permanent and cannot be undone.</p>
+    <button style="background:#d9534f;" onclick="showDeleteConfirm()">Delete My Account</button>
+</div>
+
+<!-- POPUPS -->
+<div id="popupBackdrop" class="popup-backdrop">
+    <div id="deleteConfirmPopup" class="popup" style="display:none;">
+        <div class="popup-title">Delete Account</div>
+        <div class="popup-message">Are you sure you want to permanently delete your account?</div>
+        <button onclick="confirmDeleteAccount()">Yes, Delete</button>
+        <button onclick="hideDeleteConfirm()">Cancel</button>
     </div>
 
-    <div id="popupBackdrop" class="popup-backdrop">
-        <div class="popup">
-            <div id="popupTitle" class="popup-title"></div>
-            <div id="popupMessage" class="popup-message"></div>
-            <button onclick="hidePopup()">OK</button>
-        </div>
+    <div id="mainPopup" class="popup" style="display:none;">
+        <div id="popupTitle" class="popup-title"></div>
+        <div id="popupMessage" class="popup-message"></div>
+        <button onclick="hidePopup()">OK</button>
     </div>
 </div>
 
-<script src="scripts/public-profile.js"></script>
+<script src="scripts/profile.js"></script>
 </body>
 </html>
