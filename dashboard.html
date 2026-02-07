@@ -6,8 +6,7 @@
     <title>Contact.com – Dashboard</title>
 
     <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
         body {
             background: linear-gradient(135deg, #4a6cff, #6f8cff);
@@ -91,7 +90,7 @@
         }
         .mobile-menu.show { display: flex; }
 
-        /* DASHBOARD HEADER */
+        /* HEADER */
         .header {
             text-align: center;
             margin-top: 50px;
@@ -127,6 +126,16 @@
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             text-align: center;
+        }
+
+        /* IMAGE INSIDE CARD */
+        .card-img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: block;
         }
 
         .card h3 {
@@ -181,24 +190,28 @@
 <div class="grid">
 
     <div class="card">
+        <img src="images/Communities.jpeg" class="card-img" alt="Communities">
         <h3>Communities</h3>
         <p>Join groups that match your interests and passions.</p>
         <a href="communities.html">Explore</a>
     </div>
 
     <div class="card">
+        <img src="images/Events.jpeg" class="card-img" alt="Events">
         <h3>Events</h3>
         <p>Discover meetups, workshops, and experiences near you.</p>
         <a href="events.html">View Events</a>
     </div>
 
     <div class="card">
+        <img src="images/contacts.jpeg" class="card-img" alt="Contacts">
         <h3>Contacts</h3>
         <p>Connect with people you’ve met and keep conversations going.</p>
         <a href="contacts.html">Open Contacts</a>
     </div>
 
     <div class="card">
+        <img src="images/profile.jpeg" class="card-img" alt="Profile">
         <h3>Your Profile</h3>
         <p>Update your details and manage your account.</p>
         <a href="profile.html">View Profile</a>
