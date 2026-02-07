@@ -1,22 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contact.com – Connect Better</title>
-    <link rel="stylesheet" href="styles/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact.com – Connect Better</title>
+  <link rel="stylesheet" href="styles/style.css" />
 </head>
 <body>
-<!-- NAVBAR -->
-<nav class="navbar">
+  <!-- NAVBAR -->
+  <nav class="navbar">
     <div class="hamburger" onclick="toggleMenu()">
       <span></span>
       <span></span>
       <span></span>
     </div>
-
     <div class="logo">Contact<span>.</span>com</div>
-
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="communities.html">Communities</a>
@@ -27,37 +25,47 @@
   </nav>
 
   <div class="mobile-menu" id="mobileMenu">
-      <a href="index.html">Home</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="login.html">Login</a>
-     <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+    <a href="index.html">Home</a>
+    <a href="communities.html">Communities</a>
+    <a href="events.html">Events</a>
+    <a href="login.html">Login</a>
+    <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
   </div>
-    <header class="hero">
-        <div class="hero-content">
-            <h1>Contact the People Who Matter</h1>
-            <p>A clean, modern social network built for real connections — not noise.</p>
-            <div class="hero-buttons">
-                <button class="btn-primary" onclick="window.location.href='signup.html'">Get Started</button>
-                <button class="btn-secondary" onclick="window.location.href='learnmore.html'">Learn More</button>
-            </div>
-        </div>
-    </header>
 
-    <section class="features">
-        <div class="feature">
-            <h3>Real Connections</h3>
-            <p>Stay close to friends, family, and communities without the clutter.</p>
-        </div>
-        <div class="feature">
-            <h3>Privacy First</h3>
-            <p>Your data stays yours. No ads, no tracking, no manipulation.</p>
-        </div>
-        <div class="feature">
-            <h3>Simple & Modern</h3>
-            <p>A fast, clean interface designed for humans, not algorithms.</p>
-        </div>
-    </section>
+  <header class="hero">
+    <div class="hero-content">
+      <h1>Contact the People Who Matter</h1>
+      <p>A clean, modern social network built for real connections — not noise.</p>
+      <div class="hero-buttons">
+        <button class="btn-primary" onclick="window.location.href='signup.html'">Get Started</button>
+        <button class="btn-secondary" onclick="window.location.href='learnmore.html'">Learn More</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="features">
+    <div class="feature">
+      <img src="images/communities.jpg" alt="Communities" class="feature-img" />
+      <h3>Real Connections</h3>
+      <p>Stay close to friends, family, and communities without the clutter.</p>
+    </div>
+    <div class="feature">
+      <img src="images/events.jpg" alt="Events" class="feature-img" />
+      <h3>Privacy First</h3>
+      <p>Your data stays yours. No ads, no tracking, no manipulation.</p>
+    </div>
+    <div class="feature">
+      <img src="images/contacts.jpg" alt="Contacts" class="feature-img" />
+      <h3>Simple & Modern</h3>
+      <p>A fast, clean interface designed for humans, not algorithms.</p>
+    </div>
+    <div class="feature">
+      <img src="images/profile.jpg" alt="Profile" class="feature-img" />
+      <h3>Control Your Identity</h3>
+      <p>Update your details and manage your account with ease.</p>
+    </div>
+  </section>
+
   <!-- FOOTER -->
   <footer class="footer">
     <div class="footer-inner">
@@ -72,19 +80,18 @@
       <p class="footer-note">Connect better. No noise, just people.</p>
     </div>
   </footer>
-    <script src="scripts/app.js"></script>
-    <script>
-function toggleMenu() {
-  document.querySelector(".nav-links").classList.toggle("show");
-  document.getElementById("mobileMenu").classList.toggle("show");
-}
 
-function logout() {
-    localStorage.removeItem("contact_user");
-    window.location.href = "index.html";
-}
+  <script src="scripts/app.js"></script>
+  <script>
+    function toggleMenu() {
+      document.querySelector(".nav-links").classList.toggle("show");
+      document.getElementById("mobileMenu").classList.toggle("show");
+    }
 
-</script>
-    
+    function logout() {
+      localStorage.removeItem("contact_user");
+      window.location.href = "index.html";
+    }
+  </script>
 </body>
 </html>
