@@ -27,6 +27,21 @@
             z-index: 10;
         }
 
+        /* HAMBURGER (same as profile page) */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+        .hamburger span {
+            width: 28px;
+            height: 3px;
+            background: #222;
+            border-radius: 3px;
+        }
+
         .logo {
             font-size: 1.8rem;
             font-weight: 700;
@@ -45,34 +60,27 @@
             text-decoration: none;
             color: #333;
             font-weight: 500;
-            transition: 0.2s;
         }
-        .nav-links a:hover { color: #4a6cff; }
 
-        /* MOBILE MENU */
-        #mobileMenu {
+        /* MOBILE MENU (same as profile page) */
+        .mobile-menu {
             display: none;
-            position: fixed;
-            top: 70px;
-            right: 20px;
-            background: #ffffff;
-            color: #222;
-            padding: 10px 16px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            z-index: 20;
+            flex-direction: column;
+            background: #4a6cff;
+            padding: 10px 0;
         }
-
-        #mobileMenu.show {
-            display: block;
-        }
-
-        #mobileMenu a {
-            display: block;
+        .mobile-menu a {
+            padding: 12px 18px;
+            color: white;
             text-decoration: none;
-            color: #333;
-            padding: 6px 0;
-            font-size: 14px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        .mobile-menu.show { display: flex; }
+
+        /* MOBILE BREAKPOINT */
+        @media (max-width: 700px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
         }
 
         /* PAGE TITLE */
@@ -233,7 +241,7 @@
 
 <!-- NAVBAR -->
 <div class="navbar" id="navbar"></div>
-<div id="mobileMenu"></div>
+<div class="mobile-menu" id="mobileMenu"></div>
 
 <h1 class="page-title">Communities</h1>
 
