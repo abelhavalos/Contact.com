@@ -27,22 +27,6 @@
             z-index: 10;
         }
 
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            margin-right: 20px;
-        }
-
-        .hamburger span {
-            width: 28px;
-            height: 3px;
-            background: #222;
-            border-radius: 3px;
-            transition: 0.3s;
-        }
-
         .logo {
             font-size: 1.8rem;
             font-weight: 700;
@@ -66,127 +50,32 @@
         .nav-links a:hover { color: #4a6cff; }
 
         /* MOBILE MENU */
-        .mobile-menu {
+        #mobileMenu {
             display: none;
-            flex-direction: column;
-            background: #4a6cff;
-            padding: 10px 0;
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: #ffffff;
+            color: #222;
+            padding: 10px 16px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            z-index: 20;
         }
 
-        .mobile-menu a,
-        .mobile-menu button {
-            padding: 12px 18px;
-            color: white;
+        #mobileMenu.show {
+            display: block;
+        }
+
+        #mobileMenu a {
+            display: block;
             text-decoration: none;
-            border: none;
-            background: transparent;
-            text-align: left;
-            border-top: 1px solid rgba(255,255,255,0.2);
-        }
-    
-        #createCommunityContainer button {
-    padding: 10px 20px;
-    background: #4a6cff;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    transition: background 0.2s ease;
-}
-
-#createCommunityContainer button:hover {
-    background: #3a5be0;
-}
-    
-    .card button[onclick^="deleteCommunity"] {
-    background: #ff4a4a;
-}
-
-.card button[onclick^="deleteCommunity"]:hover {
-    background: #e03c3c;
-}
-    
-#createCommunityContainer button {
-    padding: 10px 20px;
-    background: #4a6cff;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    transition: background 0.2s ease;
-}
-
-#createCommunityContainer button:hover {
-    background: #3a5be0;
-}
-#createCommunityBackdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.35);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-}
-
-#createCommunityBackdrop .popup {
-    background: #fff;
-    border-radius: 16px;
-    padding: 20px 22px;
-    max-width: 360px;
-    width: 90%;
-    box-shadow: 0 18px 45px rgba(0,0,0,0.18);
-    text-align: center;
-}
-
-#createCommunityBackdrop .popup-title {
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 16px;
-    color: #222;
-}
-
-#createCommunityBackdrop input,
-#createCommunityBackdrop textarea {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-}
-
-#createCommunityBackdrop button {
-    border: none;
-    border-radius: 999px;
-    padding: 8px 18px;
-    background: #2563eb;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    margin-top: 5px;
-}
-
-#createCommunityBackdrop button:hover {
-    background: #1d4ed8;
-}
-
-#createCommunityBackdrop .cancel-btn {
-    background: #aaa !important;
-    margin-top: 10px;
-}
-        .mobile-menu.show { display: flex; }
-
-        @media (max-width: 700px) {
-            .hamburger { display: flex; }
-            .nav-links { display: none; }
+            color: #333;
+            padding: 6px 0;
+            font-size: 14px;
         }
 
-        /* PAGE CONTENT */
+        /* PAGE TITLE */
         .page-title {
             text-align: center;
             margin-top: 40px;
@@ -194,11 +83,29 @@
             font-weight: 700;
         }
 
+        /* CREATE BUTTON */
         #createCommunityContainer {
             text-align: center;
             margin-top: 10px;
         }
 
+        .btn-primary {
+            padding: 10px 20px;
+            background: #4a6cff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: background 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #3a5be0;
+        }
+
+        /* COMMUNITY GRID */
         .grid {
             display: flex;
             justify-content: center;
@@ -221,17 +128,31 @@
         .card h3 { color: #4a6cff; margin-bottom: 10px; }
         .card p { font-size: 0.95rem; margin-bottom: 15px; }
 
-        .card button {
+        .community-card-image {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* DELETE BUTTON */
+        .delete-btn {
             padding: 10px 20px;
-            background: #4a6cff;
+            background: #ff4a4a;
             color: #fff;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
+            margin-left: 6px;
         }
 
-        /* POPUPS */
+        .delete-btn:hover {
+            background: #e03c3c;
+        }
+
+        /* POPUP */
         .popup-backdrop {
             position: fixed;
             inset: 0;
@@ -254,15 +175,19 @@
 
         .popup-title {
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-size: 16px;
             color: #222;
         }
 
-        .popup-message {
+        .popup input,
+        .popup textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
             font-size: 14px;
-            color: #444;
-            margin-bottom: 18px;
         }
 
         .popup button {
@@ -273,6 +198,7 @@
             color: #fff;
             font-size: 14px;
             cursor: pointer;
+            margin-top: 5px;
         }
 
         .popup button:hover {
@@ -282,16 +208,23 @@
         .cancel-btn {
             background: #aaa !important;
             margin-top: 10px;
-            
         }
-.btn-primary {
-            padding: 10px 20px;
-            background: #4a6cff;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
+
+        /* IMAGE PICKER */
+        #communityImagePicker {
+            width: 100%;
+            height: 180px;
+            border-radius: 10px;
+            overflow: hidden;
             cursor: pointer;
-            font-weight: 600;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+        }
+
+        #communityImagePicker img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -299,10 +232,8 @@
 <body>
 
 <!-- NAVBAR -->
-<nav class="navbar" id="navbar"></nav>
-
-<!-- MOBILE MENU -->
-<div class="mobile-menu" id="mobileMenu"></div>
+<div class="navbar" id="navbar"></div>
+<div id="mobileMenu"></div>
 
 <h1 class="page-title">Communities</h1>
 
@@ -316,8 +247,18 @@
 <!-- CREATE COMMUNITY POPUP -->
 <div id="createCommunityBackdrop" class="popup-backdrop">
     <div class="popup">
-       
+
+        <div class="popup-title">Create Community</div>
+
         <input id="communityTitle" placeholder="Community Name">
+
+        <!-- IMAGE PICKER -->
+        <div id="communityImagePicker">
+            <img id="communityImagePreview" src="https://via.placeholder.com/300x180?text=Select+Image">
+        </div>
+
+        <input type="file" id="communityImageInput" accept="image/*" style="display:none;">
+
         <textarea id="communityDescription" placeholder="Description"></textarea>
 
         <button onclick="submitCommunity()">Create</button>
@@ -334,334 +275,7 @@
     </div>
 </div>
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+<script src="scripts/communities.js"></script>
 
-/* POPUP HELPERS */
-function showMessagePopup(title, message) {
-    document.getElementById("messageTitle").innerText = title;
-    document.getElementById("messageText").innerText = message;
-    document.getElementById("messageBackdrop").style.display = "flex";
-}
-function hideMessagePopup() {
-    document.getElementById("messageBackdrop").style.display = "none";
-}
-
-/* NAVBAR */
-function toggleMenu() {
-    document.getElementById("mobileMenu").classList.toggle("show");
-}
-
-function loadNavbar() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-
-    const loggedInNav = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="nav-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        </div>
-    `;
-
-    const publicNav = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        </div>
-    `;
-
-    document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
-
-    document.getElementById("mobileMenu").innerHTML = user
-        ? `
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        `
-        : `
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        `;
-}
-    
-function loadCreateCommunityButton() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    const wrapper = document.getElementById("createCommunityWrapper");
-
-    if (user) {
-        wrapper.innerHTML = `
-            <button class="btn-primary" onclick="openCreateCommunityPopup()">
-                Create Community
-            </button>
-        `;
-    } else {
-        wrapper.innerHTML = ""; // hide button
-    }
-}
-/* CREATE COMMUNITY POPUP */
-function openCreateCommunityPopup() {
-    document.getElementById("createCommunityBackdrop").style.display = "flex";
-}
-function closeCreateCommunityPopup() {
-    document.getElementById("createCommunityBackdrop").style.display = "none";
-}
-
-/* CREATE COMMUNITY */
-async function submitCommunity() {
-    const name = document.getElementById("communityTitle").value.trim();
-    const description = document.getElementById("communityDescription").value.trim();
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-
-    if (!user) {
-        window.location.href = "login.html";
-        return;
-    }
-
-    if (!name || !description) {
-        showMessagePopup("Missing Fields", "Please fill out all fields.");
-        return;
-    }
-
-    // 1. Close the form immediately
-    closeCreateCommunityPopup();
-
-    // 2. Create a temporary ID for optimistic UI
-    const tempId = "temp-" + Date.now();
-
-    // 3. Insert the new community card instantly
-    const grid = document.getElementById("communityGrid");
-    grid.insertAdjacentHTML("afterbegin", `
-        <div class="card" data-community="${tempId}">
-            <h3>${name}</h3>
-            <p>${description}</p>
-            <button disabled>Saving...</button>
-        </div>
-    `);
-
-    // 4. Show success message immediately
-    showMessagePopup("Success", "Community created!");
-
-    // 5. Save to backend in the background
-    const url =
-        `${API_URL}?module=createCommunity` +
-        `&name=${encodeURIComponent(name)}` +
-        `&description=${encodeURIComponent(description)}` +
-        `&email=${encodeURIComponent(user.email)}`;
-
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (!data.success) {
-            // Backend failed → remove temp card
-            document.querySelector(`[data-community="${tempId}"]`)?.remove();
-            showMessagePopup("Error", "Failed to save community.");
-            return;
-        }
-
-        // 6. Replace temp card with real one
-        const tempCard = document.querySelector(`[data-community="${tempId}"]`);
-        if (tempCard) {
-            tempCard.outerHTML = `
-                <div class="card" data-community="${data.id}">
-                    <h3>${name}</h3>
-                    <p>${description}</p>
-                    <button onclick="joinCommunity('${data.id}')">Join</button>
-                    <button style="background:#ff4a4a;" onclick="deleteCommunity('${data.id}')">Delete</button>
-                </div>
-            `;
-        }
-
-    } catch (err) {
-        // Network error → remove temp card
-        document.querySelector(`[data-community="${tempId}"]`)?.remove();
-        showMessagePopup("Network Error", "Please try again.");
-    }
-}
-/* ============================
-   FAST COMMUNITIES LOADING
-============================ */
-let allCommunities = [];
-let index = 0;
-const BATCH = 20;
-
-/* 1. Render cached communities instantly */
-function loadCachedCommunities() {
-    const cached = localStorage.getItem("cached_communities");
-    if (!cached) return;
-
-    allCommunities = JSON.parse(cached);
-    index = 0;
-
-    const grid = document.getElementById("communityGrid");
-    grid.innerHTML = "";
-// Fade-in effect for smoother perception of speed
-grid.style.opacity = "0";
-setTimeout(() => grid.style.opacity = "1", 50);
-    renderNextBatch();
-}
-
-/* 2. Fetch fresh communities in background */
-async function fetchCommunities(force = false) {
-    const res = await fetch(`${API_URL}?module=getAllCommunities`);
-    const data = await res.json();
-
-    if (!data.success) return;
-
-    // Save cache
-    localStorage.setItem("cached_communities", JSON.stringify(data.communities));
-
-    // If not forced and cache exists, don't flicker UI
-    if (!force && localStorage.getItem("cached_communities")) return;
-
-    allCommunities = data.communities;
-    index = 0;
-
-    const grid = document.getElementById("communityGrid");
-    grid.innerHTML = "";
-
-    renderNextBatch();
-}
-
-/* 3. Lazy loading (20 at a time) */
-function renderNextBatch() {
-    const slice = allCommunities.slice(index, index + BATCH);
-    appendCommunities(slice);
-    index += BATCH;
-}
-
-function appendCommunities(list) {
-    const grid = document.getElementById("communityGrid");
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-
-    list.forEach(c => {
-        const isCreator = user && user.email === c.creator;
-
-        grid.innerHTML += `
-            <div class="card" data-community="${c.id}">
-                <h3>${c.name}</h3>
-                <p>${c.description}</p>
-
-                ${isCreator
-                    ? `<button style="background:#ff4a4a;" onclick="deleteCommunity('${c.id}')">Delete</button>
-                       <button onclick="joinCommunity('${c.id}')">Join</button>`
-                    : `<button onclick="joinCommunity('${c.id}')">Join</button>`
-                }
-            </div>
-        `;
-    });
-}
-
-/* 4. Infinite scroll */
-window.addEventListener("scroll", () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
-        renderNextBatch();
-    }
-});
-
-/* JOIN COMMUNITY */
-async function joinCommunity(id) {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) {
-        window.location.href = "signup.html";
-        return;
-    }
-
-    fetch(`${API_URL}?module=joinCommunity&communityId=${id}&email=${user.email}`)
-        .catch(console.error);
-
-    window.location.href = `messages.html?mode=community&communityId=${id}`;
-}
-
-/* DELETE COMMUNITY */
-async function deleteCommunity(id) {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) return;
-
-    const card = document.querySelector(`[data-community="${id}"]`);
-
-    // 1. Remove card instantly
-    if (card) card.remove();
-
-    // 2. Remove from cache instantly
-    let cached = JSON.parse(localStorage.getItem("cached_communities") || "[]");
-    cached = cached.filter(c => c.id !== id);
-    localStorage.setItem("cached_communities", JSON.stringify(cached));
-
-    // 3. Remove from in-memory list
-    allCommunities = allCommunities.filter(c => c.id !== id);
-
-    // 4. Show success popup immediately
-    showMessagePopup("Deleted", "Community removed.");
-
-    // 5. Backend delete in background
-    const res = await fetch(
-        `${API_URL}?module=deleteCommunity&communityId=${id}&email=${user.email}`
-    );
-    const data = await res.json();
-
-    // 6. If backend failed → restore card + restore cache
-    if (!data.success) {
-        const grid = document.getElementById("communityGrid");
-
-        grid.insertAdjacentHTML("afterbegin", `
-            <div class="card" data-community="${id}">
-                <h3>${data.name || "Community"}</h3>
-                <p>${data.description || ""}</p>
-                <button style="background:#ff4a4a;" onclick="deleteCommunity('${id}')">Delete</button>
-                <button onclick="joinCommunity('${id}')">Join</button>
-            </div>
-        `);
-
-        // Restore cache
-        cached.push({
-            id,
-            name: data.name,
-            description: data.description,
-            creator: user.email
-        });
-        localStorage.setItem("cached_communities", JSON.stringify(cached));
-
-        showMessagePopup("Error", data.message || "Failed to delete community.");
-    }
-}
-
-
-document.addEventListener("DOMContentLoaded", loadCreateCommunityButton);
-/* LOGOUT */
-function logout() {
-    localStorage.removeItem("contact_user");
-    window.location.href = "index.html";
-}
-
-/* INIT */
-document.addEventListener("DOMContentLoaded", () => {
-    loadNavbar();
-    loadCreateCommunityButton();
-    // FAST LOAD
-    loadCachedCommunities();  // instant
-    fetchCommunities();       // background refresh
-});
-</script>
 </body>
 </html>
