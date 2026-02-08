@@ -206,8 +206,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
 
   if (mode === "private") {
-    document.getElementById("toggleMembers").style.display = "none";
-    document.getElementById("memberSidebar").style.display = "none";
+    const toggle = document.getElementById("toggleMembers");
+    const sidebar = document.getElementById("memberSidebar");
+    if (toggle) toggle.style.display = "none";
+    if (sidebar) sidebar.style.display = "none";
     await loadOtherUserProfile();
   }
 
@@ -216,10 +218,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     await primeCommunityMembers();
   }
 
-  document.getElementById("sendBtn").onclick = sendMessage;
-  document.getElementById("toggleMembers").onclick = () => {
-    document.getElementById("memberSidebar").classList.toggle("show");
-  };
+  const sendBtn = document.getElementById("sendBtn");
+  if (sendBtn) sendBtn.onclick = sendMessage;
+
+  const toggleMembersBtn = document.getElementById("toggleMembers");
+  if (toggleMembersBtn) {
+    toggleMembersBtn.onclick = () => {
+      document.getElementById("memberSidebar").classList.toggle("show");
+    };
+  }
 
   if (activeConversationId) {
     primeMessages();
@@ -232,7 +239,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /****************************************************
- * PRIVATE CHAT HEADER
+ * PRIVATE CHAT HEADER — OTHER USER ONLY
  ****************************************************/
 async function loadOtherUserProfile() {
   const r = await fetch(
@@ -241,17 +248,22 @@ async function loadOtherUserProfile() {
   const d = await r.json();
   otherUser = d?.user || {};
 
-  const fullName = otherUser.fullName || otherUser.FullName || otherEmail;
-  const initials = getInitials(fullName);
+  const otherFullName =
+    otherUser.fullName || otherUser.FullName || otherEmail;
+  const otherInitials = getInitials(otherFullName);
 
-  const avatarHTML = otherUser.profilePic
-    ? `<img class="chat-avatar" src="${otherUser.profilePic}" />`
-    : `<div class="chat-avatar-fallback">${initials}</div>`;
+  const otherAvatarHTML =
+    otherUser.profilePic || otherUser.ProfilePic
+      ? `<img class="chat-avatar" src="${
+          otherUser.profilePic || otherUser.ProfilePic
+        }" />`
+      : `<div class="chat-avatar-fallback">${otherInitials}</div>`;
 
+  // Header now shows ONLY the other user
   document.getElementById("headerTitle").innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;">
-      ${avatarHTML}
-      <span>${fullName}</span>
+      ${otherAvatarHTML}
+      <span>${otherFullName}</span>
     </div>
   `;
 }
@@ -283,7 +295,6 @@ async function primeCommunityMembers() {
     communityMembers = cached;
     renderCommunityMembersList(cached);
   } else {
-    // Show skeletons instantly instead of emails
     renderCommunityMembersSkeletons(8);
   }
 
@@ -300,10 +311,7 @@ async function loadCommunityMembers() {
     typeof m === "string" ? m : m.email
   );
 
-  // Replace email-fast-render with skeletons (privacy-safe)
   renderCommunityMembersSkeletons(emails.length || 8);
-
-  // Background hydration
   hydrateMemberProfiles(emails);
 }
 
@@ -431,11 +439,15 @@ function renderPrivateMessages(list) {
   const container = document.getElementById("messages");
   container.innerHTML = "";
 
-  const fullName = otherUser?.fullName || otherEmail;
+  const fullName =
+    otherUser?.fullName || otherUser?.FullName || otherEmail;
   const initials = getInitials(fullName);
-  const avatarHTML = otherUser?.profilePic
-    ? `<img class="chat-avatar" src="${otherUser.profilePic}" />`
-    : `<div class="chat-avatar-fallback">${initials}</div>`;
+  const avatarHTML =
+    otherUser?.profilePic || otherUser?.ProfilePic
+      ? `<img class="chat-avatar" src="${
+          otherUser.profilePic || otherUser.ProfilePic
+        }" />`
+      : `<div class="chat-avatar-fallback">${initials}</div>`;
 
   list.forEach((msg) => {
     const isMe = msg.senderEmail === loggedInUser.email;
