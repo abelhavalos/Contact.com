@@ -4,15 +4,54 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy & Terms – Contact.com</title>
+
+  <!-- Load global site styles FIRST -->
   <link rel="stylesheet" href="styles/style.css" />
+
+  <!-- Load page‑specific styles SECOND -->
+  <link rel="stylesheet" href="styles/privacy.css" />
 </head>
 
 <body>
 
+  <!-- UNIVERSAL CONTACT.COM NAVBAR -->
   <nav class="navbar">
+
+    <!-- Hamburger (must be first for your CSS) -->
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <!-- Logo -->
     <div class="logo">Contact<span>.</span>com</div>
+
+    <!-- Desktop Nav Links -->
+    <div class="nav-links" id="nav-links">
+      <a href="index.html">Home</a>
+      <a href="communities.html">Communities</a>
+      <a href="Events.html">Events</a>
+      <a href="contacts.html">Contacts</a>
+      <a href="profile.html">Profile</a>
+      <a href="login.html">Login</a>
+      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+    </div>
+
   </nav>
 
+  <!-- Mobile Menu (required for your CSS to work) -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="index.html">Home</a>
+    <a href="communities.html">Communities</a>
+    <a href="Events.html">Events</a>
+    <a href="contacts.html">Contacts</a>
+    <a href="profile.html">Profile</a>
+    <a href="login.html">Login</a>
+    <a href="signup.html">Sign Up</a>
+  </div>
+
+  <!-- MAIN CONTENT -->
   <main class="legal-page">
 
     <header class="legal-header">
@@ -118,6 +157,13 @@
   <footer class="footer">
     <p>© 2026 Contact.com — Contact the People Who Matter.</p>
   </footer>
+
+  <!-- Correct JS for your mobile menu -->
+  <script>
+    function toggleMenu() {
+      document.getElementById("mobileMenu").classList.toggle("show");
+    }
+  </script>
 
 </body>
 </html>
