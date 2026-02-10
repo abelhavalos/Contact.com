@@ -399,10 +399,9 @@ function primeMessages() {
 
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
-  loadAllMessages();is
-  pollingInterval = setInterval(loadAllMessages, 1000);
+  loadAllMessages();
+  pollingInterval = setInterval(loadAllMessages, 3000);
 }
-
 function loadNewMessages() {
   if (!activeConversationId) return;
 
