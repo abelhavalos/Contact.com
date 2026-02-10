@@ -399,8 +399,8 @@ function primeMessages() {
 
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
-  loadNewMessages();
-  pollingInterval = setInterval(loadNewMessages, 1500);
+  loadAllMessages();is
+  pollingInterval = setInterval(loadNewMessages, 1000);
 }
 
 function loadNewMessages() {
@@ -421,6 +421,35 @@ function loadNewMessages() {
     });
 }
 
+function loadAllMessages() {
+  if (!activeConversationId) return;
+
+  const ts = Date.now(); // cache‑buster
+
+  fetch(
+    `${API_URL}?module=getMessages&conversationId=${activeConversationId}&_=${ts}`,
+    { cache: "no-store" }
+  )
+    .then(r => r.json())
+    .then(d => {
+      const rows = d?.messages || [];
+
+      messages = rows.map(m => ({
+        ...m,
+        decryptedText: decrypt(m.text)
+      }));
+
+      lastMessageId = rows.length
+        ? Math.max(...rows.map(m => m.id))
+        : 0;
+
+      const wrapper = document.getElementById("messageList");
+      wrapper.innerHTML = "";
+      renderMessagesFast(messages);
+      cacheMessages();
+    })
+    .catch(err => console.error("Full reload failed", err));
+}
 /****************************************************
  * RENDERING
  ****************************************************/
