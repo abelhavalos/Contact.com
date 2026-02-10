@@ -550,9 +550,16 @@ function sendMessage() {
   input.value = "";
 }
 
-function decrypt(ciphertext) {
+function decrypt(cipherText) {
   try {
-    return CryptoJS.AES.decrypt(ciphertext, loggedInUser.email).toString(CryptoJS.enc.Utf8);
+    const key = localStorage.getItem("contact_encryption_key");
+    if (!key) return "[decryption-error]";
+
+    const encryptedBytes = Uint8Array.from(atob(cipherText), c => c.charCodeAt(0));
+    const keyBytes = new TextEncoder().encode(key);
+
+    const decrypted = encryptedBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+    return new TextDecoder().decode(decrypted);
   } catch (e) {
     return "[decryption-error]";
   }
