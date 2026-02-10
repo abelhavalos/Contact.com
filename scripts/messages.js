@@ -399,9 +399,10 @@ function primeMessages() {
 
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
-  loadAllMessages();
-  pollingInterval = setInterval(loadAllMessages, 3000);
+  loadNewMessages();
+  pollingInterval = setInterval(loadNewMessages, 1500);
 }
+
 function loadNewMessages() {
   if (!activeConversationId) return;
 
@@ -419,7 +420,6 @@ function loadNewMessages() {
       renderMessagesFast(newMsgs);
     });
 }
-
 function loadAllMessages() {
   if (!activeConversationId) return;
 
