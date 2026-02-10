@@ -30,6 +30,7 @@ let activeConversationId = conversationIdParam || null;
 let messages = [];
 let otherUser = null;
 let communityMembers = [];
+let lastMessageId = 0;
 
 const BUBBLE_PALETTE = [
   { bg: "#4A6CFF", text: "#FFFFFF" },
