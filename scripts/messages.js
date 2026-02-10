@@ -407,7 +407,7 @@ function primeMessages() {
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   loadMessages();
-  pollingInterval = setInterval(loadMessages, 1500);
+  pollingInterval = setInterval(loadMessages, 500);
 }
 
 function loadMessages() {
