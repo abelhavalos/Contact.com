@@ -398,42 +398,55 @@ async function startCommunityConversation() {
  ****************************************************/
 function primeMessages() {
   const cached = loadCachedMessages();
-  if (cached.length) {
-    messages = cached;
-    renderMessages(messages);
+  if (!cached.length) return;
+
+  messages = cached;
+
+  for (const m of messages) {
+    if (m.id > lastMessageId) lastMessageId = m.id;
+    if (!m.decryptedText) m.decryptedText = decrypt(m.text);
   }
+
+  renderMessagesFast(messages);
 }
 
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
-  loadMessages();
-  pollingInterval = setInterval(loadMessages, 1500);
+  loadNewMessages();
+  pollingInterval = setInterval(loadNewMessages, 1500);
 }
 
-function loadMessages() {
+function loadNewMessages() {
   if (!activeConversationId) return;
 
   fetch(
-    `${API_URL}?module=getMessages&conversationId=${activeConversationId}`
+    `${API_URL}?module=getMessagesAfterId&conversationId=${activeConversationId}&afterId=${lastMessageId}`
   )
-    .then((r) => r.json())
-    .then((d) => {
-      messages = d?.messages || [];
-      renderMessages(messages);
+    .then(r => r.json())
+    .then(d => {
+      const newMsgs = d?.messages || [];
+      if (!newMsgs.length) return;
+
+      messages.push(...newMsgs);
       cacheMessages();
+      renderMessagesFast(newMsgs);
     });
 }
 
 /****************************************************
  * RENDERING
  ****************************************************/
-function renderMessages(list) {
+function renderMessagesFast(newMessages) {
   const wrapper = document.getElementById("messageList");
   if (!wrapper) return;
 
   let html = "";
 
-  for (const msg of list) {
+  for (const msg of newMessages) {
+    if (msg.id > lastMessageId) lastMessageId = msg.id;
+
+    if (!msg.decryptedText) msg.decryptedText = decrypt(msg.text);
+
     const isMe = msg.senderEmail === loggedInUser.email;
 
     let fullName, avatarHTML, color;
@@ -472,7 +485,7 @@ function renderMessages(list) {
     const bubble = `
       <div style="background:${color.bg};color:${color.text};
                   padding:10px 14px;border-radius:14px;">
-        ${msg.text}
+        ${msg.decryptedText}
       </div>
     `;
 
@@ -505,7 +518,7 @@ function renderMessages(list) {
     }
   }
 
-  wrapper.innerHTML = html;
+  wrapper.insertAdjacentHTML("beforeend", html);
   wrapper.parentElement.scrollTop = wrapper.parentElement.scrollHeight;
 }
 
@@ -518,21 +531,20 @@ function sendMessage() {
   if (!text || !activeConversationId) return;
 
   const optimisticMsg = {
+    id: lastMessageId + 1,
     senderEmail: loggedInUser.email,
     text,
-    optimistic: true,
-    tempId: Date.now()
+    decryptedText: text,
+    optimistic: true
   };
 
   messages.push(optimisticMsg);
-  renderMessages(messages);
+  renderMessagesFast([optimisticMsg]);
   cacheMessages();
 
   fetch(
-    `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(
-      text
-    )}`
-  ).catch((e) => console.error("Failed to send message", e));
+    `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(text)}`
+  ).catch(e => console.error("Failed to send message", e));
 
   input.value = "";
 }
