@@ -1,11 +1,5 @@
 /****************************************************
  * CONTACT.COM — FAST MESSAGES.JS (PRIVATE + COMMUNITY)
- * Optimized for:
- *  - Instant message rendering (cache-first)
- *  - Instant community member rendering
- *  - Background profile hydration
- *  - Optimistic send
- *  - Navbar preserved exactly as before
  ****************************************************/
 
 const API_URL =
@@ -21,10 +15,23 @@ loggedInUser.profilePic =
 
 /* URL PARAMS */
 const url = new URL(window.location.href);
-const otherEmail = url.searchParams.get("otherEmail");
+
+// Original params
+const otherEmailParam = url.searchParams.get("otherEmail");
 const conversationIdParam = url.searchParams.get("conversationId");
 const communityId = url.searchParams.get("communityId");
 const mode = communityId ? "community" : "private";
+
+// Event → private chat params
+const paramEmail = url.searchParams.get("email");
+const paramName = url.searchParams.get("name");
+const paramTitle = url.searchParams.get("title");
+
+// Normalize private chat target
+const finalOtherEmail = otherEmailParam || paramEmail;
+
+// Store event title for header
+let chatTitle = paramTitle || "";
 
 let activeConversationId = conversationIdParam || null;
 let messages = [];
@@ -44,7 +51,6 @@ let pollingInterval = null;
 /****************************************************
  * HELPERS
  ****************************************************/
-
 function getUserColor(email) {
   if (!email) return BUBBLE_PALETTE[0];
   let hash = 0;
@@ -67,7 +73,7 @@ function getInitials(name) {
 }
 
 /****************************************************
- * NAVBAR (UNCHANGED)
+ * NAVBAR
  ****************************************************/
 function loadNavbar() {
   const nav = document.getElementById("navbar");
@@ -151,121 +157,38 @@ function loadCachedMembers() {
 }
 
 /****************************************************
- * SKELETON MEMBER RENDERING (Messenger‑style 44×44)
- ****************************************************/
-function renderCommunityMembersSkeletons(count = 8) {
-  const container = document.getElementById("memberSidebar");
-  if (!container) return;
-
-  container.innerHTML = "<h3>Members</h3>";
-
-  for (let i = 0; i < count; i++) {
-    container.innerHTML += `
-      <div class="member" style="margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-
-          <!-- Skeleton avatar (44×44 px, blue‑tinted) -->
-          <div style="
-            width:44px;
-            height:44px;
-            border-radius:50%;
-            background:#dbe4ff;
-            animation:pulse 1.4s ease-in-out infinite;
-          "></div>
-
-          <!-- Skeleton name bar (60% width, blue‑tinted) -->
-          <div style="
-            width:60%;
-            height:14px;
-            border-radius:6px;
-            background:#e6ecff;
-            animation:pulse 1.4s ease-in-out infinite;
-          "></div>
-
-        </div>
-      </div>
-    `;
-  }
-}
-
-/* Pulse animation for skeletons */
-const skeletonStyle = document.createElement("style");
-skeletonStyle.innerHTML = `
-@keyframes pulse {
-  0% { opacity: 0.55; }
-  50% { opacity: 1; }
-  100% { opacity: 0.55; }
-}
-`;
-document.head.appendChild(skeletonStyle);
-
-/****************************************************
- * DOM READY
- ****************************************************/
-document.addEventListener("DOMContentLoaded", async () => {
-  loadNavbar();
-
-  if (mode === "private") {
-    const toggle = document.getElementById("toggleMembers");
-    const sidebar = document.getElementById("memberSidebar");
-    if (toggle) toggle.style.display = "none";
-    if (sidebar) sidebar.style.display = "none";
-    await loadOtherUserProfile();
-  }
-
-  if (mode === "community") {
-    await loadCommunityInfo();
-    await primeCommunityMembers();
-  }
-
-  const sendBtn = document.getElementById("sendBtn");
-  if (sendBtn) sendBtn.onclick = sendMessage;
-
-  const toggleMembersBtn = document.getElementById("toggleMembers");
-  if (toggleMembersBtn) {
-    toggleMembersBtn.onclick = () => {
-      document.getElementById("memberSidebar").classList.toggle("show");
-    };
-  }
-
-  if (activeConversationId) {
-    primeMessages();
-    startPolling();
-  } else if (mode === "community") {
-    await startCommunityConversation();
-  } else if (otherEmail) {
-    startConversation();
-  }
-});
-
-/****************************************************
- * PRIVATE CHAT HEADER — OTHER USER ONLY
+ * PRIVATE CHAT HEADER — FIXED FOR EVENT TITLE
  ****************************************************/
 async function loadOtherUserProfile() {
   const r = await fetch(
-    `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(otherEmail)}`
+    `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`
   );
   const d = await r.json();
   otherUser = d?.user || {};
 
   const otherFullName =
-    otherUser.fullName || otherUser.FullName || otherEmail;
+    otherUser.fullName || otherUser.FullName || finalOtherEmail;
   const otherInitials = getInitials(otherFullName);
 
   const otherAvatarHTML =
     otherUser.profilePic || otherUser.ProfilePic
-      ? `<img class="chat-avatar" src="${
-          otherUser.profilePic || otherUser.ProfilePic
-        }" />`
+      ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
       : `<div class="chat-avatar-fallback">${otherInitials}</div>`;
 
-  // Header now shows ONLY the other user
-  document.getElementById("headerTitle").innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;">
-      ${otherAvatarHTML}
-      <span>${otherFullName}</span>
-    </div>
-  `;
+  if (chatTitle) {
+    document.getElementById("headerTitle").innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span>${chatTitle}</span>
+      </div>
+    `;
+  } else {
+    document.getElementById("headerTitle").innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${otherAvatarHTML}
+        <span>${otherFullName}</span>
+      </div>
+    `;
+  }
 }
 
 /****************************************************
@@ -286,7 +209,7 @@ async function loadCommunityInfo() {
 }
 
 /****************************************************
- * COMMUNITY MEMBERS — CACHE-FIRST + HYDRATION
+ * COMMUNITY MEMBERS
  ****************************************************/
 async function primeCommunityMembers() {
   const cached = loadCachedMembers();
@@ -367,11 +290,11 @@ function renderCommunityMembersList(list) {
 }
 
 /****************************************************
- * CONVERSATION SETUP
+ * CONVERSATION SETUP — FIXED FOR EVENT CHAT
  ****************************************************/
 function startConversation() {
   fetch(
-    `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${otherEmail}`
+    `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`
   )
     .then((r) => r.json())
     .then((d) => {
@@ -440,13 +363,11 @@ function renderPrivateMessages(list) {
   container.innerHTML = "";
 
   const fullName =
-    otherUser?.fullName || otherUser?.FullName || otherEmail;
+    otherUser?.fullName || otherUser?.FullName || finalOtherEmail;
   const initials = getInitials(fullName);
   const avatarHTML =
     otherUser?.profilePic || otherUser?.ProfilePic
-      ? `<img class="chat-avatar" src="${
-          otherUser.profilePic || otherUser.ProfilePic
-        }" />`
+      ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
       : `<div class="chat-avatar-fallback">${initials}</div>`;
 
   list.forEach((msg) => {
@@ -473,7 +394,7 @@ function renderPrivateMessages(list) {
         </div>
       `;
     } else {
-      const color = getUserColor(otherEmail);
+      const color = getUserColor(finalOtherEmail);
 
       container.innerHTML += `
         <div style="display:flex;align-items:flex-start;margin-bottom:18px;gap:10px;">
@@ -577,3 +498,42 @@ function sendMessage() {
 
   input.value = "";
 }
+
+/****************************************************
+ * DOM READY
+ ****************************************************/
+document.addEventListener("DOMContentLoaded", async () => {
+  loadNavbar();
+
+  if (mode === "private") {
+    const toggle = document.getElementById("toggleMembers");
+    const sidebar = document.getElementById("memberSidebar");
+    if (toggle) toggle.style.display = "none";
+    if (sidebar) sidebar.style.display = "none";
+    await loadOtherUserProfile();
+  }
+
+  if (mode === "community") {
+    await loadCommunityInfo();
+    await primeCommunityMembers();
+  }
+
+  const sendBtn = document.getElementById("sendBtn");
+  if (sendBtn) sendBtn.onclick = sendMessage;
+
+  const toggleMembersBtn = document.getElementById("toggleMembers");
+  if (toggleMembersBtn) {
+    toggleMembersBtn.onclick = () => {
+      document.getElementById("memberSidebar").classList.toggle("show");
+    };
+  }
+
+  if (activeConversationId) {
+    primeMessages();
+    startPolling();
+  } else if (mode === "community") {
+    await startCommunityConversation();
+  } else if (finalOtherEmail) {
+    startConversation();
+  }
+});
