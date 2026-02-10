@@ -207,7 +207,51 @@ async function loadCommunityInfo() {
     </div>
   `;
 }
+function renderCommunityMembersSkeletons(count = 8) {
+  const container = document.getElementById("memberSidebar");
+  if (!container) return;
 
+  container.innerHTML = "<h3>Members</h3>";
+
+  for (let i = 0; i < count; i++) {
+    container.innerHTML += `
+      <div class="member" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+
+          <!-- Skeleton avatar (44×44 px, blue‑tinted) -->
+          <div style="
+            width:44px;
+            height:44px;
+            border-radius:50%;
+            background:#dbe4ff;
+            animation:pulse 1.4s ease-in-out infinite;
+          "></div>
+
+          <!-- Skeleton name bar (60% width, blue‑tinted) -->
+          <div style="
+            width:60%;
+            height:14px;
+            border-radius:6px;
+            background:#e6ecff;
+            animation:pulse 1.4s ease-in-out infinite;
+          "></div>
+
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Pulse animation for skeletons
+const skeletonStyle = document.createElement("style");
+skeletonStyle.innerHTML = `
+@keyframes pulse {
+  0% { opacity: 0.55; }
+  50% { opacity: 1; }
+  100% { opacity: 0.55; }
+}
+`;
+document.head.appendChild(skeletonStyle);
 /****************************************************
  * COMMUNITY MEMBERS
  ****************************************************/
