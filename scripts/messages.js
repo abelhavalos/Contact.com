@@ -1,11 +1,10 @@
 /****************************************************
- * CONTACT.COM — FAST MESSAGES.JS (PRIVATE + COMMUNITY)
- * Optimized for:
- *  - Instant message rendering (cache-first)
- *  - Instant community member rendering
- *  - Background profile hydration
- *  - Optimistic send
- *  - Navbar preserved exactly as before
+ * CONTACT.COM — REAL‑TIME MESSAGES.JS
+ * Fixes:
+ *  - All message fetches bypass browser cache
+ *  - Polling always receives fresh rows
+ *  - Row‑by‑row rendering preserved
+ *  - Private + community unified
  ****************************************************/
 
 const API_URL =
@@ -45,7 +44,6 @@ let pollingInterval = null;
 /****************************************************
  * HELPERS
  ****************************************************/
-
 function getUserColor(email) {
   if (!email) return BUBBLE_PALETTE[0];
   let hash = 0;
@@ -68,7 +66,7 @@ function getInitials(name) {
 }
 
 /****************************************************
- * NAVBAR (UNCHANGED)
+ * NAVBAR
  ****************************************************/
 function loadNavbar() {
   const nav = document.getElementById("navbar");
@@ -152,7 +150,7 @@ function loadCachedMembers() {
 }
 
 /****************************************************
- * SKELETON MEMBER RENDERING (Messenger‑style 44×44)
+ * SKELETON MEMBERS
  ****************************************************/
 function renderCommunityMembersSkeletons(count = 8) {
   const container = document.getElementById("memberSidebar");
@@ -164,32 +162,20 @@ function renderCommunityMembersSkeletons(count = 8) {
     container.innerHTML += `
       <div class="member" style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:10px;">
-
-          <!-- Skeleton avatar (44×44 px, blue‑tinted) -->
           <div style="
-            width:44px;
-            height:44px;
-            border-radius:50%;
-            background:#dbe4ff;
-            animation:pulse 1.4s ease-in-out infinite;
-          "></div>
-
-          <!-- Skeleton name bar (60% width, blue‑tinted) -->
+            width:44px;height:44px;border-radius:50%;
+            background:#dbe4ff;animation:pulse 1.4s ease-in-out infinite;">
+          </div>
           <div style="
-            width:60%;
-            height:14px;
-            border-radius:6px;
-            background:#e6ecff;
-            animation:pulse 1.4s ease-in-out infinite;
-          "></div>
-
+            width:60%;height:14px;border-radius:6px;
+            background:#e6ecff;animation:pulse 1.4s ease-in-out infinite;">
+          </div>
         </div>
       </div>
     `;
   }
 }
 
-/* Pulse animation for skeletons */
 const skeletonStyle = document.createElement("style");
 skeletonStyle.innerHTML = `
 @keyframes pulse {
@@ -207,10 +193,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
 
   if (mode === "private") {
-    const toggle = document.getElementById("toggleMembers");
-    const sidebar = document.getElementById("memberSidebar");
-    if (toggle) toggle.style.display = "none";
-    if (sidebar) sidebar.style.display = "none";
+    document.getElementById("toggleMembers").style.display = "none";
+    document.getElementById("memberSidebar").style.display = "none";
     await loadOtherUserProfile();
   }
 
@@ -219,8 +203,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await primeCommunityMembers();
   }
 
-  const sendBtn = document.getElementById("sendBtn");
-  if (sendBtn) sendBtn.onclick = sendMessage;
+  document.getElementById("sendBtn").onclick = sendMessage;
 
   const toggleMembersBtn = document.getElementById("toggleMembers");
   if (toggleMembersBtn) {
@@ -240,30 +223,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /****************************************************
- * PRIVATE CHAT HEADER — OTHER USER ONLY
+ * PRIVATE CHAT HEADER
  ****************************************************/
 async function loadOtherUserProfile() {
   const r = await fetch(
-    `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(otherEmail)}`
+    `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(otherEmail)}`,
+    { cache: "no-store" }
   );
   const d = await r.json();
   otherUser = d?.user || {};
 
   const otherFullName =
     otherUser.fullName || otherUser.FullName || otherEmail;
-  const otherInitials = getInitials(otherFullName);
+  const initials = getInitials(otherFullName);
 
-  const otherAvatarHTML =
+  const avatarHTML =
     otherUser.profilePic || otherUser.ProfilePic
-      ? `<img class="chat-avatar" src="${
-          otherUser.profilePic || otherUser.ProfilePic
-        }" />`
-      : `<div class="chat-avatar-fallback">${otherInitials}</div>`;
+      ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}">`
+      : `<div class="chat-avatar-fallback">${initials}</div>`;
 
-  // Header now shows ONLY the other user
   document.getElementById("headerTitle").innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;">
-      ${otherAvatarHTML}
+      ${avatarHTML}
       <span>${otherFullName}</span>
     </div>
   `;
@@ -274,7 +255,8 @@ async function loadOtherUserProfile() {
  ****************************************************/
 async function loadCommunityInfo() {
   const r = await fetch(
-    `${API_URL}?module=getCommunityById&communityId=${communityId}`
+    `${API_URL}?module=getCommunityById&communityId=${communityId}`,
+    { cache: "no-store" }
   );
   const d = await r.json();
   const name = d?.community?.name || "Community";
@@ -287,7 +269,7 @@ async function loadCommunityInfo() {
 }
 
 /****************************************************
- * COMMUNITY MEMBERS — CACHE-FIRST + HYDRATION
+ * COMMUNITY MEMBERS
  ****************************************************/
 async function primeCommunityMembers() {
   const cached = loadCachedMembers();
@@ -304,7 +286,8 @@ async function primeCommunityMembers() {
 
 async function loadCommunityMembers() {
   const r = await fetch(
-    `${API_URL}?module=getCommunityMembers&communityId=${communityId}`
+    `${API_URL}?module=getCommunityMembers&communityId=${communityId}`,
+    { cache: "no-store" }
   );
   const d = await r.json();
 
@@ -322,7 +305,8 @@ async function hydrateMemberProfiles(emails) {
   for (const email of emails) {
     try {
       const r = await fetch(
-        `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`
+        `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`,
+        { cache: "no-store" }
       );
       const d = await r.json();
       const u = d?.user || {};
@@ -350,7 +334,7 @@ function renderCommunityMembersList(list) {
     const initials = getInitials(m.fullName);
 
     const avatarHTML = m.profilePic
-      ? `<img class="chat-avatar" src="${m.profilePic}" />`
+      ? `<img class="chat-avatar" src="${m.profilePic}">`
       : `<div class="chat-avatar-fallback">${initials}</div>`;
 
     container.innerHTML += `
@@ -372,7 +356,8 @@ function renderCommunityMembersList(list) {
  ****************************************************/
 function startConversation() {
   fetch(
-    `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${otherEmail}`
+    `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${otherEmail}`,
+    { cache: "no-store" }
   )
     .then((r) => r.json())
     .then((d) => {
@@ -384,7 +369,8 @@ function startConversation() {
 
 async function startCommunityConversation() {
   const r = await fetch(
-    `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
+    `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`,
+    { cache: "no-store" }
   );
   const d = await r.json();
   activeConversationId = d.conversationId;
@@ -421,10 +407,11 @@ function loadNewMessages() {
   if (!activeConversationId) return;
 
   fetch(
-    `${API_URL}?module=getMessagesAfterId&conversationId=${activeConversationId}&afterId=${lastMessageId}`
+    `${API_URL}?module=getMessagesAfterId&conversationId=${activeConversationId}&afterId=${lastMessageId}`,
+    { cache: "no-store" }
   )
-    .then(r => r.json())
-    .then(d => {
+    .then((r) => r.json())
+    .then((d) => {
       const newMsgs = d?.messages || [];
       if (!newMsgs.length) return;
 
@@ -462,15 +449,18 @@ function renderMessagesFast(newMessages) {
       } else {
         fullName = otherUser?.fullName || otherUser?.FullName || otherEmail;
         const initials = getInitials(fullName);
-        avatarHTML = otherUser?.profilePic || otherUser?.ProfilePic
-          ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}">`
-          : `<div class="chat-avatar-fallback">${initials}</div>`;
+        avatarHTML =
+          otherUser?.profilePic || otherUser?.ProfilePic
+            ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}">`
+            : `<div class="chat-avatar-fallback">${initials}</div>`;
       }
       color = getUserColor(isMe ? loggedInUser.email : otherEmail);
     }
 
     if (mode === "community") {
-      const sender = communityMembers.find(m => m.email === msg.senderEmail);
+      const sender = communityMembers.find(
+        (m) => m.email === msg.senderEmail
+      );
       fullName = isMe
         ? loggedInUser.fullName
         : sender?.fullName || msg.senderEmail;
@@ -544,21 +534,31 @@ function sendMessage() {
   cacheMessages();
 
   fetch(
-    `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(text)}`
-  ).catch(e => console.error("Failed to send message", e));
+    `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(
+      text
+    )}`,
+    { cache: "no-store" }
+  ).catch((e) => console.error("Failed to send message", e));
 
   input.value = "";
 }
 
+/****************************************************
+ * DECRYPT
+ ****************************************************/
 function decrypt(cipherText) {
   try {
     const key = localStorage.getItem("contact_encryption_key");
     if (!key) return "[decryption-error]";
 
-    const encryptedBytes = Uint8Array.from(atob(cipherText), c => c.charCodeAt(0));
+    const encryptedBytes = Uint8Array.from(atob(cipherText), (c) =>
+      c.charCodeAt(0)
+    );
     const keyBytes = new TextEncoder().encode(key);
 
-    const decrypted = encryptedBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+    const decrypted = encryptedBytes.map(
+      (b, i) => b ^ keyBytes[i % keyBytes.length]
+    );
     return new TextDecoder().decode(decrypted);
   } catch (e) {
     return "[decryption-error]";
