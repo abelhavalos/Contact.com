@@ -448,6 +448,9 @@ async function deleteEvent(id) {
   }
 }
 
+/* ============================
+   CONTACT EVENT CREATOR
+============================ */
 function contactEventCreator(creatorEmail, creatorName, eventTitle) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) {
@@ -455,11 +458,18 @@ function contactEventCreator(creatorEmail, creatorName, eventTitle) {
     return;
   }
 
-  fetch(`${API_URL}?module=addContact&email=${encodeURIComponent(user.email)}&contact=${encodeURIComponent(creatorEmail)}`)
-    .catch(() => {});
+  fetch(
+    `${API_URL}?module=addContact&email=${encodeURIComponent(
+      user.email
+    )}&contact=${encodeURIComponent(creatorEmail)}`
+  ).catch(() => {});
 
   window.location.href =
-    `messages.html?mode=private&email=${encodeURIComponent(creatorEmail)}&name=${encodeURIComponent(creatorName)}&title=${encodeURIComponent(eventTitle)}`;
+    `messages.html?mode=private&email=${encodeURIComponent(
+      creatorEmail
+    )}&name=${encodeURIComponent(
+      creatorName
+    )}&title=${encodeURIComponent(eventTitle)}`;
 }
 
 /* ============================
