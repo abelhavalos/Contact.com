@@ -549,3 +549,11 @@ function sendMessage() {
 
   input.value = "";
 }
+
+function decrypt(ciphertext) {
+  try {
+    return CryptoJS.AES.decrypt(ciphertext, loggedInUser.email).toString(CryptoJS.enc.Utf8);
+  } catch (e) {
+    return "[decryption-error]";
+  }
+}
