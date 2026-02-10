@@ -168,7 +168,6 @@ function compressEventImage(img) {
   const preview = document.getElementById("eventImagePreview");
   if (preview) preview.src = base64;
 
-  // used when submitting the event
   window.eventImageBase64 = base64;
 }
 
@@ -252,7 +251,7 @@ async function submitEvent() {
           <h3>${data.title || title}</h3>
           ${finalImgHtml}
           <p>${data.description || description}</p>
-          <button class="btn-primary" onclick="contactEventCreator('${data.id}', '${data.title}')">Contact Me</button>
+          <button class="btn-primary" onclick="contactEventCreator('${data.creator}', '${data.creatorName}', '${data.title}')">Contact Me</button>
           <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
         </div>
       `;
@@ -310,9 +309,7 @@ async function fetchEvents(force = false) {
     if (!grid) return;
     grid.innerHTML = "";
     renderNextBatch();
-  } catch {
-    // silent fail
-  }
+  } catch {}
 }
 
 function renderNextBatch() {
@@ -344,10 +341,10 @@ function appendEvents(list) {
           isCreator
             ? `
           <button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>
-          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.title}')">Contact Me</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Contact Me</button>
         `
             : `
-          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.title}')">Contact Me</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Contact Me</button>
         `
         }
       </div>
@@ -430,7 +427,7 @@ async function deleteEvent(id) {
           ${imgHtml}
           <p>${data.description || ""}</p>
           <button class="delete-btn" onclick="deleteEvent('${id}')">Delete</button>
-          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.title}')">Contact Me</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Contact Me</button>
         </div>
       `
       );
@@ -450,6 +447,7 @@ async function deleteEvent(id) {
     showMessagePopup("Network Error", "Could not reach the server.");
   }
 }
+
 function contactEventCreator(creatorEmail, creatorName, eventTitle) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) {
@@ -457,14 +455,13 @@ function contactEventCreator(creatorEmail, creatorName, eventTitle) {
     return;
   }
 
-  // Optional: auto-add to contacts
   fetch(`${API_URL}?module=addContact&email=${encodeURIComponent(user.email)}&contact=${encodeURIComponent(creatorEmail)}`)
     .catch(() => {});
 
-  // Redirect with event title included
   window.location.href =
     `messages.html?mode=private&email=${encodeURIComponent(creatorEmail)}&name=${encodeURIComponent(creatorName)}&title=${encodeURIComponent(eventTitle)}`;
 }
+
 /* ============================
    LOGOUT
 ============================ */
