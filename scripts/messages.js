@@ -400,7 +400,7 @@ function primeMessages() {
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   loadNewMessages();
-  pollingInterval = setInterval(loadNewMessages, 500);
+  pollingInterval = setInterval(loadNewMessages, 1000);
 }
 
 function loadNewMessages() {
