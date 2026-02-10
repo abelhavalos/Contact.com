@@ -428,126 +428,85 @@ function loadMessages() {
  * RENDERING
  ****************************************************/
 function renderMessages(list) {
-  if (mode === "community") {
-    renderCommunityMessages(list);
-  } else {
-    renderPrivateMessages(list);
+  const wrapper = document.getElementById("messageList");
+  if (!wrapper) return;
+
+  let html = "";
+
+  for (const msg of list) {
+    const isMe = msg.senderEmail === loggedInUser.email;
+
+    let fullName, avatarHTML, color;
+
+    if (mode === "private") {
+      if (isMe) {
+        fullName = loggedInUser.fullName;
+        const initials = getInitials(fullName);
+        avatarHTML = loggedInUser.profilePic
+          ? `<img class="chat-avatar" src="${loggedInUser.profilePic}">`
+          : `<div class="chat-avatar-fallback">${initials}</div>`;
+      } else {
+        fullName = otherUser?.fullName || otherUser?.FullName || otherEmail;
+        const initials = getInitials(fullName);
+        avatarHTML = otherUser?.profilePic || otherUser?.ProfilePic
+          ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}">`
+          : `<div class="chat-avatar-fallback">${initials}</div>`;
+      }
+      color = getUserColor(isMe ? loggedInUser.email : otherEmail);
+    }
+
+    if (mode === "community") {
+      const sender = communityMembers.find(m => m.email === msg.senderEmail);
+      fullName = isMe
+        ? loggedInUser.fullName
+        : sender?.fullName || msg.senderEmail;
+
+      const initials = getInitials(fullName);
+      avatarHTML = sender?.profilePic
+        ? `<img class="chat-avatar" src="${sender.profilePic}">`
+        : `<div class="chat-avatar-fallback">${initials}</div>`;
+
+      color = getUserColor(msg.senderEmail);
+    }
+
+    const bubble = `
+      <div style="background:${color.bg};color:${color.text};
+                  padding:10px 14px;border-radius:14px;">
+        ${msg.text}
+      </div>
+    `;
+
+    if (isMe) {
+      html += `
+        <div style="display:flex;justify-content:flex-end;
+                    align-items:flex-start;margin-bottom:18px;gap:10px;">
+          <div style="max-width:60%;">${bubble}</div>
+          <div style="width:70px;text-align:center;">
+            ${avatarHTML}
+            <div style="font-size:12px;color:#666;margin-top:4px;">
+              ${fullName}
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div style="display:flex;align-items:flex-start;
+                    margin-bottom:18px;gap:10px;">
+          <div style="width:70px;text-align:center;">
+            ${avatarHTML}
+            <div style="font-size:12px;color:#666;margin-top:4px;">
+              ${fullName}
+            </div>
+          </div>
+          <div style="max-width:60%;">${bubble}</div>
+        </div>
+      `;
+    }
   }
-}
 
-function renderPrivateMessages(list) {
-  const container = document.getElementById("messages");
-  container.innerHTML = "";
-
-  const fullName =
-    otherUser?.fullName || otherUser?.FullName || otherEmail;
-  const initials = getInitials(fullName);
-  const avatarHTML =
-    otherUser?.profilePic || otherUser?.ProfilePic
-      ? `<img class="chat-avatar" src="${
-          otherUser.profilePic || otherUser.ProfilePic
-        }" />`
-      : `<div class="chat-avatar-fallback">${initials}</div>`;
-
-  list.forEach((msg) => {
-    const isMe = msg.senderEmail === loggedInUser.email;
-
-    if (isMe) {
-      const color = getUserColor(loggedInUser.email);
-      const myInitials = getInitials(loggedInUser.fullName);
-      const myAvatarHTML = loggedInUser.profilePic
-        ? `<img class="chat-avatar" src="${loggedInUser.profilePic}" />`
-        : `<div class="chat-avatar-fallback">${myInitials}</div>`;
-
-      container.innerHTML += `
-        <div style="display:flex;justify-content:flex-end;align-items:flex-start;margin-bottom:18px;gap:10px;">
-          <div style="max-width:60%;">
-            <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${msg.text}
-            </div>
-          </div>
-          <div style="width:70px;text-align:center;">
-            ${myAvatarHTML}
-            <div style="font-size:12px;color:#666;margin-top:4px;">${loggedInUser.fullName}</div>
-          </div>
-        </div>
-      `;
-    } else {
-      const color = getUserColor(otherEmail);
-
-      container.innerHTML += `
-        <div style="display:flex;align-items:flex-start;margin-bottom:18px;gap:10px;">
-          <div style="width:70px;text-align:center;">
-            ${avatarHTML}
-            <div style="font-size:12px;color:#666;margin-top:4px;">${fullName}</div>
-          </div>
-          <div style="max-width:60%;">
-            <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${msg.text}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-  });
-
-  container.scrollTop = container.scrollHeight;
-}
-
-function renderCommunityMessages(list) {
-  const container = document.getElementById("messages");
-  container.innerHTML = "";
-
-  list.forEach((msg) => {
-    const isMe = msg.senderEmail === loggedInUser.email;
-
-    const sender = communityMembers.find(
-      (m) => m.email === msg.senderEmail
-    );
-
-    const fullName = isMe
-      ? loggedInUser.fullName
-      : sender?.fullName || msg.senderEmail;
-
-    const color = getUserColor(msg.senderEmail);
-    const initials = getInitials(fullName);
-
-    const avatarHTML = sender?.profilePic
-      ? `<img class="chat-avatar" src="${sender.profilePic}" />`
-      : `<div class="chat-avatar-fallback">${initials}</div>`;
-
-    if (isMe) {
-      container.innerHTML += `
-        <div style="display:flex;justify-content:flex-end;align-items:flex-start;margin-bottom:18px;gap:10px;">
-          <div style="max-width:60%;">
-            <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${msg.text}
-            </div>
-          </div>
-          <div style="width:70px;text-align:center;">
-            ${avatarHTML}
-            <div style="font-size:12px;color:#666;margin-top:4px;">${fullName}</div>
-          </div>
-        </div>
-      `;
-    } else {
-      container.innerHTML += `
-        <div style="display:flex;align-items:flex-start;margin-bottom:18px;gap:10px;">
-          <div style="width:70px;text-align:center;">
-            ${avatarHTML}
-            <div style="font-size:12px;color:#666;margin-top:4px;">${fullName}</div>
-          </div>
-          <div style="max-width:60%;">
-            <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${msg.text}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-  });
-
-  container.scrollTop = container.scrollHeight;
+  wrapper.innerHTML = html;
+  wrapper.parentElement.scrollTop = wrapper.parentElement.scrollHeight;
 }
 
 /****************************************************
