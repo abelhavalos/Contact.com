@@ -433,7 +433,6 @@ function loadAllMessages() {
     .then(d => {
       const rows = d?.messages || [];
 
-      // These rows are already decrypted by the backend
       messages = rows.map(m => ({
         ...m,
         decryptedText: m.decryptedText || m.text
@@ -450,7 +449,6 @@ function loadAllMessages() {
     })
     .catch(err => console.error("Full reload failed", err));
 }
-
 /****************************************************
  * RENDERING
  ****************************************************/
