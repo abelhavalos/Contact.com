@@ -433,7 +433,7 @@ function loadAllMessages() {
     .then(d => {
       const rows = d?.messages || [];
 
-      // Backend already returns plaintext for this endpoint
+      // These rows are already decrypted by the backend
       messages = rows.map(m => ({
         ...m,
         decryptedText: m.decryptedText || m.text
@@ -449,7 +449,9 @@ function loadAllMessages() {
       cacheMessages();
     })
     .catch(err => console.error("Full reload failed", err));
-}/****************************************************
+}
+
+/****************************************************
  * RENDERING
  ****************************************************/
 function renderMessagesFast(newMessages) {
