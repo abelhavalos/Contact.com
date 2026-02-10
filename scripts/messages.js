@@ -426,16 +426,17 @@ function loadAllMessages() {
   const ts = Date.now(); // cache buster
 
   fetch(
-    `${API_URL}?module=getMessages&conversationId=${activeConversationId}&_=${ts}`,
+    `${API_URL}?module=getMessagesAfterId&conversationId=${activeConversationId}&afterId=0&_=${ts}`,
     { cache: "no-store" }
   )
     .then(r => r.json())
     .then(d => {
       const rows = d?.messages || [];
 
+      // Backend already returns decryptedText for this endpoint
       messages = rows.map(m => ({
         ...m,
-        decryptedText: decrypt(m.text)
+        decryptedText: m.decryptedText || m.text // use backend plaintext
       }));
 
       lastMessageId = rows.length
@@ -448,7 +449,8 @@ function loadAllMessages() {
       cacheMessages();
     })
     .catch(err => console.error("Full reload failed", err));
-}/****************************************************
+}
+/****************************************************
  * RENDERING
  ****************************************************/
 function renderMessagesFast(newMessages) {
