@@ -251,7 +251,7 @@ async function submitEvent() {
           <h3>${data.title || title}</h3>
           ${finalImgHtml}
           <p>${data.description || description}</p>
-          <button class="btn-primary" onclick="contactEventCreator('${data.creator}', '${data.creatorName}', '${data.title}')">Contact Me</button>
+          <button class="btn-primary" onclick="contactEventCreator('${data.creator}', '${data.creatorName}', '${data.title}')">Join</button>
           <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
         </div>
       `;
@@ -427,7 +427,7 @@ async function deleteEvent(id) {
           ${imgHtml}
           <p>${data.description || ""}</p>
           <button class="delete-btn" onclick="deleteEvent('${id}')">Delete</button>
-          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Contact Me</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Join</button>
         </div>
       `
       );
