@@ -341,10 +341,10 @@ function appendEvents(list) {
           isCreator
             ? `
           <button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>
-          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Contact Me</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Join</button>
         `
             : `
-          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Contact Me</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Join</button>
         `
         }
       </div>
