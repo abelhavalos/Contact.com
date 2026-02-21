@@ -263,6 +263,9 @@
 </div>
 
 <script>
+    const API_URL =
+  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -278,9 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("userName").textContent = user.fullName;
 });
-</script>
 
-<script>
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
