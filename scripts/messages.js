@@ -13,27 +13,6 @@ loggedInUser.fullName =
 loggedInUser.profilePic =
   loggedInUser.profilePic || loggedInUser.ProfilePic || null;
 
-/****************************************************
- * FRONTEND ROOM KEY
- ****************************************************/
-let ROOM_KEY = null;
-let askedForRoomKey = false;
-
-function getRoomKey() {
-  if (ROOM_KEY) return ROOM_KEY;
-
-  if (!askedForRoomKey) {
-    askedForRoomKey = true;
-    const key = prompt("Enter your private room key:");
-    if (key && key.trim()) {
-      ROOM_KEY = key.trim();
-      return ROOM_KEY;
-    }
-  }
-
-  return null;
-}
-
 /* URL PARAMS */
 const url = new URL(window.location.href);
 
@@ -182,9 +161,7 @@ function loadCachedMembers() {
  ****************************************************/
 async function loadOtherUserProfile() {
   const r = await fetch(
-    `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(
-      finalOtherEmail
-    )}`
+    `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`
   );
   const d = await r.json();
   otherUser = d?.user || {};
@@ -195,9 +172,7 @@ async function loadOtherUserProfile() {
 
   const otherAvatarHTML =
     otherUser.profilePic || otherUser.ProfilePic
-      ? `<img class="chat-avatar" src="${
-          otherUser.profilePic || otherUser.ProfilePic
-        }" />`
+      ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
       : `<div class="chat-avatar-fallback">${otherInitials}</div>`;
 
   if (chatTitle) {
@@ -232,7 +207,6 @@ async function loadCommunityInfo() {
     </div>
   `;
 }
-
 function renderCommunityMembersSkeletons(count = 8) {
   const container = document.getElementById("memberSidebar");
   if (!container) return;
@@ -243,6 +217,8 @@ function renderCommunityMembersSkeletons(count = 8) {
     container.innerHTML += `
       <div class="member" style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:10px;">
+
+          <!-- Skeleton avatar (44×44 px, blue‑tinted) -->
           <div style="
             width:44px;
             height:44px;
@@ -250,6 +226,8 @@ function renderCommunityMembersSkeletons(count = 8) {
             background:#dbe4ff;
             animation:pulse 1.4s ease-in-out infinite;
           "></div>
+
+          <!-- Skeleton name bar (60% width, blue‑tinted) -->
           <div style="
             width:60%;
             height:14px;
@@ -257,12 +235,14 @@ function renderCommunityMembersSkeletons(count = 8) {
             background:#e6ecff;
             animation:pulse 1.4s ease-in-out infinite;
           "></div>
+
         </div>
       </div>
     `;
   }
 }
 
+// Pulse animation for skeletons
 const skeletonStyle = document.createElement("style");
 skeletonStyle.innerHTML = `
 @keyframes pulse {
@@ -272,7 +252,6 @@ skeletonStyle.innerHTML = `
 }
 `;
 document.head.appendChild(skeletonStyle);
-
 /****************************************************
  * COMMUNITY MEMBERS
  ****************************************************/
@@ -401,24 +380,15 @@ function startPolling() {
 function loadMessages() {
   if (!activeConversationId) return;
 
-  const key = getRoomKey();
-  if (!key) {
-    // No key: keep cached messages, don't wipe UI
-    return;
-  }
-
   fetch(
-    `${API_URL}?module=getMessages&conversationId=${activeConversationId}&key=${encodeURIComponent(
-      key
-    )}`
+    `${API_URL}?module=getMessages&conversationId=${activeConversationId}`
   )
     .then((r) => r.json())
     .then((d) => {
       messages = d?.messages || [];
       renderMessages(messages);
       cacheMessages();
-    })
-    .catch((e) => console.error("Failed to load messages", e));
+    });
 }
 
 /****************************************************
@@ -441,9 +411,7 @@ function renderPrivateMessages(list) {
   const initials = getInitials(fullName);
   const avatarHTML =
     otherUser?.profilePic || otherUser?.ProfilePic
-      ? `<img class="chat-avatar" src="${
-          otherUser.profilePic || otherUser.ProfilePic
-        }" />`
+      ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
       : `<div class="chat-avatar-fallback">${initials}</div>`;
 
   list.forEach((msg) => {
@@ -555,12 +523,6 @@ function sendMessage() {
   const text = input.value.trim();
   if (!text || !activeConversationId) return;
 
-  const key = getRoomKey();
-  if (!key) {
-    alert("You need a room key to send messages.");
-    return;
-  }
-
   const optimisticMsg = {
     senderEmail: loggedInUser.email,
     text,
@@ -575,7 +537,7 @@ function sendMessage() {
   fetch(
     `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(
       text
-    )}&key=${encodeURIComponent(key)}`
+    )}`
   ).catch((e) => console.error("Failed to send message", e));
 
   input.value = "";
