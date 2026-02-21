@@ -170,6 +170,49 @@
                 max-width: 350px;
             }
         }
+
+        /* NOTIFICATIONS */
+.notifications {
+    max-width: 800px;
+    margin: 30px auto 0 auto;
+    padding: 20px;
+    background: #ffffff;
+    color: #222;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.notification-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background: #f0f4ff;
+}
+
+.notification-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4a6cff;
+}
+
+.notification-time {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.no-notifications {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
     </style>
 </head>
 
@@ -186,7 +229,7 @@
     <h2><span id="userName"></span></h2>
     <p>Your world of connections starts here.</p>
 </div>
-
+<div id="notificationsBox" class="notifications"></div>
 <div class="grid">
 
     <div class="card">
@@ -289,13 +332,45 @@ function loadNavbar() {
             <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
         `;
 }
+async function loadNotifications() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) return;
 
+    const r = await fetch(`${API_URL}?module=getNotifications&email=${encodeURIComponent(user.email)}`);
+    const list = await r.json();
+
+    renderNotifications(list);
+}
+
+function renderNotifications(list) {
+    const box = document.getElementById("notificationsBox");
+    if (!box) return;
+
+    if (!list || list.length === 0) {
+        box.innerHTML = `<div class="no-notifications">No notifications yet</div>`;
+        return;
+    }
+
+    box.innerHTML = "";
+
+    list.forEach(n => {
+        box.innerHTML += `
+            <div class="notification-item" onclick="window.location.href='${n.link}'">
+                <div class="notification-text">${n.text}</div>
+                <div class="notification-time">${new Date(Number(n.timestamp)).toLocaleString()}</div>
+            </div>
+        `;
+    });
+}
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
 }
 
-document.addEventListener("DOMContentLoaded", loadNavbar);
+document.addEventListener("DOMContentLoaded", () => {
+    loadNavbar();
+    loadNotifications();   // ← ADD THIS
+});
 </script>
 
 </body>
