@@ -336,12 +336,14 @@ async function loadNotifications() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return;
 
-    const r = await fetch(`${API_URL}?module=getNotifications&email=${encodeURIComponent(user.email)}`);
-    const list = await r.json();
+    const r = await fetch(
+        `${API_URL}?module=getNotifications&email=${encodeURIComponent(user.email)}`
+    );
 
-    renderNotifications(list);
+    const data = await r.json();          // ← YOUR LINE GOES HERE
+    const list = data.notifications || []; // ← AND HERE
+    renderNotifications(list);             // ← AND HERE
 }
-
 function renderNotifications(list) {
     const box = document.getElementById("notificationsBox");
     if (!box) return;
