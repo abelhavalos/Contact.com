@@ -518,59 +518,33 @@ function renderCommunityMessages(list) {
 /****************************************************
  * SEND — OPTIMISTIC
  ****************************************************/
-function sendMessage(p) {
-  const conversationId = p.conversationId;
-  const senderEmail = p.senderEmail;
-  let receiverEmail = p.receiverEmail || "";
-  const plainText = p.text;
+function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (!text || !activeConversationId) return;
 
-  if (!conversationId || !senderEmail || !plainText) {
-    return { success: false, message: "Missing fields for sendMessage" };
-  }
+  const optimisticMsg = {
+    senderEmail: loggedInUser.email,
+    text,
+    optimistic: true,
+    tempId: Date.now()
+  };
 
-  // ⭐ Auto-detect receiver if frontend didn't send it
-  if (!receiverEmail) {
-    const conv = getConversationById(conversationId);
-    if (conv) {
-      receiverEmail = (conv.user1 === senderEmail) ? conv.user2 : conv.user1;
-    }
-  }
+  messages.push(optimisticMsg);
+  renderMessages(messages);
+  cacheMessages();
 
-  const encryptedText = encrypt_(plainText);
+  fetch(
+    `${API_URL}?module=sendMessage`
+    + `&conversationId=${activeConversationId}`
+    + `&senderEmail=${loggedInUser.email}`
+    + `&receiverEmail=${otherEmail}`   // ⭐ REQUIRED
+    + `&text=${encodeURIComponent(text)}`
+  ).catch((e) => console.error("Failed to send message", e));
 
-  const sheet = SpreadsheetApp.getActive().getSheetByName(MSG_SHEET);
-  if (!sheet) {
-    return { success: false, message: "Message sheet not found" };
-  }
-
-  const newId = "m_" + Utilities.getUuid();
-  const now = new Date();
-
-  sheet.appendRow([
-    newId,
-    conversationId,
-    senderEmail,
-    receiverEmail,
-    encryptedText,
-    now
-  ]);
-
-  // ⭐ Push notification to receiver
-  if (receiverEmail) {
-    const sender = getUserByEmail({ email: senderEmail });
-    const senderName = sender?.fullName || senderEmail;
-
-    pushNotification({
-      email: receiverEmail,
-      text: `New message from ${senderName}`,
-      link: `privatechat.html?conversationId=${conversationId}`,
-      timestamp: Date.now(),
-      read: false
-    });
-  }
-
-  return { success: true, messageId: newId };
+  input.value = "";
 }
+
 /****************************************************
  * DOM READY
  ****************************************************/
