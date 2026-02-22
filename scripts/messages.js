@@ -524,23 +524,34 @@ function sendMessage() {
   if (!text || !activeConversationId) return;
 
   const optimisticMsg = {
+    id: "temp_" + Date.now(),
     senderEmail: loggedInUser.email,
     text,
     optimistic: true,
-    tempId: Date.now()
+    timestamp: Date.now()
   };
 
   messages.push(optimisticMsg);
   renderMessages(messages);
-  cacheMessages();
 
   fetch(
-    `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(text)}`
-  ).catch((e) => console.error("Failed to send message", e));
+    `${API_URL}?module=sendMessage`
+    + `&conversationId=${activeConversationId}`
+    + `&senderEmail=${loggedInUser.email}`
+    + `&text=${encodeURIComponent(text)}`
+  )
+  .then(r => r.json())
+  .then(data => {
+    // Replace optimistic message with real one
+    if (data.success) {
+      messages = messages.filter(m => !m.optimistic);
+      loadMessages(); // reload from backend
+    }
+  })
+  .catch(err => console.error("Send failed", err));
 
   input.value = "";
 }
-
 /****************************************************
  * DOM READY
  ****************************************************/
