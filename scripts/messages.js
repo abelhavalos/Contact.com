@@ -538,13 +538,12 @@ function sendMessage() {
     `${API_URL}?module=sendMessage`
     + `&conversationId=${activeConversationId}`
     + `&senderEmail=${loggedInUser.email}`
-    + `&receiverEmail=${otherEmail}`   // ⭐ REQUIRED
+    + `&receiverEmail=${activeConversation.otherUser}`   // ⭐ FIXED
     + `&text=${encodeURIComponent(text)}`
   ).catch((e) => console.error("Failed to send message", e));
 
   input.value = "";
 }
-
 /****************************************************
  * DOM READY
  ****************************************************/
