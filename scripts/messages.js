@@ -535,15 +535,12 @@ function sendMessage() {
   cacheMessages();
 
   fetch(
-    `${API_URL}?module=sendMessage`
-    + `&conversationId=${activeConversationId}`
-    + `&senderEmail=${loggedInUser.email}`
-    + `&receiverEmail=${activeConversation.otherUser}`   // ⭐ FIXED
-    + `&text=${encodeURIComponent(text)}`
+    `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&text=${encodeURIComponent(text)}`
   ).catch((e) => console.error("Failed to send message", e));
 
   input.value = "";
 }
+
 /****************************************************
  * DOM READY
  ****************************************************/
