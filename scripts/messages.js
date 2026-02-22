@@ -374,23 +374,29 @@ function primeMessages() {
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   loadMessages();
-  pollingInterval = setInterval(loadMessages, 200);
+  pollingInterval = setInterval(() => {
+  if (activeConversationId) {
+    loadMessages();
+  }
+}, 200);
 }
 
-function loadMessages() {
-  if (!activeConversationId) return;
-
-  fetch(
+async function loadMessages() {
+  const r = await fetch(
     `${API_URL}?module=getMessages&conversationId=${activeConversationId}`
-  )
-    .then((r) => r.json())
-    .then((d) => {
-      messages = d?.messages || [];
-      renderMessages(messages);
-      cacheMessages();
-    });
-}
+  );
+  const data = await r.json();
 
+  const backendMessages = data.messages || [];
+
+  // Keep optimistic messages that haven't been confirmed yet
+  const optimistic = messages.filter(m => m.optimistic);
+
+  // Merge backend + optimistic
+  messages = [...backendMessages, ...optimistic];
+
+  renderMessages(messages);
+}
 /****************************************************
  * RENDERING
  ****************************************************/
