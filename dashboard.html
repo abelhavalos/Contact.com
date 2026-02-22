@@ -218,14 +218,10 @@
 
 </div>
 <script>
-    const API_URL =
-  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
-
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
 
-// Load user from localStorage
 document.addEventListener("DOMContentLoaded", () => {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
@@ -236,7 +232,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("userName").textContent = user.fullName;
 });
+</script>
 
+<script>
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
@@ -288,38 +286,7 @@ function loadNavbar() {
             <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
         `;
 }
-async function loadNotifications() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) return;
 
-    const r = await fetch(
-        `${API_URL}?module=getNotifications&email=${encodeURIComponent(user.email)}`
-    );
-
-    const data = await r.json();          // ← YOUR LINE GOES HERE
-    const list = data.notifications || []; // ← AND HERE
-    renderNotifications(list);             // ← AND HERE
-}
-function renderNotifications(list) {
-    const box = document.getElementById("notificationsBox");
-    if (!box) return;
-
-    if (!list || list.length === 0) {
-        box.innerHTML = `<div class="no-notifications">No notifications yet</div>`;
-        return;
-    }
-
-    box.innerHTML = "";
-
-    list.forEach(n => {
-        box.innerHTML += `
-            <div class="notification-item" onclick="window.location.href='${n.link}'">
-                <div class="notification-text">${n.text}</div>
-                <div class="notification-time">${new Date(Number(n.timestamp)).toLocaleString()}</div>
-            </div>
-        `;
-    });
-}
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
@@ -327,9 +294,7 @@ function logout() {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
-    loadNotifications();   // ← ADD THIS
 });
 </script>
-
 </body>
 </html>
