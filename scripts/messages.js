@@ -387,16 +387,18 @@ async function loadMessages() {
   );
   const data = await r.json();
 
-  const backendMessages = data.messages || [];
+  let backendMessages = data.messages || [];
 
-  // Keep optimistic messages that haven't been confirmed yet
+  // ⭐ Only take the last 30 messages
+  backendMessages = backendMessages.slice(-10);
+
   const optimistic = messages.filter(m => m.optimistic);
 
-  // Merge backend + optimistic
   messages = [...backendMessages, ...optimistic];
 
   renderMessages(messages);
 }
+
 /****************************************************
  * RENDERING
  ****************************************************/
