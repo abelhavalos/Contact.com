@@ -232,7 +232,21 @@
                 max-width: 350px;
             }
         }
-
+.mobile-menu {
+    position: absolute;
+    top: 70px; /* match your navbar height */
+    right: 0;
+    width: 200px; /* or 100% if you want full width */
+    background: #4a6cff;
+    padding: 10px 0;
+    display: none;
+    flex-direction: column;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.mobile-menu.show {
+    display: flex;
+}
         
     </style>
 </head>
