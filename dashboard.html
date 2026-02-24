@@ -461,24 +461,15 @@ function messageUser(email) {
 /* ------------------ MARK AS READ + REFRESH + OPEN CHAT ------------------ */
 
 async function handleNotificationClick(senderEmail, receiverEmail, link) {
-  // 1. Delete notification from backend
-  await fetch(
-    `${API_URL}?module=deleteNotification&email=${encodeURIComponent(receiverEmail)}&link=${encodeURIComponent(link)}`
-  );
+    // 1. Immediately redirect to chat
+    messageUser(senderEmail);
 
-  // 2. Update bubble
-  updateNotificationBubble();
-
-  // 3. Refresh notification list
-  const r = await fetch(`${API_URL}?module=getNotifications&email=${receiverEmail}`);
-  const data = await r.json();
-  renderNotifications(data.notifications || []);
-
-  // 4. Hide panel so next open shows updated list
-  document.getElementById("notificationsPanel").style.display = "none";
-
-  // 5. Open private chat
-  messageUser(senderEmail);
+    // 2. Delete notification in the background
+    fetch(
+        `${API_URL}?module=deleteNotification&email=${encodeURIComponent(receiverEmail)}&link=${encodeURIComponent(link)}`
+    ).then(() => {
+        // 3. Update bubble silently
+        updateNotificationBubble();
+    }).catch(err => console.error("Delete notification error:", err));
 }
-
 </script>
