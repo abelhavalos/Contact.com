@@ -438,23 +438,41 @@ function renderNotifications(list) {
 }
 
 /* CLICK HANDLER FOR BUBBLE + PANEL */
+/* CLICK HANDLER FOR BUBBLE + PANEL */
 document.addEventListener("click", async (e) => {
-  const bubble = document.getElementById("notifBubble");
-  const panel = document.getElementById("notificationsPanel");
+    const bubble = document.getElementById("notifBubble");
+    const panel = document.getElementById("notificationsPanel");
+    const hamburger = document.querySelector(".hamburger");
+    const navbar = document.getElementById("navbar");
 
-  if (e.target === bubble) {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    const r = await fetch(`${API_URL}?module=getNotifications&email=${user.email}`);
-    const data = await r.json();
+    // ⭐ Allow hamburger menu to work
+    if (hamburger.contains(e.target)) {
+        return; // do NOT close panel, do NOT block toggleMenu()
+    }
 
-    renderNotifications(data.notifications || []);
-    panel.style.display = panel.style.display === "none" || panel.style.display === "" ? "block" : "none";
-    return;
-  }
+    // ⭐ Allow navbar links to work normally
+    if (navbar.contains(e.target) && e.target !== bubble) {
+        return;
+    }
 
-  if (!panel.contains(e.target)) {
-    panel.style.display = "none";
-  }
+    // ⭐ Bubble clicked → open notifications
+    if (e.target === bubble) {
+        const user = JSON.parse(localStorage.getItem("contact_user"));
+        const r = await fetch(`${API_URL}?module=getNotifications&email=${user.email}`);
+        const data = await r.json();
+
+        renderNotifications(data.notifications || []);
+        panel.style.display =
+            panel.style.display === "none" || panel.style.display === ""
+                ? "block"
+                : "none";
+        return;
+    }
+
+    // ⭐ Click outside panel → close it
+    if (!panel.contains(e.target)) {
+        panel.style.display = "none";
+    }
 });
 </script>
 
