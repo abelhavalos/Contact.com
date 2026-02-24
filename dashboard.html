@@ -448,14 +448,14 @@ function renderNotifications(list) {
 
     list.forEach(n => {
         panel.innerHTML += `
-            <div class="notification-item" onclick="window.location.href='${n.link}'">
+            <div class="notification-item" onclick="messageUser('${n.email}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
         `;
     });
 }
-
+    
 /* CLICK HANDLER FOR BUBBLE + PANEL */
 document.addEventListener("click", async (e) => {
     const bubble = document.getElementById("notifBubble");
@@ -475,6 +475,9 @@ document.addEventListener("click", async (e) => {
         panel.style.display = "none";
     }
 });
+function messageUser(email) {
+  window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
+}    
 </script>
 </body>
 </html>
