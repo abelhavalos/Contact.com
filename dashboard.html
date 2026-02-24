@@ -447,15 +447,21 @@ function renderNotifications(list) {
     }
 
     list.forEach(n => {
+        // Extract sender email from link
+        let senderEmail = null;
+
+        if (n.link && n.link.includes("otherEmail=")) {
+            senderEmail = decodeURIComponent(n.link.split("otherEmail=")[1]);
+        }
+
         panel.innerHTML += `
-            <div class="notification-item" onclick="messageUser('${n.email}')">
+            <div class="notification-item" onclick="messageUser('${senderEmail}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
         `;
     });
-}
-    
+}    
 /* CLICK HANDLER FOR BUBBLE + PANEL */
 document.addEventListener("click", async (e) => {
     const bubble = document.getElementById("notifBubble");
