@@ -410,7 +410,7 @@ function renderNotifications(list) {
 
     list.forEach(n => {
         panel.innerHTML += `
-            <div class="notification-item" onclick="openPrivateChatFromNotification('${n.link}')">
+            <div class="notification-item" onclick="window.location.href='${n.link}'">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
@@ -436,9 +436,9 @@ document.addEventListener("click", async (e) => {
     if (!panel.contains(e.target)) {
         panel.style.display = "none";
     }
-});
+}
 
-/* ⭐ FIX: OPEN PRIVATE CHAT WITH FULL PROFILE */
+/* (optional) keep this if you use it elsewhere */
 async function openPrivateChat(otherEmail) {
     try {
         const r = await fetch(`${API_URL}?module=getPublicProfile&email=${otherEmail}`);
@@ -453,7 +453,8 @@ async function openPrivateChat(otherEmail) {
         console.error("Error loading profile:", err);
         window.location.href = `messages.html?otherEmail=${encodeURIComponent(otherEmail)}`;
     }
-}
+});
 </script>
+
 </body>
 </html>
