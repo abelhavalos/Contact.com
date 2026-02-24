@@ -491,7 +491,19 @@ document.addEventListener("click", async (e) => {
 });
 function messageUser(email) {
   window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
-}    
+}
+
+async function handleNotificationClick(senderEmail, receiverEmail, timestamp) {
+  // 1. Mark notification as read
+  await fetch(`${API_URL}?module=markNotificationRead&email=${receiverEmail}&timestamp=${encodeURIComponent(timestamp)}`);
+
+  // 2. Update bubble immediately
+  updateNotificationBubble();
+
+  // 3. Open the private chat
+  messageUser(senderEmail);
+}
+    
 </script>
 </body>
 </html>
