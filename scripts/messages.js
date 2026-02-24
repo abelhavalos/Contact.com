@@ -546,6 +546,40 @@ function sendMessage() {
     `${API_URL}?module=sendMessage`
     + `&conversationId=${activeConversationId}`
     + `&senderEmail=${loggedInUser.email}`
+    + `&receiverEmail=${activeConversation.otherUser}`   // ⭐ FIXED
+    + `&text=${encodeURIComponent(text)}`
+  )
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      messages = messages.filter(m => !m.optimistic);
+      loadMessages();
+    }
+  })
+  .catch(err => console.error("Send failed", err));
+
+  input.value = "";
+}
+/**function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (!text || !activeConversationId) return;
+
+  const optimisticMsg = {
+    id: "temp_" + Date.now(),
+    senderEmail: loggedInUser.email,
+    text,
+    optimistic: true,
+    timestamp: Date.now()
+  };
+
+  messages.push(optimisticMsg);
+  renderMessages(messages);
+
+  fetch(
+    `${API_URL}?module=sendMessage`
+    + `&conversationId=${activeConversationId}`
+    + `&senderEmail=${loggedInUser.email}`
     + `&text=${encodeURIComponent(text)}`
   )
   .then(r => r.json())
@@ -560,6 +594,7 @@ function sendMessage() {
 
   input.value = "";
 }
+**/
 /****************************************************
  * DOM READY
  ****************************************************/
