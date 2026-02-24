@@ -449,10 +449,11 @@ function renderNotifications(list) {
     const currentUser = JSON.parse(localStorage.getItem("contact_user")).email;
 
     list.forEach(n => {
+        // Extract sender email from conversationId
         let senderEmail = null;
 
         if (n.link && n.link.includes("conversationId=")) {
-            const convId = n.link.split("conversationId=")[1]; 
+            const convId = n.link.split("conversationId=")[1];
             const parts = convId.replace("conv_", "").split("_");
 
             const email1 = parts[0];
@@ -461,8 +462,10 @@ function renderNotifications(list) {
             senderEmail = (email1 === currentUser) ? email2 : email1;
         }
 
+        // ⭐ THIS IS WHERE YOUR onclick GOES
         panel.innerHTML += `
-            <div class="notification-item" onclick="messageUser('${senderEmail}')">
+            <div class="notification-item"
+                 onclick="handleNotificationClick('${senderEmail}', '${n.email}', '${n.timestamp}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
@@ -495,15 +498,20 @@ function messageUser(email) {
 
 async function handleNotificationClick(senderEmail, receiverEmail, timestamp) {
   // 1. Mark notification as read
-  await fetch(`${API_URL}?module=markNotificationRead&email=${receiverEmail}&timestamp=${encodeURIComponent(timestamp)}`);
+  await fetch(`${API_URL}?module=markNotificationRead`, {
+    method: "POST",
+    body: JSON.stringify({
+      email: receiverEmail,
+      timestamp: timestamp
+    })
+  });
 
   // 2. Update bubble immediately
   updateNotificationBubble();
 
   // 3. Open the private chat
   messageUser(senderEmail);
-}
-    
+}    
 </script>
 </body>
 </html>
