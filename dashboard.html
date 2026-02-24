@@ -306,8 +306,6 @@ document.addEventListener("DOMContentLoaded", () => {
 const API_URL =
   "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* ------------------ NAV + USER ------------------ */
-
 function toggleMenu() {
   document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -322,9 +320,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("userName").textContent = user.fullName;
 });
+</script>
 
-/* ------------------ NAVBAR RENDER ------------------ */
-
+<script>
 function loadNavbar() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
 
@@ -394,19 +392,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 200);
 });
 
-/* ------------------ NOTIFICATION COUNTER ------------------ */
-
+/* NOTIFICATION COUNTER */
 async function updateNotificationBubble() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) return;
 
   try {
-    const r = await fetch(
-      `${API_URL}?module=getNotifications&email=${user.email}`
-    );
+    const r = await fetch(`${API_URL}?module=getNotifications&email=${user.email}`);
     const data = await r.json();
 
-    const unread = (data.notifications || []).filter((n) => !n.read).length;
+    const unread = (data.notifications || []).filter(n => !n.read).length;
 
     const bubble = document.getElementById("notifBubble");
     if (!bubble) return;
@@ -422,8 +417,7 @@ async function updateNotificationBubble() {
   }
 }
 
-/* ------------------ NOTIFICATION PANEL ------------------ */
-
+/* NOTIFICATION PANEL RENDERER */
 function renderNotifications(list) {
   const panel = document.getElementById("notificationsPanel");
   panel.innerHTML = "";
@@ -433,42 +427,28 @@ function renderNotifications(list) {
     return;
   }
 
-  list.forEach((n) => {
+  list.forEach(n => {
     panel.innerHTML += `
-      <div class="notification-item" onclick="openNotification(event, '${n.link}')">
+      <div class="notification-item" onclick="window.location.href='${n.link}'">
         <div class="notification-text">${n.text}</div>
-        <div class="notification-time">${new Date(
-          n.timestamp
-        ).toLocaleString()}</div>
+        <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
       </div>
     `;
   });
 }
 
-/* ⭐ Prevent navbar click handler from blocking navigation */
-function openNotification(e, link) {
-  e.stopPropagation();
-  window.location.href = link;
-}
-
-/* ------------------ CLICK HANDLER ------------------ */
-
+/* CLICK HANDLER FOR BUBBLE + PANEL */
 document.addEventListener("click", async (e) => {
   const bubble = document.getElementById("notifBubble");
   const panel = document.getElementById("notificationsPanel");
 
   if (e.target === bubble) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    const r = await fetch(
-      `${API_URL}?module=getNotifications&email=${user.email}`
-    );
+    const r = await fetch(`${API_URL}?module=getNotifications&email=${user.email}`);
     const data = await r.json();
 
     renderNotifications(data.notifications || []);
-    panel.style.display =
-      panel.style.display === "none" || panel.style.display === ""
-        ? "block"
-        : "none";
+    panel.style.display = panel.style.display === "none" || panel.style.display === "" ? "block" : "none";
     return;
   }
 
@@ -476,30 +456,7 @@ document.addEventListener("click", async (e) => {
     panel.style.display = "none";
   }
 });
-
-/* ------------------ PRIVATE CHAT OPEN ------------------ */
-
-async function openPrivateChat(otherEmail) {
-  try {
-    const r = await fetch(
-      `${API_URL}?module=getPublicProfile&email=${otherEmail}`
-    );
-    const data = await r.json();
-
-    if (data.success && data.user) {
-      localStorage.setItem("private_chat_user", JSON.stringify(data.user));
-    }
-
-    window.location.href = `messages.html?otherEmail=${encodeURIComponent(
-      otherEmail
-    )}`;
-  } catch (err) {
-    console.error("Error loading profile:", err);
-    window.location.href = `messages.html?otherEmail=${encodeURIComponent(
-      otherEmail
-    )}`;
-  }
-}
 </script>
+
 </body>
 </html>
