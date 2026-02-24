@@ -437,7 +437,23 @@ document.addEventListener("click", async (e) => {
         panel.style.display = "none";
     }
 });
-</script>
 
+/* ⭐ FIX: OPEN PRIVATE CHAT WITH FULL PROFILE */
+async function openPrivateChat(otherEmail) {
+    try {
+        const r = await fetch(`${API_URL}?module=getPublicProfile&email=${otherEmail}`);
+        const data = await r.json();
+
+        if (data.success && data.user) {
+            localStorage.setItem("private_chat_user", JSON.stringify(data.user));
+        }
+
+        window.location.href = `messages.html?otherEmail=${encodeURIComponent(otherEmail)}`;
+    } catch (err) {
+        console.error("Error loading profile:", err);
+        window.location.href = `messages.html?otherEmail=${encodeURIComponent(otherEmail)}`;
+    }
+}
+</script>
 </body>
 </html>
