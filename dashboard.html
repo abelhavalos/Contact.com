@@ -461,16 +461,23 @@ function messageUser(email) {
 /* ------------------ MARK AS READ + REFRESH + OPEN CHAT ------------------ */
 
 async function handleNotificationClick(senderEmail, receiverEmail, link) {
+    // 1. Mark notification as read
     await fetch(
         `${API_URL}?module=markNotificationRead&email=${encodeURIComponent(receiverEmail)}&link=${encodeURIComponent(link)}`
     );
 
+    // 2. Update bubble
     updateNotificationBubble();
 
+    // 3. Refresh notification list
     const r = await fetch(`${API_URL}?module=getNotifications&email=${receiverEmail}`);
     const data = await r.json();
     renderNotifications(data.notifications || []);
 
+    // ⭐ 4. Hide the panel so next open shows updated list
+    document.getElementById("notificationsPanel").style.display = "none";
+
+    // 5. Open private chat
     messageUser(senderEmail);
 }
 </script>
