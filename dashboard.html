@@ -301,164 +301,205 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("userName").textContent = user.fullName;
 });
-</script>
-
+    
 <script>
-function loadNavbar() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-    const loggedInNav = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="logo">
-            Contact<span>.</span>com
-            <div id="notifBubble" class="notification-bubble hidden">0</div>
-        </div>
-        <div class="nav-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        </div>
-    `;
+/* ------------------ NAV + USER ------------------ */
 
-    const publicNav = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        </div>
-    `;
-
-    document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
-
-    document.getElementById("mobileMenu").innerHTML = user
-        ? `
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        `
-        : `
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        `;
-}
-
-function logout() {
-    localStorage.removeItem("contact_user");
-    window.location.href = "index.html";
+function toggleMenu() {
+  document.getElementById("mobileMenu").classList.toggle("show");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    loadNavbar();
+  const user = JSON.parse(localStorage.getItem("contact_user"));
 
-    setTimeout(() => {
-        updateNotificationBubble();
-        setInterval(updateNotificationBubble, 3000);
-    }, 200);
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  document.getElementById("userName").textContent = user.fullName;
 });
 
-/* NOTIFICATION COUNTER */
+/* ------------------ NAVBAR RENDER ------------------ */
+
+function loadNavbar() {
+  const user = JSON.parse(localStorage.getItem("contact_user"));
+
+  const loggedInNav = `
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="logo">
+      Contact<span>.</span>com
+      <div id="notifBubble" class="notification-bubble hidden">0</div>
+    </div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="contacts.html">Contacts</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </div>
+  `;
+
+  const publicNav = `
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="logo">Contact<span>.</span>com</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="login.html">Login</a>
+      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+    </div>
+  `;
+
+  document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
+
+  document.getElementById("mobileMenu").innerHTML = user
+    ? `
+      <a href="dashboard.html">Dashboard</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="contacts.html">Contacts</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    `
+    : `
+      <a href="index.html">Home</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="login.html">Login</a>
+      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+    `;
+}
+
+function logout() {
+  localStorage.removeItem("contact_user");
+  window.location.href = "index.html";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadNavbar();
+
+  setTimeout(() => {
+    updateNotificationBubble();
+    setInterval(updateNotificationBubble, 3000);
+  }, 200);
+});
+
+/* ------------------ NOTIFICATION COUNTER ------------------ */
+
 async function updateNotificationBubble() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) return;
+  const user = JSON.parse(localStorage.getItem("contact_user"));
+  if (!user) return;
 
-    try {
-        const r = await fetch(`${API_URL}?module=getNotifications&email=${user.email}`);
-        const data = await r.json();
+  try {
+    const r = await fetch(
+      `${API_URL}?module=getNotifications&email=${user.email}`
+    );
+    const data = await r.json();
 
-        const unread = (data.notifications || []).filter(n => !n.read).length;
+    const unread = (data.notifications || []).filter((n) => !n.read).length;
 
-        const bubble = document.getElementById("notifBubble");
-        if (!bubble) return;
-
-        if (unread > 0) {
-            bubble.textContent = unread;
-            bubble.classList.remove("hidden");
-        } else {
-            bubble.classList.add("hidden");
-        }
-    } catch (err) {
-        console.error("Notification bubble error:", err);
-    }
-}
-
-/* NOTIFICATION PANEL RENDERER */
-function renderNotifications(list) {
-    const panel = document.getElementById("notificationsPanel");
-    panel.innerHTML = "";
-
-    if (list.length === 0) {
-        panel.innerHTML = `<div style="padding:10px;">No notifications</div>`;
-        return;
-    }
-
-    list.forEach(n => {
-        panel.innerHTML += `
-            <div class="notification-item" onclick="openNotificationLink(event, '${n.link}')">
-                <div class="notification-text">${n.text}</div>
-                <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
-            </div>
-        `;
-    });
-}
-/* CLICK HANDLER FOR BUBBLE + PANEL */
-document.addEventListener("click", async (e) => {
     const bubble = document.getElementById("notifBubble");
-    const panel = document.getElementById("notificationsPanel");
+    if (!bubble) return;
 
-    if (e.target === bubble) {
-        const user = JSON.parse(localStorage.getItem("contact_user"));
-        const r = await fetch(`${API_URL}?module=getNotifications&email=${user.email}`);
-        const data = await r.json();
-
-        renderNotifications(data.notifications || []);
-        panel.style.display = panel.style.display === "none" ? "block" : "none";
-        return;
+    if (unread > 0) {
+      bubble.textContent = unread;
+      bubble.classList.remove("hidden");
+    } else {
+      bubble.classList.add("hidden");
     }
-
-    if (!panel.contains(e.target)) {
-        panel.style.display = "none";
-    }
+  } catch (err) {
+    console.error("Notification bubble error:", err);
+  }
 }
 
-/* (optional) keep this if you use it elsewhere */
-async function openPrivateChat(otherEmail) {
-    try {
-        const r = await fetch(`${API_URL}?module=getPublicProfile&email=${otherEmail}`);
-        const data = await r.json();
+/* ------------------ NOTIFICATION PANEL ------------------ */
 
-        if (data.success && data.user) {
-            localStorage.setItem("private_chat_user", JSON.stringify(data.user));
-        }
+function renderNotifications(list) {
+  const panel = document.getElementById("notificationsPanel");
+  panel.innerHTML = "";
 
-        window.location.href = `messages.html?otherEmail=${encodeURIComponent(otherEmail)}`;
-    } catch (err) {
-        console.error("Error loading profile:", err);
-        window.location.href = `messages.html?otherEmail=${encodeURIComponent(otherEmail)}`;
-    }
+  if (list.length === 0) {
+    panel.innerHTML = `<div style="padding:10px;">No notifications</div>`;
+    return;
+  }
+
+  list.forEach((n) => {
+    panel.innerHTML += `
+      <div class="notification-item" onclick="openNotification(event, '${n.link}')">
+        <div class="notification-text">${n.text}</div>
+        <div class="notification-time">${new Date(
+          n.timestamp
+        ).toLocaleString()}</div>
+      </div>
+    `;
+  });
+}
+
+/* ⭐ Prevent navbar click handler from blocking navigation */
+function openNotification(e, link) {
+  e.stopPropagation();
+  window.location.href = link;
+}
+
+/* ------------------ CLICK HANDLER ------------------ */
+
+document.addEventListener("click", async (e) => {
+  const bubble = document.getElementById("notifBubble");
+  const panel = document.getElementById("notificationsPanel");
+
+  if (e.target === bubble) {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const r = await fetch(
+      `${API_URL}?module=getNotifications&email=${user.email}`
+    );
+    const data = await r.json();
+
+    renderNotifications(data.notifications || []);
+    panel.style.display =
+      panel.style.display === "none" || panel.style.display === ""
+        ? "block"
+        : "none";
+    return;
+  }
+
+  if (!panel.contains(e.target)) {
+    panel.style.display = "none";
+  }
 });
-    
-function openNotificationLink(e, link) {
-    e.stopPropagation(); // ⭐ prevents navbar click handler from blocking navigation
-    window.location.href = link;
-}    
-</script>
 
+/* ------------------ PRIVATE CHAT OPEN ------------------ */
+
+async function openPrivateChat(otherEmail) {
+  try {
+    const r = await fetch(
+      `${API_URL}?module=getPublicProfile&email=${otherEmail}`
+    );
+    const data = await r.json();
+
+    if (data.success && data.user) {
+      localStorage.setItem("private_chat_user", JSON.stringify(data.user));
+    }
+
+    window.location.href = `messages.html?otherEmail=${encodeURIComponent(
+      otherEmail
+    )}`;
+  } catch (err) {
+    console.error("Error loading profile:", err);
+    window.location.href = `messages.html?otherEmail=${encodeURIComponent(
+      otherEmail
+    )}`;
+  }
+}
+</script>
 </body>
 </html>
