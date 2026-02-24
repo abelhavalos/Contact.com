@@ -285,63 +285,6 @@
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
-
-function toggleMenu() {
-    document.getElementById("mobileMenu").classList.toggle("show");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-
-    if (!user) {
-        window.location.href = "login.html";
-        return;
-    }
-
-    document.getElementById("userName").textContent = user.fullName;
-});
-    
-<script>
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
-
-function toggleMenu() {
-  document.getElementById("mobileMenu").classList.toggle("show");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const user = JSON.parse(localStorage.getItem("contact_user"));
-
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
-
-  document.getElementById("userName").textContent = user.fullName;
-});
-</script>
-
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
-
-function toggleMenu() {
-    document.getElementById("mobileMenu").classList.toggle("show");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-
-    if (!user) {
-        window.location.href = "login.html";
-        return;
-    }
-
-    document.getElementById("userName").textContent = user.fullName;
-});
-</script>
-
-<script>
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
@@ -449,7 +392,6 @@ function renderNotifications(list) {
     const currentUser = JSON.parse(localStorage.getItem("contact_user")).email;
 
     list.forEach(n => {
-        // Extract sender email from conversationId
         let senderEmail = null;
 
         if (n.link && n.link.includes("conversationId=")) {
@@ -496,25 +438,19 @@ function messageUser(email) {
   window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
 }
 
-/* MARK AS READ + OPEN CHAT */
+/* MARK AS READ + REFRESH LIST + OPEN CHAT */
 async function handleNotificationClick(senderEmail, receiverEmail, link) {
-  // 1. Mark notification as read
   await fetch(
     `${API_URL}?module=markNotificationRead&email=${encodeURIComponent(receiverEmail)}&link=${encodeURIComponent(link)}`
   );
 
-  // 2. Refresh bubble
   updateNotificationBubble();
 
-  // 3. Refresh notification list (so it no longer shows unread)
   const r = await fetch(`${API_URL}?module=getNotifications&email=${receiverEmail}`);
   const data = await r.json();
   renderNotifications(data.notifications || []);
 
-  // 4. Open the private chat
   messageUser(senderEmail);
 }
-
-</script>
-</body>
+</script></body>
 </html>
