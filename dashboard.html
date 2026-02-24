@@ -462,17 +462,16 @@ function renderNotifications(list) {
             senderEmail = (email1 === currentUser) ? email2 : email1;
         }
 
-        // ⭐ THIS IS WHERE YOUR onclick GOES
         panel.innerHTML += `
             <div class="notification-item"
-                 onclick="handleNotificationClick('${senderEmail}', '${n.email}', '${n.timestamp}')">
+                 onclick="handleNotificationClick('${senderEmail}', '${n.email}', '${n.link}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
         `;
     });
-} 
-    
+}
+
 /* CLICK HANDLER FOR BUBBLE + PANEL */
 document.addEventListener("click", async (e) => {
     const bubble = document.getElementById("notifBubble");
@@ -492,26 +491,22 @@ document.addEventListener("click", async (e) => {
         panel.style.display = "none";
     }
 });
+
 function messageUser(email) {
   window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
 }
 
-async function handleNotificationClick(senderEmail, receiverEmail, timestamp) {
-  // 1. Mark notification as read
-  await fetch(`${API_URL}?module=markNotificationRead`, {
-    method: "POST",
-    body: JSON.stringify({
-      email: receiverEmail,
-      timestamp: timestamp
-    })
-  });
+/* MARK AS READ + OPEN CHAT */
+async function handleNotificationClick(senderEmail, receiverEmail, link) {
+  // 1. Mark notification as read using email + link
+  await fetch(`${API_URL}?module=markNotificationRead&email=${encodeURIComponent(receiverEmail)}&link=${encodeURIComponent(link)}`);
 
   // 2. Update bubble immediately
   updateNotificationBubble();
 
   // 3. Open the private chat
   messageUser(senderEmail);
-}    
+}
 </script>
 </body>
 </html>
