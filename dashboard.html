@@ -410,14 +410,13 @@ function renderNotifications(list) {
 
     list.forEach(n => {
         panel.innerHTML += `
-            <div class="notification-item" onclick="window.location.href='${n.link}'">
+            <div class="notification-item" onclick="openNotificationLink(event, '${n.link}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
         `;
     });
 }
-
 /* CLICK HANDLER FOR BUBBLE + PANEL */
 document.addEventListener("click", async (e) => {
     const bubble = document.getElementById("notifBubble");
@@ -454,6 +453,11 @@ async function openPrivateChat(otherEmail) {
         window.location.href = `messages.html?otherEmail=${encodeURIComponent(otherEmail)}`;
     }
 });
+    
+function openNotificationLink(e, link) {
+    e.stopPropagation(); // ⭐ prevents navbar click handler from blocking navigation
+    window.location.href = link;
+}    
 </script>
 
 </body>
