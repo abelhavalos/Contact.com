@@ -253,3 +253,18 @@ body {
   margin-top: 10px;
   color: #64748b;
 }
+.mobile-menu {
+    position: absolute;
+    top: 70px;              /* match your navbar height */
+    left: 0;                /* ⭐ anchor to the LEFT */
+    width: 220px;           /* adjust as needed */
+    background: #4a6cff;
+    padding: 10px 0;
+    display: none;
+    flex-direction: column;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.mobile-menu.show {
+    display: flex;
+}
