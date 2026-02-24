@@ -232,6 +232,21 @@
                 max-width: 350px;
             }
         }
+
+        #mobileMenu {
+    position: absolute;      /* sits on top, not pushing content */
+    top: 60px;               /* adjust to match your navbar height */
+    right: 0;
+    width: 200px;            /* or 100% if you want full width */
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    display: none;           /* hidden by default */
+    z-index: 9999;           /* stays above everything */
+}
+
+#mobileMenu.show {
+    display: block;
+}
     </style>
 </head>
 
