@@ -526,7 +526,7 @@ function renderCommunityMessages(list) {
 /****************************************************
  * SEND — OPTIMISTIC
  ****************************************************/
-function sendMessage() {
+/**function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
   if (!text || !activeConversationId) return;
@@ -560,7 +560,8 @@ function sendMessage() {
 
   input.value = "";
 }
-/**function sendMessage() {
+**/
+function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
   if (!text || !activeConversationId) return;
@@ -594,7 +595,7 @@ function sendMessage() {
 
   input.value = "";
 }
-**/
+
 /****************************************************
  * DOM READY
  ****************************************************/
