@@ -410,7 +410,7 @@ function renderNotifications(list) {
 
     list.forEach(n => {
         panel.innerHTML += `
-            <div class="notification-item" onclick="window.location.href='${n.link}'">
+            <div class="notification-item" onclick="openPrivateChatFromNotification('${n.link}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
