@@ -72,6 +72,14 @@ function getInitials(name) {
     .toUpperCase();
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
 /****************************************************
  * NAVBAR
  ****************************************************/
@@ -207,6 +215,7 @@ async function loadCommunityInfo() {
     </div>
   `;
 }
+
 function renderCommunityMembersSkeletons(count = 8) {
   const container = document.getElementById("memberSidebar");
   if (!container) return;
@@ -252,6 +261,7 @@ skeletonStyle.innerHTML = `
 }
 `;
 document.head.appendChild(skeletonStyle);
+
 /****************************************************
  * COMMUNITY MEMBERS
  ****************************************************/
@@ -310,6 +320,8 @@ async function hydrateMemberProfiles(emails) {
 
 function renderCommunityMembersList(list) {
   const container = document.getElementById("memberSidebar");
+  if (!container) return;
+
   container.innerHTML = "<h3>Members</h3>";
 
   list.forEach((m) => {
@@ -375,10 +387,10 @@ function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   loadMessages();
   pollingInterval = setInterval(() => {
-  if (activeConversationId) {
-    loadMessages();
-  }
-}, 200);
+    if (activeConversationId) {
+      loadMessages();
+    }
+  }, 200);
 }
 
 async function loadMessages() {
@@ -389,10 +401,10 @@ async function loadMessages() {
 
   let backendMessages = data.messages || [];
 
-  // ⭐ Only take the last 30 messages
+  // Only take the last 10 messages
   backendMessages = backendMessages.slice(-10);
 
-  const optimistic = messages.filter(m => m.optimistic);
+  const optimistic = messages.filter((m) => m.optimistic);
 
   messages = [...backendMessages, ...optimistic];
 
@@ -402,6 +414,23 @@ async function loadMessages() {
 /****************************************************
  * RENDERING
  ****************************************************/
+function renderMessageContent(msg) {
+  if (msg.type === "image") {
+    return `<img src="${msg.fileData}" class="chat-image">`;
+  }
+
+  if (msg.type === "document") {
+    return `
+      <a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">
+        📄 ${msg.fileName}
+      </a>
+    `;
+  }
+
+  // Default: text message
+  return msg.text || "";
+}
+
 function renderMessages(list) {
   if (mode === "community") {
     renderCommunityMessages(list);
@@ -412,11 +441,13 @@ function renderMessages(list) {
 
 function renderPrivateMessages(list) {
   const container = document.getElementById("messages");
+  if (!container) return;
   container.innerHTML = "";
 
   const fullName =
     otherUser?.fullName || otherUser?.FullName || finalOtherEmail;
   const initials = getInitials(fullName);
+
   const avatarHTML =
     otherUser?.profilePic || otherUser?.ProfilePic
       ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
@@ -425,9 +456,12 @@ function renderPrivateMessages(list) {
   list.forEach((msg) => {
     const isMe = msg.senderEmail === loggedInUser.email;
 
+    const contentHTML = renderMessageContent(msg);
+
     if (isMe) {
       const color = getUserColor(loggedInUser.email);
       const myInitials = getInitials(loggedInUser.fullName);
+
       const myAvatarHTML = loggedInUser.profilePic
         ? `<img class="chat-avatar" src="${loggedInUser.profilePic}" />`
         : `<div class="chat-avatar-fallback">${myInitials}</div>`;
@@ -436,7 +470,7 @@ function renderPrivateMessages(list) {
         <div style="display:flex;justify-content:flex-end;align-items:flex-start;margin-bottom:18px;gap:10px;">
           <div style="max-width:60%;">
             <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${msg.text}
+              ${contentHTML}
             </div>
           </div>
           <div style="width:70px;text-align:center;">
@@ -456,7 +490,7 @@ function renderPrivateMessages(list) {
           </div>
           <div style="max-width:60%;">
             <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${msg.text}
+              ${contentHTML}
             </div>
           </div>
         </div>
@@ -469,6 +503,7 @@ function renderPrivateMessages(list) {
 
 function renderCommunityMessages(list) {
   const container = document.getElementById("messages");
+  if (!container) return;
   container.innerHTML = "";
 
   list.forEach((msg) => {
@@ -489,12 +524,14 @@ function renderCommunityMessages(list) {
       ? `<img class="chat-avatar" src="${sender.profilePic}" />`
       : `<div class="chat-avatar-fallback">${initials}</div>`;
 
+    const contentHTML = renderMessageContent(msg);
+
     if (isMe) {
       container.innerHTML += `
         <div style="display:flex;justify-content:flex-end;align-items:flex-start;margin-bottom:18px;gap:10px;">
           <div style="max-width:60%;">
             <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${msg.text}
+              ${contentHTML}
             </div>
           </div>
           <div style="width:70px;text-align:center;">
@@ -512,7 +549,7 @@ function renderCommunityMessages(list) {
           </div>
           <div style="max-width:60%;">
             <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${msg.text}
+              ${contentHTML}
             </div>
           </div>
         </div>
@@ -526,15 +563,26 @@ function renderCommunityMessages(list) {
 /****************************************************
  * SEND — OPTIMISTIC
  ****************************************************/
-/**function sendMessage() {
+function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
-  const text = input.value.trim();
-  if (!text || !activeConversationId) return;
+  const text = (input?.value || "").trim();
+
+  const isTextMessage = !payloadOverride;
+
+  if (isTextMessage && (!text || !activeConversationId)) return;
+
+  const payload = payloadOverride || {
+    type: "text",
+    text: text
+  };
 
   const optimisticMsg = {
     id: "temp_" + Date.now(),
     senderEmail: loggedInUser.email,
-    text,
+    type: payload.type,
+    text: payload.type === "text" ? payload.text : `[${payload.type} uploaded]`,
+    fileName: payload.fileName || null,
+    fileData: payload.fileData || null,
     optimistic: true,
     timestamp: Date.now()
   };
@@ -542,58 +590,34 @@ function renderCommunityMessages(list) {
   messages.push(optimisticMsg);
   renderMessages(messages);
 
-  fetch(
+  const url =
     `${API_URL}?module=sendMessage`
-    + `&conversationId=${activeConversationId}`
-    + `&senderEmail=${loggedInUser.email}`
-    + `&receiverEmail=${activeConversation.otherUser}`   // ⭐ FIXED
-    + `&text=${encodeURIComponent(text)}`
-  )
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      messages = messages.filter(m => !m.optimistic);
-      loadMessages();
-    }
+    + `&conversationId=${encodeURIComponent(activeConversationId)}`
+    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
+    + `&type=${encodeURIComponent(payload.type)}`;
+
+  const body = payload.type === "text"
+    ? null
+    : JSON.stringify({
+        fileName: payload.fileName,
+        fileData: payload.fileData
+      });
+
+  fetch(url, {
+    method: payload.type === "text" ? "GET" : "POST",
+    headers: payload.type === "text" ? {} : { "Content-Type": "application/json" },
+    body: body
   })
-  .catch(err => console.error("Send failed", err));
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) {
+        messages = messages.filter((m) => !m.optimistic);
+        loadMessages();
+      }
+    })
+    .catch((err) => console.error("Send failed", err));
 
-  input.value = "";
-}
-**/
-function sendMessage() {
-  const input = document.getElementById("messageInput");
-  const text = input.value.trim();
-  if (!text || !activeConversationId) return;
-
-  const optimisticMsg = {
-    id: "temp_" + Date.now(),
-    senderEmail: loggedInUser.email,
-    text,
-    optimistic: true,
-    timestamp: Date.now()
-  };
-
-  messages.push(optimisticMsg);
-  renderMessages(messages);
-
-  fetch(
-    `${API_URL}?module=sendMessage`
-    + `&conversationId=${activeConversationId}`
-    + `&senderEmail=${loggedInUser.email}`
-    + `&text=${encodeURIComponent(text)}`
-  )
-  .then(r => r.json())
-  .then(data => {
-    // Replace optimistic message with real one
-    if (data.success) {
-      messages = messages.filter(m => !m.optimistic);
-      loadMessages(); // reload from backend
-    }
-  })
-  .catch(err => console.error("Send failed", err));
-
-  input.value = "";
+  if (isTextMessage && input) input.value = "";
 }
 
 /****************************************************
@@ -616,13 +640,66 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const sendBtn = document.getElementById("sendBtn");
-  if (sendBtn) sendBtn.onclick = sendMessage;
+  if (sendBtn) sendBtn.onclick = () => sendMessage();
+
+  const messageInput = document.getElementById("messageInput");
+  if (messageInput) {
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
 
   const toggleMembersBtn = document.getElementById("toggleMembers");
   if (toggleMembersBtn) {
     toggleMembersBtn.onclick = () => {
       document.getElementById("memberSidebar").classList.toggle("show");
     };
+  }
+
+  const uploadDocBtn = document.getElementById("uploadDocBtn");
+  const uploadImgBtn = document.getElementById("uploadImgBtn");
+  const docInput = document.getElementById("docInput");
+  const imgInput = document.getElementById("imgInput");
+
+  if (uploadDocBtn && docInput) {
+    uploadDocBtn.onclick = () => docInput.click();
+
+    docInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const base64 = await fileToBase64(file);
+
+      sendMessage({
+        type: "document",
+        fileName: file.name,
+        fileData: base64
+      });
+
+      e.target.value = "";
+    });
+  }
+
+  if (uploadImgBtn && imgInput) {
+    uploadImgBtn.onclick = () => imgInput.click();
+
+    imgInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const base64 = await fileToBase64(file);
+
+      sendMessage({
+        type: "image",
+        fileName: file.name,
+        fileData: base64
+      });
+
+      e.target.value = "";
+    });
   }
 
   if (activeConversationId) {
