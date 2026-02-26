@@ -661,16 +661,16 @@ function sendMessage(payloadOverride = null) {
 
   // ⭐ FIX #2 — include module + all fields in POST body
   const body = payload.type === "text"
-    ? null
-    : JSON.stringify({
-        module: "sendMessage",
-        conversationId: activeConversationId,
-        senderEmail: loggedInUser.email,
-        type: payload.type,
-        fileName: payload.fileName,
-        fileData: payload.fileData
-      });
-
+  ? null
+  : JSON.stringify({
+      module: "sendMessage",
+      conversationId: activeConversationId,
+      senderEmail: loggedInUser.email,
+      type: payload.type,
+      fileName: payload.fileName,
+      fileData: payload.fileData
+    });
+  
   fetch(url, {
     method: payload.type === "text" ? "GET" : "POST",
     headers: payload.type === "text" ? {} : { "Content-Type": "application/json" },
