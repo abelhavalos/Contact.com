@@ -5,6 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Messages – Contact.com</title>
 <link rel="stylesheet" href="styles/messages.css" />
+<style>
+#input-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: 0.2s;
+}
+
+.icon-btn:hover {
+  opacity: 1;
+}
+
+#messageInput {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+</style>
 </head>
 
 <body>
@@ -24,9 +54,15 @@
 </div>
 
     <div id="input-area">
-      <input id="messageInput" placeholder="Type a message..." />
-      <button id="sendBtn">Send</button>
-    </div>
+  <button id="uploadDocBtn" class="icon-btn">📎</button>
+  <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="display:none">
+
+  <button id="uploadImgBtn" class="icon-btn">🖼️</button>
+  <input type="file" id="imgInput" accept="image/*" style="display:none">
+
+  <input id="messageInput" placeholder="Type a message..." />
+  <button id="sendBtn">Send</button>
+</div>
   </div>
 
   <div id="memberSidebar"></div>
