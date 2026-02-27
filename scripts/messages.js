@@ -649,31 +649,44 @@ function sendMessage(payloadOverride = null) {
   messages.push(optimisticMsg);
   renderMessages(messages);
 
-  // ⭐ FIX #1 — include text in GET URL
-  const url =
-    `${API_URL}?module=sendMessage`
-    + `&conversationId=${encodeURIComponent(activeConversationId)}`
-    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-    + `&type=${encodeURIComponent(payload.type)}`
-    + (payload.type === "text"
-        ? `&text=${encodeURIComponent(payload.text)}`
-        : "");
+  // ⭐ TEXT MESSAGES → GET with query params
+  if (payload.type === "text") {
+    const url =
+      `${API_URL}?module=sendMessage`
+      + `&conversationId=${encodeURIComponent(activeConversationId)}`
+      + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
+      + `&type=text`
+      + `&text=${encodeURIComponent(payload.text)}`;
 
-  // ⭐ FIX #2 — include module + all fields in POST body
-  const body = payload.type === "text"
-  ? null
-  : JSON.stringify({
-      module: "sendMessage",
-      conversationId: activeConversationId,
-      senderEmail: loggedInUser.email,
-      type: payload.type,
-      fileName: payload.fileName,
-      fileData: payload.fileData
-    });
-  
+    fetch(url, { method: "GET" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          messages = messages.filter((m) => !m.optimistic);
+          loadMessages();
+        }
+      })
+      .catch((err) => console.error("Send failed", err));
+
+    if (input) input.value = "";
+    return;
+  }
+
+  // ⭐ FILE MESSAGES → POST with NO query params
+  const url = API_URL;
+
+  const body = JSON.stringify({
+    module: "sendMessage",
+    conversationId: activeConversationId,
+    senderEmail: loggedInUser.email,
+    type: payload.type,
+    fileName: payload.fileName,
+    fileData: payload.fileData
+  });
+
   fetch(url, {
-    method: payload.type === "text" ? "GET" : "POST",
-    headers: payload.type === "text" ? {} : { "Content-Type": "application/json" },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: body
   })
     .then((r) => r.json())
@@ -684,10 +697,7 @@ function sendMessage(payloadOverride = null) {
       }
     })
     .catch((err) => console.error("Send failed", err));
-
-  if (isTextMessage && input) input.value = "";
 }
-
 /****************************************************
  * DOM READY
  ****************************************************/
