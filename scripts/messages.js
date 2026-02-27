@@ -560,67 +560,6 @@ function renderCommunityMessages(list) {
   container.scrollTop = container.scrollHeight;
 }
 
-/****************************************************
- * SEND — OPTIMISTIC
- ****************************************************/
-/*function sendMessage(payloadOverride = null) {
-  const input = document.getElementById("messageInput");
-  const text = (input?.value || "").trim();
-
-  const isTextMessage = !payloadOverride;
-
-  if (isTextMessage && (!text || !activeConversationId)) return;
-
-  const payload = payloadOverride || {
-    type: "text",
-    text: text
-  };
-
-  const optimisticMsg = {
-    id: "temp_" + Date.now(),
-    senderEmail: loggedInUser.email,
-    type: payload.type,
-    text: payload.type === "text" ? payload.text : `[${payload.type} uploaded]`,
-    fileName: payload.fileName || null,
-    fileData: payload.fileData || null,
-    optimistic: true,
-    timestamp: Date.now()
-  };
-
-  messages.push(optimisticMsg);
-  renderMessages(messages);
-
-  const url =
-    `${API_URL}?module=sendMessage`
-    + `&conversationId=${encodeURIComponent(activeConversationId)}`
-    + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-    + `&type=${encodeURIComponent(payload.type)}`;
-
-  const body = payload.type === "text"
-    ? null
-    : JSON.stringify({
-        fileName: payload.fileName,
-        fileData: payload.fileData
-      });
-
-  fetch(url, {
-    method: payload.type === "text" ? "GET" : "POST",
-    headers: payload.type === "text" ? {} : { "Content-Type": "application/json" },
-    body: body
-  })
-    .then((r) => r.json())
-    .then((data) => {
-      if (data.success) {
-        messages = messages.filter((m) => !m.optimistic);
-        loadMessages();
-      }
-    })
-    .catch((err) => console.error("Send failed", err));
-
-  if (isTextMessage && input) input.value = "";
-}
-*/
-
 function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
