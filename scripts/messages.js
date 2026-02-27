@@ -674,27 +674,26 @@ function sendMessage(payloadOverride = null) {
 
   // ⭐ FILE MESSAGES → POST (NO query params, EXACTLY like profile.js)
   const body = JSON.stringify({
-    module: "sendMessage",
-    conversationId: activeConversationId,
-    senderEmail: loggedInUser.email,
-    type: payload.type,
-    fileName: payload.fileName,
-    fileData: payload.fileData
-  });
+  module: "sendMessage",
+  conversationId: activeConversationId,
+  senderEmail: loggedInUser.email,
+  type: payload.type,
+  fileName: payload.fileName,
+  fileData: payload.fileData
+});
 
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: body
+fetch(API_URL, {
+  method: "POST",
+  body: body   // ⭐ no headers → same behavior as profile.js
+})
+  .then((r) => r.json())
+  .then((data) => {
+    if (data.success) {
+      messages = messages.filter((m) => !m.optimistic);
+      loadMessages();
+    }
   })
-    .then((r) => r.json())
-    .then((data) => {
-      if (data.success) {
-        messages = messages.filter((m) => !m.optimistic);
-        loadMessages();
-      }
-    })
-    .catch((err) => console.error("Send failed", err));
+  .catch((err) => console.error("Send failed", err));
 }
 
 /****************************************************
