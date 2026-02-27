@@ -649,7 +649,7 @@ function sendMessage(payloadOverride = null) {
   messages.push(optimisticMsg);
   renderMessages(messages);
 
-  // ⭐ TEXT MESSAGES → GET with query params
+  // ⭐ TEXT MESSAGES → GET (safe)
   if (payload.type === "text") {
     const url =
       `${API_URL}?module=sendMessage`
@@ -672,9 +672,7 @@ function sendMessage(payloadOverride = null) {
     return;
   }
 
-  // ⭐ FILE MESSAGES → POST with NO query params
-  const url = API_URL;
-
+  // ⭐ FILE MESSAGES → POST (NO query params, EXACTLY like profile.js)
   const body = JSON.stringify({
     module: "sendMessage",
     conversationId: activeConversationId,
@@ -684,7 +682,7 @@ function sendMessage(payloadOverride = null) {
     fileData: payload.fileData
   });
 
-  fetch(url, {
+  fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body
@@ -698,6 +696,7 @@ function sendMessage(payloadOverride = null) {
     })
     .catch((err) => console.error("Send failed", err));
 }
+
 /****************************************************
  * DOM READY
  ****************************************************/
