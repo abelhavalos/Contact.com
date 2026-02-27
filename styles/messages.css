@@ -287,3 +287,10 @@ body {
 .mobile-menu.show {
     display: flex;
 }
+
+.chat-image {
+  max-width: 220px;      /* or 180px, 250px — your choice */
+  height: auto;
+  border-radius: 10px;
+  display: block;
+}
