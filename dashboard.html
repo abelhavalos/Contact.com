@@ -422,20 +422,29 @@ function renderNotifications(list) {
 
     list.forEach(n => {
         let senderEmail = null;
+        let conversationId = null;
 
+        // Extract conversationId from n.link
         if (n.link && n.link.includes("conversationId=")) {
-            const convId = n.link.split("conversationId=")[1];
-            const parts = convId.replace("conv_", "").split("_");
+            conversationId = n.link.split("conversationId=")[1];
 
+            // Extract the two emails from conv_aaa_bbb
+            const parts = conversationId.replace("conv_", "").split("_");
             const email1 = parts[0];
             const email2 = parts[1];
+            
 
+            // Determine who the sender is
             senderEmail = (email1 === currentUser) ? email2 : email1;
         }
 
+        // Fallbacks (just in case)
+        if (!senderEmail) senderEmail = n.email;
+        if (!conversationId) conversationId = n.conversationId || "";
+
         panel.innerHTML += `
             <div class="notification-item"
-                 onclick="handleNotificationClick('${senderEmail}', '${n.email}', '${n.link}')">
+                 onclick="goToConversation('${senderEmail}', '${conversationId}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
@@ -443,6 +452,11 @@ function renderNotifications(list) {
     });
 }
 
+function goToConversation(senderEmail, conversationId) {
+    window.location.href =
+        `messages.html?conversationId=${encodeURIComponent(conversationId)}`
+        + `&otherEmail=${encodeURIComponent(senderEmail)}`;
+}
 /* ------------------ PANEL TOGGLE ------------------ */
 
 document.addEventListener("click", async (e) => {
