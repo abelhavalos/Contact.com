@@ -426,21 +426,18 @@ function renderNotifications(list) {
         let isCommunity = false;
         let communityId = null;
 
-        // PRIVATE CHAT
         if (n.link && n.link.includes("conversationId=")) {
             conversationId = n.link.split("conversationId=")[1];
 
-            const parts = conversationId.replace("conv_", "").split("_");
-            const email1 = parts[0];
-            const email2 = parts[1];
-
-            senderEmail = (email1 === currentUser) ? email2 : email1;
-        }
-
-        // COMMUNITY CHAT
-        if (n.link && n.link.includes("communityId=")) {
-            isCommunity = true;
-            communityId = n.link.split("communityId=")[1];
+            if (conversationId.startsWith("c_")) {
+                isCommunity = true;
+                communityId = conversationId.replace("c_", "");
+            } else if (conversationId.startsWith("conv_")) {
+                const parts = conversationId.replace("conv_", "").split("_");
+                const email1 = parts[0];
+                const email2 = parts[1];
+                senderEmail = (email1 === currentUser) ? email2 : email1;
+            }
         }
 
         panel.innerHTML += `
@@ -452,7 +449,7 @@ function renderNotifications(list) {
         `;
     });
 }
-
+    
 /* ------------------ NOTIFICATION CLICK HANDLER ------------------ */
 
 function handleNotificationClick(senderEmail, conversationId, isCommunity, communityId, link) {
@@ -468,12 +465,11 @@ function handleNotificationClick(senderEmail, conversationId, isCommunity, commu
             + `&otherEmail=${encodeURIComponent(senderEmail)}`;
     }
 
-    // Delete notification silently
     fetch(
         `${API_URL}?module=deleteNotification&email=${encodeURIComponent(user.email)}&link=${encodeURIComponent(link)}`
     ).then(() => updateNotificationBubble());
 }
-
+    
 /* ------------------ PANEL TOGGLE ------------------ */
 
 document.addEventListener("click", async (e) => {
