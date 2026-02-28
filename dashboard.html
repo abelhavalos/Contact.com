@@ -418,10 +418,34 @@ function renderNotifications(list) {
         return;
     }
 
+    const currentUser = JSON.parse(localStorage.getItem("contact_user")).email;
+
     list.forEach(n => {
+        let senderEmail = null;
+        let conversationId = null;
+        let isCommunity = false;
+        let communityId = null;
+
+        // PRIVATE CHAT
+        if (n.link && n.link.includes("conversationId=")) {
+            conversationId = n.link.split("conversationId=")[1];
+
+            const parts = conversationId.replace("conv_", "").split("_");
+            const email1 = parts[0];
+            const email2 = parts[1];
+
+            senderEmail = (email1 === currentUser) ? email2 : email1;
+        }
+
+        // COMMUNITY CHAT
+        if (n.link && n.link.includes("communityId=")) {
+            isCommunity = true;
+            communityId = n.link.split("communityId=")[1];
+        }
+
         panel.innerHTML += `
             <div class="notification-item"
-                 onclick="handleNotificationClick(${encodeNotification(n)})">
+                 onclick="handleNotificationClick('${senderEmail}', '${conversationId}', '${isCommunity}', '${communityId}', '${n.link}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
@@ -429,43 +453,19 @@ function renderNotifications(list) {
     });
 }
 
-/* Encode notification safely for inline onclick */
-function encodeNotification(n) {
-    return `'${n.type}', '${n.senderEmail}', '${n.conversationId}', '${n.communityId}', '${n.eventId}', '${n.link}'`;
-}
-
 /* ------------------ NOTIFICATION CLICK HANDLER ------------------ */
 
-function handleNotificationClick(type, senderEmail, conversationId, communityId, eventId, link) {
+function handleNotificationClick(senderEmail, conversationId, isCommunity, communityId, link) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
-    switch (type) {
-
-        case "private_message":
-            window.location.href =
-                `messages.html?mode=private`
-                + `&conversationId=${encodeURIComponent(conversationId)}`
-                + `&otherEmail=${encodeURIComponent(senderEmail)}`;
-            break;
-
-        case "community_message":
-            window.location.href =
-                `messages.html?mode=community&communityId=${encodeURIComponent(communityId)}`;
-            break;
-
-        case "new_community":
-            window.location.href =
-                `community.html?id=${encodeURIComponent(communityId)}`;
-            break;
-
-        case "new_event":
-            window.location.href =
-                `event.html?id=${encodeURIComponent(eventId)}`;
-            break;
-
-        default:
-            console.warn("Unknown notification type:", type);
-            break;
+    if (isCommunity === "true") {
+        window.location.href =
+            `messages.html?mode=community&communityId=${encodeURIComponent(communityId)}`;
+    } else {
+        window.location.href =
+            `messages.html?mode=private`
+            + `&conversationId=${encodeURIComponent(conversationId)}`
+            + `&otherEmail=${encodeURIComponent(senderEmail)}`;
     }
 
     // Delete notification silently
