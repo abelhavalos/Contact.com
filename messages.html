@@ -65,6 +65,37 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+..chat-avatar,
+.chat-avatar-fallback {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  display: block;
+}
+
+.msg-avatar,
+.member-row img,
+.chat-header img {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  flex-shrink: 0;
+}
+  
+.chat-avatar-fallback {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #dbe4ff;
+  color: #4a6cff;
+  font-weight: 600;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>
 </head>
 
