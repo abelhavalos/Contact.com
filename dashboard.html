@@ -426,7 +426,7 @@ function renderNotifications(list) {
         let isCommunity = false;
         let communityId = null;
 
-        // Detect PRIVATE CHAT notification
+        // PRIVATE CHAT
         if (n.link && n.link.includes("conversationId=")) {
             conversationId = n.link.split("conversationId=")[1];
 
@@ -437,7 +437,7 @@ function renderNotifications(list) {
             senderEmail = (email1 === currentUser) ? email2 : email1;
         }
 
-        // Detect COMMUNITY CHAT notification
+        // COMMUNITY CHAT
         if (n.link && n.link.includes("communityId=")) {
             isCommunity = true;
             communityId = n.link.split("communityId=")[1];
@@ -445,7 +445,7 @@ function renderNotifications(list) {
 
         panel.innerHTML += `
             <div class="notification-item"
-                 onclick="handleNotificationClick('${senderEmail}', '${conversationId}', '${isCommunity}', '${communityId}')">
+                 onclick="handleNotificationClick('${senderEmail}', '${conversationId}', '${isCommunity}', '${communityId}', '${n.link}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
@@ -453,26 +453,27 @@ function renderNotifications(list) {
     });
 }
 
-function handleNotificationClick(senderEmail, conversationId, isCommunity, communityId) {
+/* ------------------ NOTIFICATION CLICK HANDLER ------------------ */
+
+function handleNotificationClick(senderEmail, conversationId, isCommunity, communityId, link) {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+
     if (isCommunity === "true") {
-        // COMMUNITY CHAT
         window.location.href =
             `messages.html?mode=community&communityId=${encodeURIComponent(communityId)}`;
-        return;
+    } else {
+        window.location.href =
+            `messages.html?mode=private`
+            + `&conversationId=${encodeURIComponent(conversationId)}`
+            + `&otherEmail=${encodeURIComponent(senderEmail)}`;
     }
 
-    // PRIVATE CHAT
-    window.location.href =
-        `messages.html?mode=private`
-        + `&conversationId=${encodeURIComponent(conversationId)}`
-        + `&otherEmail=${encodeURIComponent(senderEmail)}`;
+    // Delete notification silently
+    fetch(
+        `${API_URL}?module=deleteNotification&email=${encodeURIComponent(user.email)}&link=${encodeURIComponent(link)}`
+    ).then(() => updateNotificationBubble());
 }
-    
-function goToConversation(senderEmail, conversationId) {
-    window.location.href =
-        `messages.html?conversationId=${encodeURIComponent(conversationId)}`
-        + `&otherEmail=${encodeURIComponent(senderEmail)}`;
-}
+
 /* ------------------ PANEL TOGGLE ------------------ */
 
 document.addEventListener("click", async (e) => {
@@ -500,18 +501,6 @@ function messageUser(email) {
     window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
 }
 
-/* ------------------ MARK AS READ + REFRESH + OPEN CHAT ------------------ */
-
-async function handleNotificationClick(senderEmail, receiverEmail, link) {
-    // 1. Immediately redirect to chat
-    messageUser(senderEmail);
-
-    // 2. Delete notification in the background
-    fetch(
-        `${API_URL}?module=deleteNotification&email=${encodeURIComponent(receiverEmail)}&link=${encodeURIComponent(link)}`
-    ).then(() => {
-        // 3. Update bubble silently
-        updateNotificationBubble();
-    }).catch(err => console.error("Delete notification error:", err));
-}
 </script>
+</body>
+</html>
