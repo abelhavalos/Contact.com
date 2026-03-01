@@ -421,98 +421,107 @@ function sendMessage(payloadOverride = null) {
 }
 
 /****************************************************
- * DOM READY
+ * DOM READY - FIXED & OPTIMIZED
  ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
-  loadNavbar();
-  showChatLoader(); // ⭐ show loader as soon as page loads
+    loadNavbar();
+    showChatLoader(); 
 
-  if (mode === "private") {
-    const toggle = document.getElementById("toggleMembers");
+    const toggleBtn = document.getElementById("toggleMembers");
     const sidebar = document.getElementById("memberSidebar");
-    if (toggle) toggle.style.display = "none";
-    if (sidebar) sidebar.style.display = "none";
-    await loadOtherUserProfile();
-  }
 
-  if (mode === "community") {
-    await loadCommunityInfo();
-    await loadCommunityMembers();
-  }
+    // 1. SETUP UI MODE (Private vs Community)
+    if (mode === "private") {
+        if (toggleBtn) toggleBtn.style.display = "none";
+        if (sidebar) sidebar.style.display = "none";
+        await loadOtherUserProfile();
+    } else {
+        await loadCommunityInfo();
+        await loadCommunityMembers();
+        
+        // BLUE BUTTON TOGGLE LOGIC
+        if (toggleBtn) {
+            // Force Blue Style in JS just in case
+            toggleBtn.style.backgroundColor = "#4A6CFF";
+            toggleBtn.style.color = "white";
+            
+            toggleBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Toggle the 'show' class (Make sure your CSS uses #memberSidebar.show { display: block !important; })
+                sidebar.classList.toggle("show");
+            };
+        }
+    }
 
-  const sendBtn = document.getElementById("sendBtn");
-  if (sendBtn) sendBtn.onclick = () => sendMessage();
+    // 2. MESSAGE INPUT & SEND
+    const sendBtn = document.getElementById("sendBtn");
+    if (sendBtn) sendBtn.onclick = () => sendMessage();
 
-  const messageInput = document.getElementById("messageInput");
-  if (messageInput) {
-    messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-  }
+    const messageInput = document.getElementById("messageInput");
+    if (messageInput) {
+        messageInput.onkeydown = (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        };
+    }
 
-  const toggleMembersBtn = document.getElementById("toggleMembers");
-  if (toggleMembersBtn) {
-    toggleMembersBtn.onclick = () => {
-      const sidebar = document.getElementById("memberSidebar");
-      if (sidebar) sidebar.classList.toggle("show");
+    // 3. FILE PICKERS (Anti-Loop Logic)
+    const setupPicker = (btnId, inputId, type) => {
+        const btn = document.getElementById(btnId);
+        const input = document.getElementById(inputId);
+        if (btn && input) {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                input.click();
+            };
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                showChatLoader();
+                const base64 = await fileToBase64(file);
+                await sendMessage({ type: type, fileName: file.name, fileData: base64 });
+                e.target.value = ""; // Clear to prevent re-triggering
+                hideChatLoader();
+            };
+        }
     };
-  }
 
-  const uploadDocBtn = document.getElementById("uploadDocBtn");
-  const uploadImgBtn = document.getElementById("uploadImgBtn");
-  const docInput = document.getElementById("docInput");
-  const imgInput = document.getElementById("imgInput");
+    setupPicker("uploadDocBtn", "docInput", "document");
+    setupPicker("uploadImgBtn", "imgInput", "image");
 
-  if (uploadDocBtn && docInput) {
-    uploadDocBtn.onclick = () => docInput.click();
-    docInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const base64 = await fileToBase64(file);
-      sendMessage({ type: "document", fileName: file.name, fileData: base64 });
-      e.target.value = "";
-    });
-  }
-
-  if (uploadImgBtn && imgInput) {
-    uploadImgBtn.onclick = () => imgInput.click();
-    imgInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const base64 = await fileToBase64(file);
-      sendMessage({ type: "image", fileName: file.name, fileData: base64 });
-      e.target.value = "";
-    });
-  }
-
-  if (activeConversationId) {
-    loadMessagesOnce();
-  } else if (mode === "community") {
-    const r = await fetch(
-      `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
-    );
-    const d = await r.json();
-    activeConversationId = d.conversationId;
-    loadMessagesOnce();
-  } else if (finalOtherEmail) {
-    const r = await fetch(
-      `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`
-    );
-    const d = await r.json();
-    activeConversationId = d.conversationId;
-    loadMessagesOnce();
-  }
+    // 4. CONVERSATION INITIALIZATION & HISTORY LOAD
+    try {
+        if (!activeConversationId) {
+            let res;
+            if (mode === "community") {
+                res = await fetch(`${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`);
+            } else if (finalOtherEmail) {
+                res = await fetch(`${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`);
+            }
+            const d = await res.json();
+            activeConversationId = d.conversationId;
+        }
+        
+        // Once we have an ID (old or new), load the full history
+        if (activeConversationId) {
+            await loadMessagesOnce();
+        }
+    } catch (err) {
+        console.error("Initialization error:", err);
+    } finally {
+        hideChatLoader();
+    }
 });
 
 function showChatLoader() {
-  const el = document.getElementById("chatLoader");
-  if (el) el.style.display = "flex";
+    const el = document.getElementById("chatLoader");
+    if (el) el.style.display = "flex";
 }
 
 function hideChatLoader() {
-  const el = document.getElementById("chatLoader");
-  if (el) el.style.display = "none";
+    const el = document.getElementById("chatLoader");
+    if (el) el.style.display = "none";
 }
