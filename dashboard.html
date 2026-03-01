@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contact.com – Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
+        /* RESET & GLOBAL */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
         body {
@@ -14,17 +16,18 @@
             min-height: 100vh;
         }
 
-        /* NAVBAR */
+        /* NAVBAR - Theme Consistent */
         .navbar {
             width: 100%;
-            padding: 20px 40px;
+            height: 70px;
+            padding: 0 40px;
             display: flex;
             align-items: center;
             background: #ffffff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 1000;
         }
 
         .hamburger {
@@ -35,16 +38,20 @@
             margin-right: 20px;
         }
         .hamburger span {
-            width: 28px;
+            width: 26px;
             height: 3px;
-            background: #222;
+            background: #4a6cff;
             border-radius: 3px;
         }
 
         .logo {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.6rem;
+            font-weight: 800;
             color: #222;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .logo span { color: #4a6cff; }
 
@@ -52,29 +59,19 @@
         .notification-bubble {
             background: #ff3b3b;
             color: white;
-            font-size: 0.75rem;
-            font-weight: 700;
-            width: 22px;
-            height: 22px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 6px rgba(255,59,59,0.4);
             cursor: pointer;
+            border: 2px solid white;
         }
-        .notification-bubble.hidden {
-            display: none;
-        }
-
-        /* MOBILE POSITIONING */
-        @media (max-width: 700px) {
-            .notification-bubble {
-                position: absolute;
-                top: -10px;
-                right: -10px;
-            }
-        }
+        .notification-bubble.hidden { display: none; }
 
         .nav-links {
             display: flex;
@@ -86,186 +83,165 @@
         .nav-links a {
             text-decoration: none;
             color: #333;
-            font-weight: 500;
-        }
-
-        .btn-primary {
-            padding: 10px 20px;
-            background: #4a6cff;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
             font-weight: 600;
+            font-size: 14px;
         }
 
-        /* MOBILE MENU */
+        /* MOBILE MENU - Anchored Left */
         .mobile-menu {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: 250px;
+            background: #4a6cff;
             display: none;
             flex-direction: column;
-            background: #4a6cff;
-            padding: 10px 0;
-        }
-        .mobile-menu a,
-        .mobile-menu button {
-            padding: 12px 18px;
-            color: white;
-            text-decoration: none;
-            border: none;
-            background: transparent;
-            text-align: left;
-            border-top: 1px solid rgba(255,255,255,0.2);
+            z-index: 9999;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+            border-bottom-right-radius: 15px;
         }
         .mobile-menu.show { display: flex; }
+
+        .mobile-menu a {
+            padding: 18px 25px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
 
         /* HEADER */
         .header {
             text-align: center;
-            margin-top: 50px;
-            padding: 0 20px;
+            padding: 60px 20px 20px;
         }
 
         .header h1 {
-            font-size: 2.6rem;
-            font-weight: 700;
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .header h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            opacity: 0.9;
+            margin-top: 5px;
         }
 
         .header p {
             font-size: 1.1rem;
-            opacity: 0.95;
-            margin-top: 10px;
+            margin-top: 15px;
+            opacity: 0.85;
         }
 
-        /* GRID */
+        /* GRID & CARDS */
         .grid {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 50px;
-            padding: 20px;
-            gap: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
+            padding: 40px 20px;
+            max-width: 1100px;
+            margin: 0 auto;
         }
 
         .card {
-            width: 280px;
-            background: #f7f9fc;
+            background: #ffffff;
             color: #222;
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 24px;
             text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
         }
+        .card:hover { transform: translateY(-8px); }
 
         .card-img {
             width: 100%;
-            height: 150px;
+            height: 160px;
             object-fit: cover;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            display: block;
+            border-radius: 16px;
+            margin-bottom: 20px;
         }
 
         .card h3 {
-            color: #4a6cff;
+            color: #111;
+            font-weight: 800;
+            font-size: 1.4rem;
             margin-bottom: 10px;
         }
 
         .card p {
             font-size: 0.95rem;
-            margin-bottom: 15px;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.5;
         }
 
         .card a {
-            padding: 10px 20px;
+            display: block;
+            padding: 12px;
             background: #4a6cff;
             color: #fff;
-            border-radius: 6px;
+            border-radius: 12px;
             text-decoration: none;
-            font-weight: 600;
-            display: inline-block;
+            font-weight: 700;
+            transition: opacity 0.2s;
         }
+        .card a:hover { opacity: 0.9; }
 
         /* NOTIFICATION PANEL */
         #notificationsPanel {
             position: absolute;
-            top: 80px;
+            top: 75px;
             right: 40px;
-            width: 300px;
+            width: 320px;
             background: white;
-            color: black;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: #222;
+            border-radius: 18px;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.2);
             padding: 10px;
             display: none;
-            z-index: 999;
+            z-index: 1001;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .notification-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
             cursor: pointer;
+            border-radius: 10px;
         }
-        .notification-item:hover {
-            background: #f5f5f5;
-        }
-        .notification-text {
-            font-weight: 600;
-        }
-        .notification-time {
-            font-size: 0.8rem;
-            opacity: 0.7;
-        }
+        .notification-item:hover { background: #f8f9ff; }
+        .notification-text { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+        .notification-time { font-size: 0.75rem; color: #888; }
 
         /* RESPONSIVE */
-        @media (max-width: 700px) {
+        @media (max-width: 850px) {
             .hamburger { display: flex; }
             .nav-links { display: none; }
-
             .header h1 { font-size: 2.2rem; }
-
-            .card {
-                width: 100%;
-                max-width: 100%;
-            }
+            #notificationsPanel { right: 10px; width: 90%; }
         }
-.mobile-menu {
-    position: absolute;
-    top: 70px;              /* match your navbar height */
-    left: 0;                /* ⭐ anchor to the LEFT */
-    width: 220px;           /* adjust as needed */
-    background: #4a6cff;
-    padding: 10px 0;
-    display: none;
-    flex-direction: column;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.mobile-menu.show {
-    display: flex;
-}        
-          <link rel="stylesheet" href="styles/style.css" />
     </style>
 </head>
 
 <body>
 
-<!-- NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
 
-<!-- NOTIFICATION PANEL -->
 <div id="notificationsPanel"></div>
 
-<!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu"></div>
 
 <div class="header">
     <h1>Welcome</h1>
     <h2><span id="userName"></span></h2>
-    <p>Your world of connections starts here.</p>
+    <p>Your clean, quiet space for real connection.</p>
 </div>
 
 <div class="grid">
-
     <div class="card">
         <img src="images/Communities.jpeg" class="card-img" alt="Communities">
         <h3>Communities</h3>
@@ -283,23 +259,20 @@
     <div class="card">
         <img src="images/contacts.jpeg" class="card-img" alt="Contacts">
         <h3>Contacts</h3>
-        <p>Connect with people you’ve met and keep conversations going.</p>
-        <a href="contacts.html">Open Contacts</a>
+        <p>Stay in touch with friends and keep the chat going.</p>
+        <a href="contacts.html">Open Chat</a>
     </div>
 
     <div class="card">
         <img src="images/Profile.jpeg" class="card-img" alt="Profile">
         <h3>Your Profile</h3>
-        <p>Update your details and manage your account.</p>
+        <p>Update your bio, photo, and account settings.</p>
         <a href="profile.html">View Profile</a>
     </div>
-
 </div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
-
-/* ------------------ NAVBAR + USER LOADING ------------------ */
 
 function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
@@ -315,22 +288,18 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("userName").textContent = user.fullName;
     loadNavbar();
 
-    setTimeout(() => {
-        updateNotificationBubble();
-        setInterval(updateNotificationBubble, 3000);
-    }, 200);
+    // Start checking for notifications
+    updateNotificationBubble();
+    setInterval(updateNotificationBubble, 5000);
 });
 
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-
-    const loggedInNav = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
+    const navHTML = `
+        <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
         <div class="logo">
             Contact<span>.</span>com
-            <div id="notifBubble" class="notification-bubble hidden">0</div>
+            <div id="notifBubble" class="notification-bubble hidden" title="New Notifications">0</div>
         </div>
         <div class="nav-links">
             <a href="dashboard.html">Dashboard</a>
@@ -338,42 +307,18 @@ function loadNavbar() {
             <a href="events.html">Events</a>
             <a href="contacts.html">Contacts</a>
             <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
+            <a href="#" onclick="logout()" style="color: #ff3b3b;">Logout</a>
         </div>
     `;
-
-    const publicNav = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        </div>
+    document.getElementById("navbar").innerHTML = navHTML;
+    document.getElementById("mobileMenu").innerHTML = `
+        <a href="dashboard.html">Dashboard</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="contacts.html">Contacts</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
     `;
-
-    document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
-
-    document.getElementById("mobileMenu").innerHTML = user
-        ? `
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        `
-        : `
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        `;
 }
 
 function logout() {
@@ -381,16 +326,15 @@ function logout() {
     window.location.href = "index.html";
 }
 
-/* ------------------ NOTIFICATION BUBBLE ------------------ */
+/* ------------------ NOTIFICATION LOGIC ------------------ */
 
 async function updateNotificationBubble() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return;
 
     try {
-        const r = await fetch(`${API_URL}?module=getNotifications&email=${user.email}`);
+        const r = await fetch(`${API_URL}?module=getNotifications&email=${encodeURIComponent(user.email)}`);
         const data = await r.json();
-
         const unread = (data.notifications || []).filter(n => !n.read).length;
 
         const bubble = document.getElementById("notifBubble");
@@ -402,101 +346,72 @@ async function updateNotificationBubble() {
         } else {
             bubble.classList.add("hidden");
         }
-    } catch (err) {
-        console.error("Notification bubble error:", err);
-    }
+    } catch (err) { console.error("Notif Error:", err); }
 }
-
-/* ------------------ NOTIFICATION PANEL ------------------ */
 
 function renderNotifications(list) {
     const panel = document.getElementById("notificationsPanel");
-    panel.innerHTML = "";
+    panel.innerHTML = `<h4 style="padding: 10px; border-bottom: 1px solid #eee;">Notifications</h4>`;
 
     if (list.length === 0) {
-        panel.innerHTML = `<div style="padding:10px;">No notifications</div>`;
+        panel.innerHTML += `<div style="padding:20px; text-align:center; color:#888;">No notifications yet</div>`;
         return;
     }
 
     const currentUser = JSON.parse(localStorage.getItem("contact_user")).email;
 
     list.forEach(n => {
-        let senderEmail = null;
-        let conversationId = null;
+        let senderEmail = "";
+        let conversationId = "";
         let isCommunity = false;
-        let communityId = null;
+        let communityId = "";
 
         if (n.link && n.link.includes("conversationId=")) {
             conversationId = n.link.split("conversationId=")[1];
-
             if (conversationId.startsWith("c_")) {
                 isCommunity = true;
                 communityId = conversationId.replace("c_", "");
-            } else if (conversationId.startsWith("conv_")) {
+            } else {
                 const parts = conversationId.replace("conv_", "").split("_");
-                const email1 = parts[0];
-                const email2 = parts[1];
-                senderEmail = (email1 === currentUser) ? email2 : email1;
+                senderEmail = (parts[0] === currentUser) ? parts[1] : parts[0];
             }
         }
 
         panel.innerHTML += `
-            <div class="notification-item"
-                 onclick="handleNotificationClick('${senderEmail}', '${conversationId}', '${isCommunity}', '${communityId}', '${n.link}')">
+            <div class="notification-item" onclick="handleNotificationClick('${senderEmail}', '${conversationId}', '${isCommunity}', '${communityId}', '${n.link}')">
                 <div class="notification-text">${n.text}</div>
-                <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
+                <div class="notification-time">${new Date(n.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
             </div>
         `;
     });
 }
-    
-/* ------------------ NOTIFICATION CLICK HANDLER ------------------ */
 
 function handleNotificationClick(senderEmail, conversationId, isCommunity, communityId, link) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-
-    if (isCommunity === "true") {
-        window.location.href =
-            `messages.html?mode=community&communityId=${encodeURIComponent(communityId)}`;
-    } else {
-        window.location.href =
-            `messages.html?mode=private`
-            + `&conversationId=${encodeURIComponent(conversationId)}`
-            + `&otherEmail=${encodeURIComponent(senderEmail)}`;
-    }
-
-    fetch(
-        `${API_URL}?module=deleteNotification&email=${encodeURIComponent(user.email)}&link=${encodeURIComponent(link)}`
-    ).then(() => updateNotificationBubble());
-}
+    const targetUrl = isCommunity === "true" 
+        ? `messages.html?mode=community&communityId=${encodeURIComponent(communityId)}`
+        : `messages.html?mode=private&conversationId=${encodeURIComponent(conversationId)}&otherEmail=${encodeURIComponent(senderEmail)}`;
     
-/* ------------------ PANEL TOGGLE ------------------ */
+    window.location.href = targetUrl;
+
+    // Optional: Mark as read/delete via API
+    fetch(`${API_URL}?module=deleteNotification&email=${encodeURIComponent(user.email)}&link=${encodeURIComponent(link)}`);
+}
 
 document.addEventListener("click", async (e) => {
     const bubble = document.getElementById("notifBubble");
     const panel = document.getElementById("notificationsPanel");
 
-    if (e.target === bubble) {
+    if (e.target === bubble || bubble.contains(e.target)) {
         const user = JSON.parse(localStorage.getItem("contact_user"));
         const r = await fetch(`${API_URL}?module=getNotifications&email=${user.email}`);
         const data = await r.json();
-
         renderNotifications(data.notifications || []);
-        panel.style.display = panel.style.display === "none" || panel.style.display === "" ? "block" : "none";
-        return;
-    }
-
-    if (!panel.contains(e.target)) {
+        panel.style.display = panel.style.display === "block" ? "none" : "block";
+    } else if (panel && !panel.contains(e.target)) {
         panel.style.display = "none";
     }
 });
-
-/* ------------------ PRIVATE CHAT REDIRECT (legacy) ------------------ */
-
-function messageUser(email) {
-    window.location.href = `messages.html?otherEmail=${encodeURIComponent(email)}`;
-}
-
 </script>
 </body>
 </html>
