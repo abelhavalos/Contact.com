@@ -3,172 +3,231 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Messages | Contact.com</title>
+    <title>Messages – Contact.com</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/messages.css" />
     <style>
-        /* Modern Theme Overrides */
-        :root {
-            --bg-dark: #0f172a;
-            --accent-blue: #3b82f6;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-        }
+        /* THEME OVERRIDES TO MATCH INDEX/DASHBOARD */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            font-family: 'Inter', -apple-system, sans-serif;
-            margin: 0;
+            background: linear-gradient(135deg, #4a6cff, #6f8cff);
+            color: #222;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        /* Input Area - Integrated Look */
+        /* Use the same Navbar style from Dashboard */
+        .navbar {
+            width: 100%;
+            height: 70px;
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1000;
+        }
+
+        /* CHAT CONTAINER - Styled as a clean white card */
+        #chat-container {
+            flex: 1;
+            display: flex;
+            margin: 20px;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* HEADER AREA */
+        #header {
+            padding: 15px 25px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #headerTitle {
+            font-weight: 800;
+            color: #222;
+            font-size: 1.2rem;
+        }
+
+        /* MESSAGE AREA */
+        #chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9ff; /* Subtle blue tint for the chat area */
+        }
+
+        #messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* INPUT AREA - Clean & White */
         #input-area {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 16px 20px;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid var(--border-color);
+            padding: 15px 20px;
+            background: #fff;
+            border-top: 1px solid #eee;
         }
 
         #messageInput {
             flex: 1;
-            padding: 12px 16px;
-            background: var(--glass-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            color: white;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            font-size: 14px;
             outline: none;
-            transition: border 0.3s ease;
+            transition: border-color 0.2s;
         }
 
         #messageInput:focus {
-            border-color: var(--accent-blue);
+            border-color: #4a6cff;
         }
 
-        .icon-btn {
-            background: var(--glass-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            filter: grayscale(1); /* Matches tech icons better */
-        }
-
-        .icon-btn:hover {
-            background: var(--accent-blue);
-            filter: grayscale(0);
-            transform: translateY(-2px);
-        }
-
+        /* BUTTONS - Matching Dashboard Accent */
         #sendBtn {
-            background: var(--accent-blue);
-            color: white;
+            background: #4a6cff;
+            color: #fff;
             border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-weight: 600;
+            padding: 10px 22px;
+            border-radius: 10px;
+            font-weight: 700;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: transform 0.2s;
         }
 
         #sendBtn:hover {
+            transform: translateY(-2px);
             opacity: 0.9;
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
         }
 
-        /* Avatar Styling Consistency */
-        .chat-avatar, .msg-avatar, .chat-header img, .member-row img {
+        .icon-btn {
+            background: #f0f2f5;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .icon-btn:hover { background: #e4e6e9; }
+
+        /* SIDEBAR */
+        #memberSidebar {
+            width: 300px;
+            background: #fff;
+            border-left: 1px solid #eee;
+            padding: 20px;
+        }
+
+        /* AVATARS - Squircles as per new theme */
+        .chat-avatar, .msg-avatar, .member-row img, .chat-header img, .chat-avatar-fallback {
             width: 44px !important;
             height: 44px !important;
-            border-radius: 12px !important; /* Modern squircle instead of circle */
+            border-radius: 12px !important; 
             object-fit: cover;
-            border: 2px solid var(--border-color);
         }
 
         .chat-avatar-fallback {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            font-weight: 600;
+            background: #dbe4ff;
+            color: #4a6cff;
+            font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* Loader - Enhanced Glow */
-        .chat-loader {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            z-index: 9999;
-        }
-
+        /* LOADER - Using the blue accent */
         .chat-loader .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(59, 130, 246, 0.1);
-            border-top-color: var(--accent-blue);
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a6cff;
             border-radius: 50%;
-            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-            filter: drop-shadow(0 0 10px var(--accent-blue));
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .chat-loader .loading-text {
+            color: #fff;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Responsive Mobile Tweak */
+        @media (max-width: 850px) {
+            #memberSidebar { display: none; }
+            #chat-container { margin: 10px; border-radius: 15px; }
         }
     </style>
 </head>
 
 <body>
-    <nav class="navbar" id="navbar"></nav>
-    <div class="mobile-menu" id="mobileMenu"></div>
 
-    <div id="header" style="background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid var(--border-color); padding: 15px 20px;">
-        <span id="headerTitle" style="font-weight: 700; letter-spacing: -0.5px;"></span>
-        <button id="toggleMembers" class="mobile-toggle">View Group</button>
+<nav class="navbar">
+    <div class="logo">
+        Contact<span>.</span>com
     </div>
-
-    <div id="chatLoader" class="chat-loader">
-        <div class="spinner"></div>
-        <div class="loading-text" style="margin-top: 15px; color: var(--accent-blue); font-weight: 500;">Syncing Messages...</div>
+    <div style="margin-left: auto; display: flex; gap: 20px;">
+        <a href="dashboard.html" style="text-decoration:none; color:#333; font-weight:600; font-size:14px;">Dashboard</a>
+        <a href="profile.html" style="text-decoration:none; color:#333; font-weight:600; font-size:14px;">Profile</a>
     </div>
+</nav>
 
-    <div id="chat-container" style="display: flex; height: calc(100vh - 140px); background: transparent;">
-        <div id="chat" style="flex: 1; display: flex; flex-direction: column;">
-            <div id="messages" style="flex: 1; overflow-y: auto; padding: 20px;">
-                <div id="messageList"></div>
-            </div>
+<div id="chatLoader" class="chat-loader" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; display:none; flex-direction:column; align-items:center;">
+    <div class="spinner"></div>
+    <div class="loading-text">Opening Secure Chat...</div>
+</div>
 
-            <div id="input-area">
-                <button id="uploadDocBtn" class="icon-btn" title="Upload Document">📎</button>
-                <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="display:none">
-
-                <button id="uploadImgBtn" class="icon-btn" title="Upload Image">🖼️</button>
-                <input type="file" id="imgInput" accept="image/*" style="display:none">
-
-                <input id="messageInput" placeholder="Message your team..." />
-                <button id="sendBtn">Send</button>
-            </div>
+<div id="chat-container">
+    <div id="chat">
+        <div id="header">
+            <span id="headerTitle">Conversation</span>
+            <button id="toggleMembers" style="background:none; border:1px solid #ddd; padding:5px 12px; border-radius:8px; cursor:pointer;">Members</button>
         </div>
 
-        <div id="memberSidebar" style="width: 280px; border-left: 1px solid var(--border-color); background: rgba(0,0,0,0.1);"></div>
+        <div id="messages">
+            <div id="messageList"></div>
+        </div>
+
+        <div id="input-area">
+            <button id="uploadDocBtn" class="icon-btn" title="Documents">📎</button>
+            <input type="file" id="docInput" style="display:none">
+
+            <button id="uploadImgBtn" class="icon-btn" title="Images">🖼️</button>
+            <input type="file" id="imgInput" style="display:none">
+
+            <input id="messageInput" placeholder="Write a message..." />
+            <button id="sendBtn">Send</button>
+        </div>
     </div>
 
-    <script src="scripts/messages.js"></script>
+    <div id="memberSidebar">
+        <h3 style="font-size: 1rem; margin-bottom: 20px; color: #111;">Group Members</h3>
+        <div id="memberList"></div>
+    </div>
+</div>
+
+<script src="scripts/messages.js"></script>
 </body>
 </html>
