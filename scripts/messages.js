@@ -1,147 +1,114 @@
 /****************************************************
- * CONTACT.COM — MESSAGES.JS (V15)
- * - FIXED: File picker infinite loop
- * - FIXED: Sidebar z-index / overlap
- * - THEME: Professional Blue
+ * CONTACT.COM — MESSAGES.JS (V16)
+ * - FIXED: Recursive File Picker Loop
+ * - FIXED: Desktop/Mobile Sidebar Logic
  ****************************************************/
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+/* ... (Keep your API_URL and State variables at the top) ... */
 
-/* 1. STATE */
-let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
-if (!loggedInUser) window.location.href = "login.html";
+function setupFilePickers() {
+    const uploadImgBtn = document.getElementById("uploadImgBtn");
+    const imgInput = document.getElementById("imgInput");
+    const uploadDocBtn = document.getElementById("uploadDocBtn");
+    const docInput = document.getElementById("docInput");
 
-const url = new URL(window.location.href);
-const communityId = url.searchParams.get("communityId");
-const mode = communityId ? "community" : "private";
-const otherEmailParam = url.searchParams.get("otherEmail") || url.searchParams.get("email");
+    // 1. Image Picker Logic
+    if (uploadImgBtn && imgInput) {
+        // Clear old listeners by cloning (Prevents the loop)
+        const newBtn = uploadImgBtn.cloneNode(true);
+        uploadImgBtn.parentNode.replaceChild(newBtn, uploadImgBtn);
 
-let activeConversationId = url.searchParams.get("conversationId") || null;
-let messages = [];
-let communityMembers = [];
+        newBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            imgInput.click(); // Only click the hidden input once
+        });
 
-/* 2. FILE PICKER FIX: Using a lock to prevent loop */
-let isUploading = false;
-
-async function handleFileSelect(e, type) {
-    if (isUploading) return;
-    const file = e.target.files[0];
-    if (!file) return;
-
-    isUploading = true;
-    showChatLoader();
-
-    try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-            const base64 = reader.result;
-            await sendMessage({ 
-                type: type, 
-                fileName: file.name, 
-                fileData: base64 
-            });
+        imgInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
             
-            // CRITICAL: Reset the input value so the same file can be picked again
-            // and the 'change' event doesn't re-fire unexpectedly.
-            e.target.value = ""; 
-            isUploading = false;
+            showChatLoader();
+            const base64 = await fileToBase64(file);
+            await sendMessage({ type: "image", fileName: file.name, fileData: base64 });
+            
+            e.target.value = ""; // Clear value so it doesn't loop
             hideChatLoader();
         };
-    } catch (err) {
-        console.error("Upload failed", err);
-        isUploading = false;
-        hideChatLoader();
+    }
+
+    // 2. Document Picker Logic
+    if (uploadDocBtn && docInput) {
+        const newDocBtn = uploadDocBtn.cloneNode(true);
+        uploadDocBtn.parentNode.replaceChild(newDocBtn, uploadDocBtn);
+
+        newDocBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            docInput.click();
+        });
+
+        docInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            showChatLoader();
+            const base64 = await fileToBase64(file);
+            await sendMessage({ type: "document", fileName: file.name, fileData: base64 });
+            
+            e.target.value = "";
+            hideChatLoader();
+        };
     }
 }
 
-/* 3. MESSAGING ENGINE */
 async function loadHistory() {
     if (!activeConversationId) return;
-    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
-    const data = await r.json();
-    messages = data.messages || [];
-    
-    const list = document.getElementById("messageList");
-    list.innerHTML = ""; 
-    messages.forEach(msg => list.appendChild(buildMessageRow(msg)));
-    scrollChat();
-}
-
-function buildMessageRow(msg) {
-    const isMe = msg.senderEmail === loggedInUser.email;
-    const div = document.createElement("div");
-    div.style = `display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}; margin-bottom:15px; width:100%;`;
-
-    const bubble = document.createElement("div");
-    bubble.style = `max-width:80%; padding:12px 18px; border-radius:20px; font-size:14px; background:${isMe ? '#4A6CFF' : '#ffffff'}; color:${isMe ? '#ffffff' : '#222'}; border-${isMe ? 'bottom-right' : 'bottom-left'}-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.05);`;
-    
-    // Content Logic
-    const type = (msg.type || "").toLowerCase();
-    if (type === "image" || (msg.fileData && msg.fileData.includes("image/"))) {
-        bubble.innerHTML = `<img src="${msg.fileData}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="window.open(this.src)">`;
-    } else if (type === "document" || msg.fileName) {
-        bubble.innerHTML = `📄 <a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit; font-weight:700;">${msg.fileName}</a>`;
-    } else {
-        bubble.innerText = msg.text || "";
-    }
-
-    div.appendChild(bubble);
-    return div;
-}
-
-async function sendMessage(payload) {
-    if (!activeConversationId) return;
     try {
-        await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({ 
-                module: "sendMessage", 
-                conversationId: activeConversationId, 
-                senderEmail: loggedInUser.email, 
-                ...payload 
-            })
-        });
-        await syncNewMessages();
-    } catch (e) { console.error("Send error", e); }
+        const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
+        const data = await r.json();
+        const list = document.getElementById("messageList");
+        
+        if (data.messages) {
+            messages = data.messages;
+            list.innerHTML = ""; // Wipe "loading" text
+            messages.forEach(msg => {
+                list.appendChild(buildMessageRow(msg));
+            });
+            const container = document.getElementById("messages");
+            container.scrollTop = container.scrollHeight;
+        }
+    } catch (e) { console.error("Load History Error:", e); }
 }
 
-/* 4. SIDEBAR & TOGGLE FIX */
-function initSidebarToggle() {
-    const btn = document.getElementById("toggleMembers");
+/* 3. INITIALIZE EVERYTHING */
+document.addEventListener("DOMContentLoaded", async () => {
+    loadNavbar();
+    setupFilePickers(); // Initialize the fixed pickers
+    
+    // Sidebar Toggle (Mobile only)
+    const toggleBtn = document.getElementById("toggleMembers");
     const sidebar = document.getElementById("memberSidebar");
-    if (btn && sidebar) {
-        btn.onclick = (e) => {
+    if (toggleBtn && sidebar) {
+        toggleBtn.onclick = (e) => {
             e.stopPropagation();
             sidebar.classList.toggle("show-mobile");
         };
     }
+
+    // Load Chat Data
+    await loadChatContext();
     
-    // Close sidebar when clicking chat area on mobile
-    document.getElementById("chat").onclick = () => {
-        if (sidebar) sidebar.classList.remove("show-mobile");
-    };
-}
+    // Get Conversation
+    if (!activeConversationId) {
+        const setupUrl = mode === "community" 
+            ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
+            : `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${otherEmailParam}`;
+        const res = await fetch(setupUrl);
+        const data = await res.json();
+        activeConversationId = data.conversationId;
+    }
 
-/* 5. INITIALIZE */
-document.addEventListener("DOMContentLoaded", async () => {
-    loadNavbar(); 
-    initSidebarToggle();
-
-    // Attach File Listeners
-    document.getElementById("uploadDocBtn").onclick = () => document.getElementById("docInput").click();
-    document.getElementById("uploadImgBtn").onclick = () => document.getElementById("imgInput").click();
-    
-    document.getElementById("docInput").onchange = (e) => handleFileSelect(e, "document");
-    document.getElementById("imgInput").onchange = (e) => handleFileSelect(e, "image");
-
-    // Load Chat
-    await loadChatContext(); // Same as previous version
     await loadHistory();
     setInterval(syncNewMessages, 4000);
 });
-
-function scrollChat() {
-    const container = document.getElementById("messages");
-    container.scrollTop = container.scrollHeight;
-}
