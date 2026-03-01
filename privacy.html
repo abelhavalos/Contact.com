@@ -1,165 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy & Terms – Contact.com</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy & Terms – Contact.com</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Load global site styles FIRST -->
-  <link rel="stylesheet" href="styles/style.css" />
+    <style>
+/* RESET & GLOBAL */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
-  <!-- Load page‑specific styles SECOND -->
-  <link rel="stylesheet" href="styles/privacy.css" />
+body {
+    background: linear-gradient(135deg, #4a6cff, #6f8cff);
+    color: #fff;
+    min-height: 100vh;
+}
+
+/* NAVBAR */
+.navbar {
+    width: 100%;
+    height: 70px;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    margin-right: 20px;
+}
+.hamburger span {
+    width: 26px;
+    height: 3px;
+    background: #4a6cff;
+    border-radius: 3px;
+}
+
+.logo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #222;
+    letter-spacing: -1px;
+}
+.logo span { color: #4a6cff; }
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-left: auto;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: #4a6cff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+/* MOBILE MENU */
+.mobile-menu {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    width: 250px;
+    background: #4a6cff;
+    display: none;
+    flex-direction: column;
+    z-index: 9999;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    border-bottom-right-radius: 15px;
+}
+.mobile-menu.show { display: flex; }
+
+.mobile-menu a {
+    padding: 18px 25px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* LEGAL CONTENT STYLING */
+.legal-page {
+    max-width: 800px;
+    margin: 60px auto;
+    padding: 0 20px;
+}
+
+.legal-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.legal-header h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 10px;
+}
+
+.legal-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.legal-section {
+    background: #ffffff;
+    color: #222;
+    padding: 40px;
+    border-radius: 24px;
+    margin-bottom: 30px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.legal-section h2 {
+    color: #4a6cff;
+    font-weight: 800;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f0f2f5;
+    padding-bottom: 10px;
+}
+
+.legal-section h3 {
+    font-weight: 700;
+    margin: 25px 0 10px 0;
+    color: #111;
+}
+
+.legal-section p, .legal-section li {
+    line-height: 1.6;
+    color: #444;
+    font-size: 1rem;
+    margin-bottom: 15px;
+}
+
+.legal-section ul {
+    padding-left: 20px;
+}
+
+.legal-section a {
+    color: #4a6cff;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+/* FOOTER */
+.footer {
+    text-align: center;
+    padding: 40px 20px;
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 850px) {
+    .hamburger { display: flex; }
+    .nav-links { display: none; }
+    .legal-header h1 { font-size: 2.2rem; }
+    .legal-section { padding: 25px; border-radius: 18px; }
+}
+    </style>
 </head>
 
 <body>
 
-  <!-- UNIVERSAL CONTACT.COM NAVBAR -->
-  <nav class="navbar">
+<nav class="navbar" id="navbar"></nav>
+<div class="mobile-menu" id="mobileMenu"></div>
 
-    <!-- Hamburger (must be first for your CSS) -->
-    <div class="hamburger" onclick="toggleMenu()">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-
-    <!-- Logo -->
-    <div class="logo">Contact<span>.</span>com</div>
-
-    <!-- Desktop Nav Links -->
-    <div class="nav-links" id="nav-links">
-      <a href="index.html">Home</a>
-      <a href="communities.html">Communities</a>
-      <a href="Events.html">Events</a>
-      <a href="login.html">Login</a>
-      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-    </div>
-
-  </nav>
-
-  <!-- Mobile Menu (required for your CSS to work) -->
-  <div class="mobile-menu" id="mobileMenu">
-    <a href="index.html">Home</a>
-    <a href="communities.html">Communities</a>
-    <a href="Events.html">Events</a>
-    <a href="login.html">Login</a>
-    <a href="signup.html">Sign Up</a>
-  </div>
-
-  <!-- MAIN CONTENT -->
-  <main class="legal-page">
+<main class="legal-page">
 
     <header class="legal-header">
-      <h1>Privacy & Terms</h1>
-      <p>Your privacy matters. Contact.com is built to protect your data, not exploit it.</p>
+        <h1>Privacy & Terms</h1>
+        <p>Your privacy matters. Contact.com is built to protect your data, not exploit it.</p>
     </header>
 
-    <!-- PRIVACY POLICY -->
     <section class="legal-section">
-      <h2>Privacy Policy</h2>
-      <p>
-        Contact.com is designed with privacy at its core. We collect only the information needed to
-        provide a fast, secure, and reliable experience. We never sell your data, and we never use
-        it for targeted advertising.
-      </p>
+        <h2>Privacy Policy</h2>
+        <p>
+            Contact.com is designed with privacy at its core. We collect only the information needed to
+            provide a fast, secure, and reliable experience. We never sell your data.
+        </p>
 
-      <h3>Information We Collect</h3>
-      <ul>
-        <li><strong>Account Information:</strong> Name, email, and profile details you choose to share.</li>
-        <li><strong>Messages:</strong> Encrypted end‑to‑end. We cannot read your messages.</li>
-        <li><strong>Usage Data:</strong> Basic analytics to improve performance and reliability.</li>
-        <li><strong>Device Data:</strong> Browser type, device type, and general technical information.</li>
-      </ul>
+        <h3>Information We Collect</h3>
+        <ul>
+            <li><strong>Account Information:</strong> Name, email, and profile details you choose to share.</li>
+            <li><strong>Messages:</strong> Encrypted for transit and storage.</li>
+            <li><strong>Usage Data:</strong> Basic analytics to improve performance.</li>
+        </ul>
 
-      <h3>How We Use Your Information</h3>
-      <ul>
-        <li>To operate your account and deliver core features.</li>
-        <li>To improve speed, reliability, and user experience.</li>
-        <li>To prevent fraud, abuse, or unauthorized access.</li>
-      </ul>
-
-      <h3>What We Never Do</h3>
-      <ul>
-        <li>We never sell your personal data.</li>
-        <li>We never show ads or track you across the web.</li>
-        <li>We never read your private messages.</li>
-      </ul>
-
-      <h3>Data Security</h3>
-      <p>
-        Messages are encrypted using industry‑standard encryption. Sensitive data is stored securely
-        and protected from unauthorized access. We continuously improve our security practices to
-        keep your information safe.
-      </p>
-
-      <h3>Your Rights</h3>
-      <ul>
-        <li>Access your data at any time.</li>
-        <li>Update or delete your profile information.</li>
-        <li>Request account deletion.</li>
-      </ul>
+        <h3>What We Never Do</h3>
+        <ul>
+            <li>We never sell your personal data to third parties.</li>
+            <li>We never use your private data for targeted advertising.</li>
+            <li>We never track your activity outside of Contact.com.</li>
+        </ul>
     </section>
 
-    <!-- TERMS OF SERVICE -->
     <section class="legal-section">
-      <h2>Terms of Service</h2>
+        <h2>Terms of Service</h2>
+        <h3>Using Contact.com</h3>
+        <p>
+            By creating an account, you agree to use Contact.com responsibly. You are responsible for the content you share and the interactions you initiate.
+        </p>
 
-      <h3>Using Contact.com</h3>
-      <p>
-        By creating an account, you agree to use Contact.com responsibly and in compliance with
-        applicable laws. You are responsible for the content you share and the interactions you
-        initiate.
-      </p>
-
-      <h3>User Responsibilities</h3>
-      <ul>
-        <li>Provide accurate account information.</li>
-        <li>Respect other users and their privacy.</li>
-        <li>Do not engage in harassment, abuse, or illegal activity.</li>
-        <li>Do not attempt to hack, disrupt, or misuse the platform.</li>
-      </ul>
-
-      <h3>Content Ownership</h3>
-      <p>
-        You own the content you create. By posting or uploading content, you grant Contact.com a
-        limited license to display it within the platform for the purpose of providing our services.
-      </p>
-
-      <h3>Account Termination</h3>
-      <p>
-        We reserve the right to suspend or terminate accounts that violate these terms or pose a
-        security risk to the platform or other users.
-      </p>
-
-      <h3>Service Availability</h3>
-      <p>
-        We work hard to keep Contact.com fast and reliable, but we cannot guarantee uninterrupted
-        service. Features may change or evolve over time.
-      </p>
+        <h3>User Responsibilities</h3>
+        <ul>
+            <li>Respect other users and their privacy.</li>
+            <li>Do not engage in harassment or illegal activity.</li>
+            <li>Maintain the security of your login credentials.</li>
+        </ul>
     </section>
 
-    <!-- CONTACT -->
-    <section class="legal-section">
-      <h2>Contact Us</h2>
-      <p>
-        If you have questions about our Privacy Policy or Terms of Service, reach out anytime at:
-      </p>
-      <p><a href="support-team.html"><strong>Support Team</strong></a></p>
+    <section class="legal-section" style="text-align: center;">
+        <h2>Contact Us</h2>
+        <p>Questions about our policies? Reach out anytime.</p>
+        <a href="support-team.html" class="btn-primary" style="display: inline-block; padding: 12px 25px; margin-top: 10px;">Message Support</a>
     </section>
 
-  </main>
+</main>
 
-  <footer class="footer">
+<footer class="footer">
     <p>© 2026 Contact.com — Contact the People Who Matter.</p>
-  </footer>
+</footer>
 
-  <!-- Correct JS for your mobile menu -->
-  <script>
-    function toggleMenu() {
-      document.getElementById("mobileMenu").classList.toggle("show");
-    }
-  </script>
+<script>
+function toggleMenu() {
+    document.getElementById("mobileMenu").classList.toggle("show");
+}
+
+function loadNavbar() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const isLoggedIn = !!user;
+
+    const navLinksHTML = isLoggedIn ? `
+        <a href="dashboard.html">Dashboard</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()" style="color:#ff3b3b;">Logout</a>
+    ` : `
+        <a href="index.html">Home</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="login.html">Login</a>
+        <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+    `;
+
+    document.getElementById("navbar").innerHTML = `
+        <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+        <div class="logo">Contact<span>.</span>com</div>
+        <div class="nav-links">${navLinksHTML}</div>
+    `;
+
+    document.getElementById("mobileMenu").innerHTML = isLoggedIn ? navLinksHTML : `
+        <a href="index.html">Home</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html">Sign Up</a>
+    `;
+}
+
+function logout() {
+    localStorage.removeItem("contact_user");
+    window.location.href = "index.html";
+}
+
+document.addEventListener("DOMContentLoaded", loadNavbar);
+</script>
 
 </body>
 </html>
