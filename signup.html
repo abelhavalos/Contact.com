@@ -93,15 +93,12 @@ body {
 }
 .mobile-menu.show { display: flex; }
 
-.mobile-menu a, .mobile-menu button {
+.mobile-menu a {
     padding: 18px 25px;
     color: white;
     text-decoration: none;
     font-weight: 600;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    background: transparent;
-    text-align: left;
-    border: none;
 }
 
 /* SIGNUP CARD */
@@ -141,9 +138,7 @@ input {
     outline: none;
 }
 
-input:focus {
-    border-color: #4a6cff;
-}
+input:focus { border-color: #4a6cff; }
 
 #signupBtn {
     width: 100%;
@@ -233,7 +228,7 @@ input:focus {
 @media (max-width: 850px) {
     .hamburger { display: flex; }
     .nav-links { display: none; }
-    .container { width: 90%; }
+    .container { width: 92%; margin-top: 40px; }
 }
     </style>
 </head>
@@ -266,7 +261,7 @@ input:focus {
 
 <div id="popupBackdrop" class="popup-backdrop">
     <div class="popup">
-        <div id="popupTitle" style="font-weight:800; font-size: 1.2rem; margin-bottom: 10px;"></div>
+        <div id="popupTitle" style="font-weight:800; font-size: 1.2rem; margin-bottom: 10px; color: #111;"></div>
         <div id="popupMessage" style="color:#666; font-size:14px;"></div>
         <button onclick="hidePopup()">OK</button>
     </div>
@@ -280,6 +275,7 @@ function showPopup(title, message) {
     document.getElementById("popupMessage").innerText = message;
     document.getElementById("popupBackdrop").style.display = "flex";
 }
+
 function hidePopup() {
     document.getElementById("popupBackdrop").style.display = "none";
 }
@@ -292,26 +288,34 @@ function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     const isLoggedIn = !!user;
 
-    const navContent = `
+    const navLinksHTML = isLoggedIn ? `
+        <a href="dashboard.html">Dashboard</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
+    ` : `
+        <a href="index.html">Home</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="login.html">Login</a>
+        <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+    `;
+
+    document.getElementById("navbar").innerHTML = `
         <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
         <div class="logo">Contact<span>.</span>com</div>
-        <div class="nav-links">
-            ${isLoggedIn ? `
-                <a href="dashboard.html">Dashboard</a>
-                <a href="communities.html">Communities</a>
-                <a href="events.html">Events</a>
-                <a href="#" onclick="logout()">Logout</a>
-            ` : `
-                <a href="index.html">Home</a>
-                <a href="communities.html">Communities</a>
-                <a href="events.html">Events</a>
-                <a href="login.html">Login</a>
-                <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-            `}
-        </div>
+        <div class="nav-links">${navLinksHTML}</div>
     `;
-    document.getElementById("navbar").innerHTML = navContent;
-    document.getElementById("mobileMenu").innerHTML = navContent; // Reuse logic for mobile
+
+    // Mobile menu needs clean links without the styled button for guests
+    document.getElementById("mobileMenu").innerHTML = isLoggedIn ? navLinksHTML : `
+        <a href="index.html">Home</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html" style="background: rgba(255,255,255,0.1)">Sign Up</a>
+    `;
 }
 
 async function signupUser() {
