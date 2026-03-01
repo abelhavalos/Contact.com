@@ -294,33 +294,3 @@ body {
   border-radius: 10px;
   display: block;
 }
-
-/* Hide toggle button on large screens */
-@media (min-width: 851px) {
-    #toggleMembers {
-        display: none !important;
-    }
-    #memberSidebar {
-        display: block !important;
-        position: relative;
-        transform: none;
-    }
-}
-
-/* Sidebar behavior for mobile */
-@media (max-width: 850px) {
-    #memberSidebar {
-        display: none;
-        position: fixed;
-        right: 0;
-        top: 70px;
-        z-index: 1000;
-        background: white;
-        height: 100%;
-        width: 250px;
-        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-    }
-    #memberSidebar.show {
-        display: block;
-    }
-}
