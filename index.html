@@ -1,274 +1,276 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contact.com – Learn More</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact.com – Connect Better</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* THEME VARIABLES */
+    :root {
+      --primary-blue: #4A6CFF;
+      --gradient-bg: linear-gradient(135deg, #4a6cff, #6f8cff);
+      --text-dark: #222;
+      --card-bg: #f7f9fc;
+    }
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
-        body {
-            background: linear-gradient(135deg, #4a6cff, #6f8cff);
-            color: #fff;
-            min-height: 100vh;
-        }
+    body {
+      background: var(--gradient-bg);
+      color: #fff;
+      min-height: 100vh;
+    }
 
-        /* NAVBAR - Styled to match Messages.js logic */
-        .navbar {
-            width: 100%;
-            height: 70px;
-            padding: 0 40px;
-            display: flex;
-            align-items: center;
-            background: #ffffff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
+    /* NAVBAR - MATCHES MESSAGES.JS LOGIC */
+    .navbar {
+      width: 100%;
+      height: 70px;
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
 
-        /* Hamburger on LEFT */
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            margin-right: 20px;
-        }
-        .hamburger span {
-            width: 26px;
-            height: 3px;
-            background: #4a6cff; /* Match chatroom blue */
-            border-radius: 3px;
-        }
+    /* Left-side Hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      margin-right: 20px;
+    }
+    .hamburger span {
+      width: 26px;
+      height: 3px;
+      background: var(--primary-blue);
+      border-radius: 3px;
+    }
 
-        .logo {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: #222;
-            cursor: pointer;
-        }
-        .logo span { color: #4a6cff; }
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -1px;
+    }
+    .logo span { color: var(--primary-blue); }
 
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-left: auto;
-        }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-left: auto;
+    }
 
-        .nav-links a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
+    .nav-links a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+    }
 
-        .btn-primary {
-            padding: 10px 20px;
-            background: #4a6cff;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
+    .btn-primary {
+      padding: 10px 20px;
+      background: var(--primary-blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
 
-        /* MOBILE MENU - Anchored to Top-Left like Chatroom */
-        .mobile-menu {
-            position: fixed;
-            top: 70px;
-            left: 0;
-            width: 250px;
-            background: #4a6cff;
-            display: none;
-            flex-direction: column;
-            z-index: 9999;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.2);
-            height: auto;
-            border-bottom-right-radius: 12px;
-        }
-        .mobile-menu a,
-        .mobile-menu button {
-            padding: 18px 25px;
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            text-align: left;
-            background: transparent;
-            border-left: none;
-            border-right: none;
-        }
-        .mobile-menu.show { display: flex; }
+    .btn-secondary {
+      padding: 10px 20px;
+      background: #fff;
+      color: var(--primary-blue);
+      border: 2px solid #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
 
-        /* HERO */
-        .hero {
-            text-align: center;
-            margin-top: 80px;
-            padding: 0 20px;
-        }
-        .hero h1 { font-size: 3.2rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; }
-        .hero p { font-size: 1.25rem; max-width: 750px; margin: 0 auto; opacity: 0.9; line-height: 1.6; }
+    /* MOBILE MENU - ANCHORED LEFT */
+    .mobile-menu {
+      position: fixed;
+      top: 70px;
+      left: 0;
+      width: 250px;
+      background: var(--primary-blue);
+      display: none;
+      flex-direction: column;
+      z-index: 999;
+      box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+      border-bottom-right-radius: 15px;
+    }
+    .mobile-menu.show { display: flex; }
 
-        /* FEATURES */
-        .features {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 60px;
-            padding: 20px;
-            gap: 25px;
-        }
+    .mobile-menu a, .mobile-menu button {
+      padding: 18px 25px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
+      border-top: none; border-left: none; border-right: none;
+      text-align: left;
+    }
 
-        .card {
-            width: 280px;
-            background: #ffffff;
-            color: #222;
-            padding: 20px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        .card:hover { transform: translateY(-5px); }
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 80px 20px 40px;
+    }
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 15px;
+      letter-spacing: -2px;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      max-width: 700px;
+      margin: 0 auto 30px;
+      opacity: 0.95;
+    }
+    .hero-buttons { display: flex; justify-content: center; gap: 15px; }
 
-        .feature-img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 12px;
-            margin-bottom: 15px;
-        }
+    /* FEATURES SECTION */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
 
-        .card h3 { color: #4a6cff; margin-bottom: 12px; font-size: 1.3rem; }
-        .card p { font-size: 0.95rem; line-height: 1.5; color: #555; }
+    .feature {
+      background: #fff;
+      color: var(--text-dark);
+      padding: 25px;
+      border-radius: 18px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      transition: transform 0.3s;
+    }
+    .feature:hover { transform: translateY(-5px); }
 
-        /* CTA */
-        .cta { text-align: center; margin: 80px 0; }
-        .cta a {
-            padding: 16px 35px;
-            background: #fff;
-            color: #4a6cff;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 800;
-            font-size: 1.2rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-        }
+    .feature-img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
 
-        @media (max-width: 850px) {
-            .hamburger { display: flex; }
-            .nav-links { display: none; }
-            .navbar { padding: 0 20px; }
-            .hero h1 { font-size: 2.5rem; }
-        }
-    </style>
+    .feature h3 { color: var(--primary-blue); margin-bottom: 10px; font-weight: 700; }
+    .feature p { font-size: 0.95rem; color: #555; line-height: 1.5; }
+
+    /* FOOTER */
+    .footer {
+      padding: 60px 20px;
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+      margin-top: 40px;
+    }
+    .footer-brand { font-weight: 800; font-size: 1.2rem; margin-bottom: 10px; }
+    .footer-links a { color: #fff; text-decoration: none; margin: 0 10px; font-size: 0.9rem; opacity: 0.8; }
+
+    @media (max-width: 850px) {
+      .hamburger { display: flex; }
+      .nav-links { display: none; }
+      .hero h1 { font-size: 2.5rem; }
+    }
+  </style>
 </head>
-
 <body>
 
-<nav class="navbar" id="navbar"></nav>
-
-<div class="mobile-menu" id="mobileMenu"></div>
-
-<section class="hero">
-    <h1>What Is Contact.com?</h1>
-    <p>
-        A modern social platform built for real human connection.  
-        No noise, no clutter — just meaningful interactions with the people and communities that matter most.
-    </p>
-</section>
-
-<section class="features">
-    <div class="card">
-        <img src="images/Communities.jpeg" alt="Communities" class="feature-img" />
-        <h3>Real Connections</h3>
-        <p>Meet people who share your interests and passions — not just random matches.</p>
+  <nav class="navbar">
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
-
-    <div class="card">
-        <img src="images/Events.jpeg" alt="Events" class="feature-img" />
-        <h3>Communities</h3>
-        <p>Join groups built around creativity, wellness, tech, and hobbies.</p>
+    <div class="logo">Contact<span>.</span>com</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="login.html">Login</a>
+      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     </div>
+  </nav>
 
-    <div class="card">
-        <img src="images/contacts.jpeg" alt="Contacts" class="feature-img" />
-        <h3>Events</h3>
-        <p>Discover meetups, workshops, and experiences that bring people together.</p>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="index.html">Home</a>
+    <a href="communities.html">Communities</a>
+    <a href="events.html">Events</a>
+    <a href="login.html">Login</a>
+    <button onclick="window.location.href='signup.html'">Sign Up</button>
+  </div>
+
+  <header class="hero">
+    <div class="hero-content">
+      <h1>Contact the People Who Matter</h1>
+      <p>A clean, modern social network built for real connections — not noise.</p>
+      <div class="hero-buttons">
+        <button class="btn-primary" onclick="window.location.href='signup.html'">Get Started</button>
+        <button class="btn-secondary" onclick="window.location.href='learnmore.html'">Learn More</button>
+      </div>
     </div>
+  </header>
 
-    <div class="card">
-        <img src="images/Profile.jpeg" alt="Profile" class="feature-img" />
-        <h3>Privacy First</h3>
-        <p>Your data stays yours. No ads, no tracking, no manipulation — ever.</p>
+  <section class="features">
+    <div class="feature">
+      <img src="images/Communities.jpeg" alt="Communities" class="feature-img" />
+      <h3>Real Connections</h3>
+      <p>Stay close to friends, family, and communities without the clutter.</p>
     </div>
-</section>
+    <div class="feature">
+      <img src="images/Events.jpeg" alt="Events" class="feature-img" />
+      <h3>Privacy First</h3>
+      <p>Your data stays yours. No ads, no tracking, no manipulation.</p>
+    </div>
+    <div class="feature">
+      <img src="images/contacts.jpeg" alt="Contacts" class="feature-img" />
+      <h3>Simple & Modern</h3>
+      <p>A fast, clean interface designed for humans, not algorithms.</p>
+    </div>
+    <div class="feature">
+      <img src="images/Profile.jpeg" alt="Profile" class="feature-img" />
+      <h3>Control Your Identity</h3>
+      <p>Update your details and manage your account with ease.</p>
+    </div>
+  </section>
 
-<section class="cta">
-    <a href="signup.html">Join The Community</a>
-</section>
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">Contact<span>.</span>com</div>
+      <div class="footer-links">
+        <a href="learnmore.html">Learn more</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="privacy.html">Terms</a>
+      </div>
+      <p class="footer-note" style="margin-top: 15px; font-size: 0.8rem; opacity: 0.6;">Connect better. No noise, just people.</p>
+    </div>
+  </footer>
 
-<script>
-function toggleMenu() {
-    document.getElementById("mobileMenu").classList.toggle("show");
-}
+  <script>
+    function toggleMenu() {
+      // Toggle logic that matches the sidebar feel
+      document.getElementById("mobileMenu").classList.toggle("show");
+    }
 
-function logout() {
-    localStorage.removeItem("contact_user");
-    window.location.href = "index.html";
-}
-
-function loadNavbar() {
-    const user = JSON.parse(localStorage.getItem("contact_user"));
-
-    const navContent = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="logo" onclick="window.location.href='index.html'">Contact<span>.</span>com</div>
-        <div class="nav-links">
-            ${user ? `
-                <a href="dashboard.html">Dashboard</a>
-                <a href="communities.html">Communities</a>
-                <a href="events.html">Events</a>
-                <a href="contacts.html">Contacts</a>
-                <a href="profile.html">Profile</a>
-                <a href="#" onclick="logout()" style="color:#4a6cff; font-weight:bold;">Logout</a>
-            ` : `
-                <a href="index.html">Home</a>
-                <a href="communities.html">Communities</a>
-                <a href="events.html">Events</a>
-                <a href="login.html">Login</a>
-                <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-            `}
-        </div>
-    `;
-
-    const mobileContent = user ? `
-        <a href="dashboard.html">Dashboard</a>
-        <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
-        <a href="contacts.html">Contacts</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()">Logout</a>
-    ` : `
-        <a href="index.html">Home</a>
-        <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
-        <a href="login.html">Login</a>
-        <a href="signup.html">Sign Up</a>
-    `;
-
-    document.getElementById("navbar").innerHTML = navContent;
-    document.getElementById("mobileMenu").innerHTML = mobileContent;
-}
-
-document.addEventListener("DOMContentLoaded", loadNavbar);
-</script>
-
+    function logout() {
+      localStorage.removeItem("contact_user");
+      window.location.href = "index.html";
+    }
+  </script>
 </body>
 </html>
