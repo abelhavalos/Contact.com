@@ -205,35 +205,30 @@ function renderCommunityMembersList(list) {
   const container = document.getElementById("memberSidebar");
   if (!container) return;
 
-  container.innerHTML = "<h3>Members</h3>";
-  const fragment = document.createDocumentFragment();
-
+  container.innerHTML = "<h3 style='margin-bottom:15px; font-size:16px;'>Members</h3>";
+  
   list.forEach((m) => {
     const initials = getInitials(m.fullName);
-    const avatar = m.profilePic
-      ? `<img class="chat-avatar" src="${m.profilePic}" />`
+    
+    // Check for both profilePic and ProfilePic (case sensitivity fix)
+    const picUrl = m.profilePic || m.ProfilePic;
+    
+    const avatarHTML = picUrl
+      ? `<img class="chat-avatar" src="${picUrl}" />`
       : `<div class="chat-avatar-fallback">${initials}</div>`;
 
     const row = document.createElement("div");
-    row.className = "member";
+    row.className = "member-row";
     row.style.cursor = "pointer";
-    row.style.marginBottom = "12px";
-    row.onclick = () =>
-      (window.location.href = `public-profile.html?email=${encodeURIComponent(
-        m.email
-      )}`);
+    row.onclick = () => (window.location.href = `public-profile.html?email=${encodeURIComponent(m.email)}`);
 
     row.innerHTML = `
-      <div class="member-row">
-        ${avatar}
-        <div class="member-name">${m.fullName}</div>
-      </div>
+        ${avatarHTML}
+        <div class="member-name" style="font-weight:500; font-size:14px; color:#333;">${m.fullName}</div>
     `;
 
-    fragment.appendChild(row);
+    container.appendChild(row);
   });
-
-  container.appendChild(fragment);
 }
 
 /****************************************************
