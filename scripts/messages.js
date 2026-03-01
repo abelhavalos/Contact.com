@@ -1,7 +1,9 @@
 /****************************************************
- * CONTACT.COM — HIGH-PERFORMANCE MESSAGES.JS
- * Optimized for: Parallel Loading, Delta-Sync, & 
- * Low-Latency UI updates.
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS (V2)
+ * - Parallel Meta Loading
+ * - Delta-Sync via lastId
+ * - Optimistic UI Rendering
+ * - Color Caching
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -10,7 +12,6 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
 
-// Normalize user object
 loggedInUser.fullName = loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
 loggedInUser.profilePic = loggedInUser.profilePic || loggedInUser.ProfilePic || null;
 
@@ -21,11 +22,10 @@ const finalOtherEmail = url.searchParams.get("otherEmail") || url.searchParams.g
 const chatTitle = url.searchParams.get("title") || "";
 
 let activeConversationId = url.searchParams.get("conversationId") || null;
-let messages = [];
+let messages = []; // Local state of all messages
 let communityMembers = [];
 let otherUser = null;
-let colorCache = {}; // Optimization: Don't re-hash colors every frame
-let lastSyncCount = 0; // Simple delta tracker
+let colorCache = {};
 
 const BUBBLE_PALETTE = [
   { bg: "#4A6CFF", text: "#FFFFFF" },
@@ -63,21 +63,13 @@ function fileToBase64(file) {
 }
 
 /****************************************************
- * CORE INITIALIZATION (PARALLEL FETCHING)
+ * CORE INITIALIZATION
  ****************************************************/
 async function initChat() {
   loadNavbar();
   showChatLoader();
 
-  // 1. Fire all metadata requests at once
-  const metaPromises = [];
-  if (mode === "private") {
-    metaPromises.push(loadOtherUserProfile());
-  } else {
-    metaPromises.push(loadCommunityInfo(), loadCommunityMembers());
-  }
-
-  // 2. Resolve Conversation ID if missing
+  // 1. Resolve Conversation ID if missing
   if (!activeConversationId) {
     const setupUrl = mode === "community" 
       ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
@@ -90,50 +82,57 @@ async function initChat() {
     } catch (e) { console.error("Conv Init Error:", e); }
   }
 
-  // 3. Wait for metadata to finish then do first message load
-  await Promise.all(metaPromises);
-  await syncMessages(true); // true = first load
+  // 2. Fire metadata and first message load in parallel
+  const metaPromises = [];
+  if (mode === "private") {
+    metaPromises.push(loadOtherUserProfile());
+  } else {
+    metaPromises.push(loadCommunityInfo(), loadCommunityMembers());
+  }
+
+  // Initial full load (lastId = 0)
+  await Promise.all([...metaPromises, syncMessages()]);
   
   hideChatLoader();
 
-  // 4. Background Sync (Poll every 4 seconds)
-  setInterval(() => syncMessages(false), 4000);
+  // 3. Background Sync (Poll every 3 seconds for new messages)
+  setInterval(() => syncMessages(), 3000);
 }
 
 /****************************************************
- * MESSAGING ENGINE
+ * MESSAGING ENGINE (DELTA SYNC)
  ****************************************************/
-async function syncMessages(isFirstLoad = false) {
+async function syncMessages() {
   if (!activeConversationId) return;
 
-  const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
-  const data = await r.json();
-  const newMessages = data.messages || [];
+  // Determine the last ID we have locally to request only new data
+  const lastId = messages.reduce((max, m) => (m.messageId > max ? m.messageId : max), 0);
+  
+  try {
+    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}&lastId=${lastId}`);
+    const data = await r.json();
+    const newMessages = data.messages || [];
 
-  // Only render if count changed (Basic delta check)
-  if (newMessages.length > lastSyncCount) {
-    const container = document.getElementById("messages");
-    if (!container) return;
+    if (newMessages.length > 0) {
+      const container = document.getElementById("messages");
+      if (!container) return;
 
-    // If first load, clear and render all. Otherwise, just append the delta.
-    if (isFirstLoad) {
-      container.innerHTML = "";
-      messages = newMessages;
       const fragment = document.createDocumentFragment();
-      messages.forEach(msg => fragment.appendChild(buildMessageRow(msg)));
-      container.appendChild(fragment);
-    } else {
-      const delta = newMessages.slice(lastSyncCount);
-      delta.forEach(msg => {
-        // Prevent adding optimistic duplicates
-        if (!document.getElementById(`msg-${msg.id}`)) {
-          container.appendChild(buildMessageRow(msg));
+      
+      newMessages.forEach(msg => {
+        // Ensure we don't duplicate a message that was added optimistically
+        const existing = document.getElementById(`msg-${msg.messageId}`);
+        if (!existing) {
+          messages.push(msg);
+          fragment.appendChild(buildMessageRow(msg));
         }
       });
-    }
 
-    lastSyncCount = newMessages.length;
-    container.scrollTop = container.scrollHeight;
+      container.appendChild(fragment);
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch (e) {
+    console.error("Sync Error:", e);
   }
 }
 
@@ -142,11 +141,11 @@ function buildMessageRow(msg) {
   const color = getUserColor(msg.senderEmail);
 
   const row = document.createElement("div");
-  row.id = `msg-${msg.id || Date.now()}`;
+  // Use messageId if it exists, otherwise use a temporary timestamp ID
+  row.id = `msg-${msg.messageId || 'temp-' + Date.now()}`;
   row.className = "msg-row";
   row.style = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'}`;
 
-  // Avatar Logic
   let pic, name;
   if (isMe) {
     pic = loggedInUser.profilePic;
@@ -175,7 +174,7 @@ function buildMessageRow(msg) {
 }
 
 function renderMessageContent(msg) {
-  if (msg.type === "image") return `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:8px; min-height:100px;">`;
+  if (msg.type === "image") return `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:8px; min-height:150px; display:block;">`;
   if (msg.type === "document") return `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">📄 ${msg.fileName}</a>`;
   return msg.text || "";
 }
@@ -187,9 +186,9 @@ function sendMessage(payloadOverride = null) {
 
   const payload = payloadOverride || { type: "text", text };
 
-  // OPTIMISTIC UI: Append immediately
+  // OPTIMISTIC UI: Render locally before server response
   const tempMsg = {
-    id: "temp-" + Date.now(),
+    messageId: 0, // Placeholder
     senderEmail: loggedInUser.email,
     ...payload
   };
@@ -200,25 +199,24 @@ function sendMessage(payloadOverride = null) {
 
   // NETWORK SEND
   const isText = payload.type === "text";
-  const fetchOptions = isText ? {} : {
-    method: "POST",
-    body: JSON.stringify({ 
-      module: "sendMessage", 
-      conversationId: activeConversationId, 
-      senderEmail: loggedInUser.email, 
-      ...payload 
-    })
-  };
-
-  const url = isText 
-    ? `${API_URL}?module=sendMessage&conversationId=${encodeURIComponent(activeConversationId)}&senderEmail=${encodeURIComponent(loggedInUser.email)}&type=text&text=${encodeURIComponent(text)}`
-    : API_URL;
-
-  fetch(url, fetchOptions).then(() => syncMessages());
+  if (isText) {
+    fetch(`${API_URL}?module=sendMessage&conversationId=${encodeURIComponent(activeConversationId)}&senderEmail=${encodeURIComponent(loggedInUser.email)}&type=text&text=${encodeURIComponent(text)}`)
+      .then(() => syncMessages());
+  } else {
+    fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ 
+        module: "sendMessage", 
+        conversationId: activeConversationId, 
+        senderEmail: loggedInUser.email, 
+        ...payload 
+      })
+    }).then(() => syncMessages());
+  }
 }
 
 /****************************************************
- * UI FETCHERS
+ * UI DATA FETCHERS
  ****************************************************/
 async function loadOtherUserProfile() {
   try {
@@ -230,9 +228,29 @@ async function loadOtherUserProfile() {
 }
 
 async function loadCommunityInfo() {
-  const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
-  const d = await r.json();
-  updateHeader(d?.community?.name || "Community", null);
+  try {
+    const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
+    const d = await r.json();
+    updateHeader(d?.community?.name || "Community", null);
+  } catch (e) { console.error(e); }
+}
+
+async function loadCommunityMembers() {
+  try {
+    const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
+    const d = await r.json();
+    const emails = (d.members || []).map(m => typeof m === "string" ? m : m.email);
+
+    const tasks = emails.map(async (email) => {
+      const res = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      const u = data?.user || {};
+      return { email, fullName: u.fullName || u.FullName || email, profilePic: u.profilePic || u.ProfilePic || null };
+    });
+
+    communityMembers = await Promise.all(tasks);
+    renderCommunityMembersList(communityMembers);
+  } catch (e) { console.error(e); }
 }
 
 function updateHeader(title, pic) {
@@ -242,16 +260,48 @@ function updateHeader(title, pic) {
   header.innerHTML = `<div class="chat-header">${chatTitle ? '' : avatar}<div class="chat-header-main">${chatTitle || title}</div></div>`;
 }
 
-// Sidebar and Navbar code (Simplified from your original)
+/****************************************************
+ * BOOTSTRAP & EVENTS
+ ****************************************************/
+document.addEventListener("DOMContentLoaded", () => {
+  initChat();
+
+  const sendBtn = document.getElementById("sendBtn");
+  if (sendBtn) sendBtn.onclick = () => sendMessage();
+
+  const messageInput = document.getElementById("messageInput");
+  if (messageInput) {
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
+
+  // File Uploads
+  const setupUpload = (btnId, inputId, type) => {
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (btn && input) {
+      btn.onclick = () => input.click();
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const base64 = await fileToBase64(file);
+        sendMessage({ type, fileName: file.name, fileData: base64 });
+        e.target.value = "";
+      };
+    }
+  };
+  setupUpload("uploadDocBtn", "docInput", "document");
+  setupUpload("uploadImgBtn", "imgInput", "image");
+});
+
 function loadNavbar() {
   const nav = document.getElementById("navbar");
   if (nav) nav.innerHTML = `<div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div><div class="logo">Contact<span>.</span>com</div><div class="nav-links"><a href="dashboard.html">Dashboard</a><a href="communities.html">Communities</a><a href="profile.html">Profile</a><a href="#" onclick="logout()">Logout</a></div>`;
 }
-
-/****************************************************
- * BOOTSTRAP
- ****************************************************/
-document.addEventListener("DOMContentLoaded", initChat);
 
 function showChatLoader() { document.getElementById("chatLoader")?.style.setProperty("display", "flex"); }
 function hideChatLoader() { document.getElementById("chatLoader")?.style.setProperty("display", "none"); }
