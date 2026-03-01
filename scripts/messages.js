@@ -17,7 +17,6 @@ const url = new URL(window.location.href);
 const communityId = url.searchParams.get("communityId");
 const mode = communityId ? "community" : "private";
 const otherEmailParam = url.searchParams.get("otherEmail") || url.searchParams.get("email");
-const paramTitle = url.searchParams.get("title") || "";
 
 let activeConversationId = url.searchParams.get("conversationId") || null;
 let messages = [];
@@ -40,7 +39,7 @@ function fileToBase64(file) {
 }
 
 /****************************************************
- * RENDERING
+ * RENDERING (CIRCULAR AVATARS)
  ****************************************************/
 async function loadMessagesOnce() {
   if (!activeConversationId) return;
@@ -69,6 +68,7 @@ function buildMessageRow(msg) {
   row.style.justifyContent = isMe ? "flex-end" : "flex-start";
 
   const bubble = document.createElement("div");
+  bubble.className = "msg-bubble"; 
   bubble.style = `max-width:70%; padding:10px 14px; border-radius:18px; font-size:14px; background:${isMe ? '#4A6CFF' : '#fff'}; color:${isMe ? '#fff' : '#222'}; border: ${isMe ? 'none' : '1px solid #ddd'};`;
 
   if (msg.type === "image") {
@@ -84,7 +84,7 @@ function buildMessageRow(msg) {
 }
 
 /****************************************************
- * MEMBERS (CIRCULAR)
+ * MEMBERS LIST
  ****************************************************/
 async function loadCommunityMembers() {
   const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
@@ -122,7 +122,7 @@ function renderMembersList() {
 }
 
 /****************************************************
- * SEND & PICKERS
+ * SEND MESSAGE
  ****************************************************/
 async function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
@@ -132,7 +132,6 @@ async function sendMessage(payloadOverride = null) {
   const payload = payloadOverride || { type: "text", text };
   if (input) input.value = "";
 
-  // Optimistic UI
   messages.push({ ...payload, senderEmail: loggedInUser.email });
   renderAllMessages(messages);
 
@@ -144,30 +143,40 @@ async function sendMessage(payloadOverride = null) {
 }
 
 /****************************************************
- * DOM READY
+ * DOM READY - TOGGLE & PICKER FIX
  ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
-  // 1. UI Elements
   const toggleBtn = document.getElementById("toggleMembers");
   const sidebar = document.getElementById("memberSidebar");
   const docInput = document.getElementById("docInput");
   const imgInput = document.getElementById("imgInput");
 
-  // 2. Sidebar Toggle
-  if (toggleBtn) {
-    toggleBtn.onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle("show"); };
+  // 1. THE TOGGLE FIX
+  if (toggleBtn && sidebar) {
+    toggleBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // Stops click from reaching 'window'
+      sidebar.classList.toggle("active");
+    };
+
+    // Close sidebar if you click anywhere else on the screen
+    window.onclick = (e) => {
+      if (!sidebar.contains(e.target) && e.target !== toggleBtn) {
+        sidebar.classList.remove("active");
+      }
+    };
   }
 
-  // 3. File Pickers (Anti-Loop)
-  document.getElementById("uploadDocBtn").onclick = () => docInput.click();
-  document.getElementById("uploadImgBtn").onclick = () => imgInput.click();
+  // 2. THE PICKER FIX (Stop the loop)
+  document.getElementById("uploadDocBtn").onclick = (e) => { e.preventDefault(); docInput.click(); };
+  document.getElementById("uploadImgBtn").onclick = (e) => { e.preventDefault(); imgInput.click(); };
 
   docInput.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const base64 = await fileToBase64(file);
     await sendMessage({ type: "document", fileName: file.name, fileData: base64 });
-    e.target.value = ""; // Clear loop
+    e.target.value = ""; // CLEARS INPUT TO STOP LOOP
   };
 
   imgInput.onchange = async (e) => {
@@ -175,10 +184,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!file) return;
     const base64 = await fileToBase64(file);
     await sendMessage({ type: "image", fileName: file.name, fileData: base64 });
-    e.target.value = ""; // Clear loop
+    e.target.value = ""; // CLEARS INPUT TO STOP LOOP
   };
 
-  // 4. Mode Setup
+  // 3. LOAD CONTENT
   if (mode === "community") {
     await loadCommunityMembers();
   } else {
@@ -186,7 +195,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (sidebar) sidebar.style.display = "none";
   }
 
-  // 5. Start Conv
   if (!activeConversationId) {
     const setupUrl = mode === "community" 
       ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
@@ -198,8 +206,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   loadMessagesOnce();
 
+  // 4. INPUT HANDLERS
   document.getElementById("sendBtn").onclick = () => sendMessage();
-  document.getElementById("messageInput").onkeydown = (e) => { if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); }};
+  document.getElementById("messageInput").onkeydown = (e) => { 
+    if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+  };
 });
 
 function showChatLoader() { document.getElementById("chatLoader").style.display = "flex"; }
