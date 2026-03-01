@@ -66,9 +66,9 @@
             font-size: 14px;
         }
 
-        /* BUTTONS - White Text Fix */
+        /* BUTTONS - White Text Guaranteed */
         .btn-primary {
-            padding: 10px 22px;
+            padding: 12px 24px;
             background: #4a6cff;
             color: #ffffff !important;
             border: none;
@@ -77,6 +77,8 @@
             font-weight: 700;
             box-shadow: 0 4px 12px rgba(74, 108, 255, 0.3);
             transition: transform 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
         }
         .btn-primary:active { transform: scale(0.95); }
 
@@ -107,7 +109,7 @@
         .page-title {
             text-align: center;
             margin-top: 50px;
-            font-size: 2.8rem;
+            font-size: 3rem;
             font-weight: 800;
             letter-spacing: -1px;
         }
@@ -117,46 +119,66 @@
             margin-top: 20px;
         }
 
-        /* EVENT GRID */
+        /* FULL WIDTH EVENT LIST */
         .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 30px;
-            padding: 40px;
-            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            padding: 40px 20px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
-        /* CARDS */
+        /* BUBBLE CARDS - Horizontal Layout */
         .card {
             background: #ffffff;
             color: #222;
-            padding: 25px;
-            border-radius: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            text-align: center;
+            padding: 30px;
+            border-radius: 28px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 30px;
             transition: transform 0.3s ease;
         }
         .card:hover { transform: translateY(-5px); }
 
         .event-card-image {
-            width: 100%;
+            width: 280px;
             height: 180px;
+            min-width: 280px;
             object-fit: cover;
-            border-radius: 16px;
-            margin-bottom: 15px;
+            border-radius: 20px;
             background: #f0f2f5;
         }
 
-        .card h3 { color: #111; margin-bottom: 10px; font-weight: 800; font-size: 1.4rem; }
-        .card p { color: #666; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; }
+        .card-content {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .card h3 { 
+            color: #111; 
+            margin-bottom: 10px; 
+            font-weight: 800; 
+            font-size: 1.7rem; 
+        }
+        .card p { 
+            color: #555; 
+            font-size: 1rem; 
+            margin-bottom: 20px; 
+            line-height: 1.6; 
+        }
 
         .delete-btn {
             background: #ff4a4a;
-            color: white !important;
-            padding: 8px 16px;
+            color: #ffffff !important;
+            padding: 10px 20px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 700;
             cursor: pointer;
         }
@@ -176,7 +198,7 @@
             background: #fff;
             border-radius: 24px;
             padding: 35px;
-            max-width: 400px;
+            max-width: 450px;
             width: 90%;
             text-align: center;
             color: #222;
@@ -184,7 +206,7 @@
 
         .popup-title {
             font-weight: 800;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             margin-bottom: 20px;
             color: #111;
         }
@@ -197,7 +219,6 @@
             border: 1px solid #e5e7eb;
             background: #f9fafb;
             font-size: 15px;
-            outline: none;
         }
 
         .popup button {
@@ -208,30 +229,26 @@
             border: none;
             border-radius: 12px;
             font-weight: 700;
-            font-size: 16px;
             cursor: pointer;
             margin-top: 10px;
         }
 
         .cancel-btn { background: #9ca3af !important; }
 
-        /* IMAGE PICKER */
-        #eventImagePicker {
-            width: 100%;
-            height: 160px;
-            border-radius: 12px;
-            overflow: hidden;
-            cursor: pointer;
-            margin-bottom: 15px;
-            border: 2px dashed #cbd5e1;
-        }
-        #eventImagePicker img { width: 100%; height: 100%; object-fit: cover; }
-
-        @media (max-width: 850px) {
+        /* RESPONSIVE STACKING */
+        @media (max-width: 800px) {
+            .card {
+                flex-direction: column;
+                text-align: center;
+                padding: 20px;
+            }
+            .card-content { text-align: center; }
+            .event-card-image {
+                width: 100%;
+                min-width: 100%;
+            }
             .hamburger { display: flex; }
             .nav-links { display: none; }
-            .page-title { font-size: 2rem; }
-            .grid { padding: 20px; }
         }
     </style>
 </head>
@@ -253,11 +270,13 @@
     <div class="popup">
         <div class="popup-title">Create Event</div>
         <input id="eventTitle" placeholder="Event Title">
-        <div id="eventImagePicker" onclick="document.getElementById('eventImageInput').click()">
-            <img id="eventImagePreview" src="https://via.placeholder.com/300x180?text=Click+to+Upload+Image">
+        
+        <div id="eventImagePicker" onclick="document.getElementById('eventImageInput').click()" style="cursor:pointer; border: 2px dashed #ccc; border-radius: 12px; margin-bottom: 15px; overflow: hidden; height: 160px;">
+            <img id="eventImagePreview" src="https://via.placeholder.com/300x180?text=Select+Event+Image" style="width:100%; height:100%; object-fit:cover;">
         </div>
         <input type="file" id="eventImageInput" accept="image/*" style="display:none;" onchange="previewEventImage(this)">
-        <textarea id="eventDescription" placeholder="What's happening?" rows="3"></textarea>
+        
+        <textarea id="eventDescription" placeholder="Tell people about the event..." rows="3"></textarea>
         <button onclick="submitEvent()">Launch Event</button>
         <button class="cancel-btn" onclick="closeCreateEventPopup()">Cancel</button>
     </div>
@@ -272,6 +291,7 @@
 </div>
 
 <script>
+    // NAVBAR & AUTH LOGIC
     function toggleMenu() {
         document.getElementById("mobileMenu").classList.toggle("show");
     }
@@ -305,9 +325,10 @@
             <a href="communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="login.html">Login</a>
-            <a href="signup.html" style="background: rgba(255,255,255,0.1);">Sign Up</a>
+            <a href="signup.html">Sign Up</a>
         `;
 
+        // If logged in, show "Create Event" button
         if(isLoggedIn && document.getElementById("createEventWrapper")) {
             document.getElementById("createEventWrapper").innerHTML = 
                 `<button class="btn-primary" onclick="openCreateEventPopup()">+ Create Event</button>`;
@@ -327,7 +348,7 @@
         }
     }
 
-    // Modal Toggles
+    // Modal Controls
     function openCreateEventPopup() { document.getElementById("createEventBackdrop").style.display = "flex"; }
     function closeCreateEventPopup() { document.getElementById("createEventBackdrop").style.display = "none"; }
     function hideMessagePopup() { document.getElementById("messageBackdrop").style.display = "none"; }
