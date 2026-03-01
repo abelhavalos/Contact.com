@@ -1,7 +1,7 @@
 /****************************************************
- * CONTACT.COM — ULTRA FAST MESSAGES.JS (V6)
- * - Anti-Flicker File Sync
- * - Simulated Progress Bar
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS (V7)
+ * - Click-to-Zoom Image Overlay
+ * - Anti-Flicker File Sync & Progress Bar
  * - Toast Notification System
  * - Fixed Responsive Navbar (Desktop & Mobile)
  ****************************************************/
@@ -21,7 +21,23 @@ let activeConversationId = url.searchParams.get("conversationId") || null;
 let messages = []; 
 let communityMembers = [];
 let otherUser = null;
-let colorCache = {};
+
+/****************************************************
+ * IMAGE OVERLAY (ZOOM)
+ ****************************************************/
+function openImageOverlay(src) {
+  let overlay = document.getElementById("image-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "image-overlay";
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:none; align-items:center; justify-content:center; cursor:pointer;";
+    overlay.innerHTML = `<img id="overlay-img" style="max-width:90%; max-height:90%; border-radius:8px; transition: transform 0.3s ease;">`;
+    overlay.onclick = () => overlay.style.display = "none";
+    document.body.appendChild(overlay);
+  }
+  document.getElementById("overlay-img").src = src;
+  overlay.style.display = "flex";
+}
 
 /****************************************************
  * TOAST NOTIFICATIONS
@@ -31,7 +47,7 @@ function showToast(msg, type = "error") {
   if (!toast) {
     toast = document.createElement("div");
     toast.id = "chat-toast";
-    toast.style = "position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px; color:white; font-weight:bold; z-index:9999; transition: opacity 0.4s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);";
+    toast.style = "position:fixed; top:80px; right:20px; padding:12px 20px; border-radius:8px; color:white; font-weight:bold; z-index:9999; transition: opacity 0.4s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); pointer-events:none;";
     document.body.appendChild(toast);
   }
   toast.style.backgroundColor = type === "error" ? "#EF4444" : "#10B981";
@@ -47,44 +63,44 @@ function loadNavbar() {
   const nav = document.getElementById("navbar");
   if (!nav) return;
 
-  // Use a standard structure that works with common CSS frameworks
   nav.innerHTML = `
-    <div class="nav-container" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding: 0 15px;">
-      <div class="logo" style="font-weight:bold; font-size:1.2rem;">Contact<span style="color:#4A6CFF;">.</span>com</div>
+    <div class="nav-container" style="display:flex; justify-content:space-between; align-items:center; width:100%; height:60px; padding: 0 20px; background:#fff; border-bottom:1px solid #eee;">
+      <div class="logo" style="font-weight:bold; font-size:1.3rem; cursor:pointer;" onclick="window.location.href='dashboard.html'">Contact<span style="color:#4A6CFF;">.</span>com</div>
       
-      <div class="nav-links desktop-nav" style="display:flex; gap:20px;">
-        <a href="dashboard.html">Dashboard</a>
-        <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
-        <a href="contacts.html">Contacts</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()" style="color:#EF4444;">Logout</a>
+      <div class="nav-links desktop-nav" style="display:flex; gap:25px;">
+        <a href="dashboard.html" style="text-decoration:none; color:#333;">Dashboard</a>
+        <a href="communities.html" style="text-decoration:none; color:#333;">Communities</a>
+        <a href="events.html" style="text-decoration:none; color:#333;">Events</a>
+        <a href="contacts.html" style="text-decoration:none; color:#333;">Contacts</a>
+        <a href="profile.html" style="text-decoration:none; color:#333;">Profile</a>
+        <a href="#" onclick="logout()" style="text-decoration:none; color:#EF4444; font-weight:bold;">Logout</a>
       </div>
 
-      <div class="hamburger" onclick="toggleMenu()" style="cursor:pointer; display:none; flex-direction:column; gap:4px;">
-        <div style="width:25px; height:3px; background:#333;"></div>
-        <div style="width:25px; height:3px; background:#333;"></div>
-        <div style="width:25px; height:3px; background:#333;"></div>
+      <div class="hamburger" onclick="toggleMenu()" style="cursor:pointer; display:none; flex-direction:column; gap:5px;">
+        <div style="width:25px; height:2px; background:#333;"></div>
+        <div style="width:25px; height:2px; background:#333;"></div>
+        <div style="width:25px; height:2px; background:#333;"></div>
       </div>
     </div>
 
-    <div id="mobileMenu" style="display:none; flex-direction:column; background:white; width:100%; position:absolute; top:60px; left:0; border-bottom:1px solid #ddd; z-index:1000; padding:10px;">
-        <a href="dashboard.html" style="padding:10px; border-bottom:1px solid #eee;">Dashboard</a>
-        <a href="communities.html" style="padding:10px; border-bottom:1px solid #eee;">Communities</a>
-        <a href="events.html" style="padding:10px; border-bottom:1px solid #eee;">Events</a>
-        <a href="contacts.html" style="padding:10px; border-bottom:1px solid #eee;">Contacts</a>
-        <a href="profile.html" style="padding:10px; border-bottom:1px solid #eee;">Profile</a>
-        <a href="#" onclick="logout()" style="padding:10px; color:#EF4444;">Logout</a>
+    <div id="mobileMenu" style="display:none; flex-direction:column; background:white; width:100%; position:absolute; top:60px; left:0; border-bottom:1px solid #ddd; z-index:1000; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+        <a href="dashboard.html" style="padding:15px; border-bottom:1px solid #eee; text-decoration:none; color:#333;">Dashboard</a>
+        <a href="communities.html" style="padding:15px; border-bottom:1px solid #eee; text-decoration:none; color:#333;">Communities</a>
+        <a href="events.html" style="padding:15px; border-bottom:1px solid #eee; text-decoration:none; color:#333;">Events</a>
+        <a href="contacts.html" style="padding:15px; border-bottom:1px solid #eee; text-decoration:none; color:#333;">Contacts</a>
+        <a href="profile.html" style="padding:15px; border-bottom:1px solid #eee; text-decoration:none; color:#333;">Profile</a>
+        <a href="#" onclick="logout()" style="padding:15px; color:#EF4444; text-decoration:none; font-weight:bold;">Logout</a>
     </div>
   `;
 
-  // Dynamic Visibility CSS Logic
   const style = document.createElement('style');
   style.innerHTML = `
-    @media (max-width: 768px) {
+    @media (max-width: 850px) {
       .desktop-nav { display: none !important; }
       .hamburger { display: flex !important; }
     }
+    .msg-bubble img { cursor: zoom-in; transition: transform 0.2s; }
+    .msg-bubble img:hover { transform: scale(1.02); }
   `;
   document.head.appendChild(style);
 }
@@ -95,7 +111,7 @@ function toggleMenu() {
 }
 
 /****************************************************
- * MESSAGING ENGINE (STABLE RECONCILIATION)
+ * MESSAGING ENGINE
  ****************************************************/
 async function syncMessages() {
   if (!activeConversationId) return;
@@ -109,7 +125,8 @@ async function syncMessages() {
     if (newMessages.length > 0) {
       const container = document.getElementById("messages");
       newMessages.forEach(msg => {
-        const lookupTag = btoa(unescape(encodeURIComponent(msg.text || msg.fileName)));
+        const fingerprint = msg.type === "text" ? msg.text : msg.fileName;
+        const lookupTag = btoa(unescape(encodeURIComponent(fingerprint)));
         const tempElement = document.querySelector(`[data-temp-tag="${lookupTag}"]`);
         
         if (tempElement) {
@@ -135,7 +152,8 @@ function sendMessage(payloadOverride = null) {
   if (!payloadOverride && (!text || !activeConversationId)) return;
 
   const payload = payloadOverride || { type: "text", text };
-  const tempTag = btoa(unescape(encodeURIComponent(payload.text || payload.fileName)));
+  const fingerprint = payload.type === "text" ? payload.text : payload.fileName;
+  const tempTag = btoa(unescape(encodeURIComponent(fingerprint)));
 
   const container = document.getElementById("messages");
   const row = buildMessageRow({ messageId: 0, senderEmail: loggedInUser.email, ...payload });
@@ -145,11 +163,13 @@ function sendMessage(payloadOverride = null) {
   if (payload.type !== "text") {
     const bubble = row.querySelector(".msg-bubble");
     bubble.insertAdjacentHTML('beforeend', `
-      <div class="progress-container" style="width:100%; height:4px; background:rgba(255,255,255,0.3); border-radius:2px; margin-top:8px; overflow:hidden;">
-        <div class="progress-bar" style="width:10%; height:100%; background:#fff; transition: width 0.3s ease;"></div>
+      <div class="progress-container" style="width:100%; height:4px; background:rgba(255,255,255,0.2); border-radius:2px; margin-top:8px; overflow:hidden;">
+        <div class="progress-bar" style="width:10%; height:100%; background:#fff; transition: width 0.5s ease;"></div>
       </div>`);
-    const bar = row.querySelector(".progress-bar");
-    setTimeout(() => { if(bar) bar.style.width = "70%"; }, 500);
+    setTimeout(() => { 
+      const bar = row.querySelector(".progress-bar");
+      if(bar) bar.style.width = "80%"; 
+    }, 100);
   }
 
   container.appendChild(row);
@@ -162,15 +182,13 @@ function sendMessage(payloadOverride = null) {
 
   fetch(url, options)
     .then(async (r) => {
-      const data = await r.json();
-      if (data.error) throw new Error(data.error);
-      const bar = row.querySelector(".progress-bar");
-      if (bar) bar.style.width = "100%";
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
       syncMessages();
     })
     .catch((err) => {
-      row.remove(); // Remove failed message from UI
-      showToast("Upload failed: " + err.message);
+      row.remove();
+      showToast("Failed to send: " + err.message);
     });
 }
 
@@ -182,20 +200,23 @@ function buildMessageRow(msg) {
   const row = document.createElement("div");
   row.className = "msg-row";
   row.id = msg.messageId ? `msg-${msg.messageId}` : `temp-${Date.now()}`;
-  row.style = `display:flex; margin-bottom:12px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'}; transition: all 0.3s ease;`;
+  row.style = `display:flex; margin-bottom:15px; gap:10px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'}; transition: all 0.3s ease;`;
 
-  const content = renderMessageContent(msg);
   row.innerHTML = `
-    <div class="msg-bubble" style="max-width:70%; padding:10px 14px; border-radius:18px; font-size:14px; background:${isMe ? "#4A6CFF" : "#F1F1F1"}; color:${isMe ? "#FFF" : "#111"};">
-      ${content}
+    <div class="msg-bubble" style="max-width:75%; padding:12px 16px; border-radius:18px; font-size:14px; background:${isMe ? "#4A6CFF" : "#F1F1F1"}; color:${isMe ? "#FFF" : "#111"}; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+      ${renderMessageContent(msg)}
     </div>
   `;
   return row;
 }
 
 function renderMessageContent(msg) {
-  if (msg.type === "image") return `<img src="${msg.fileData}" style="max-width:100%; border-radius:10px; display:block;">`;
-  if (msg.type === "document") return `<div style="display:flex; align-items:center; gap:8px;"><span style="font-size:20px;">📄</span><a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit; text-decoration:underline; font-weight:600;">${msg.fileName}</a></div>`;
+  if (msg.type === "image") {
+    return `<img src="${msg.fileData}" onclick="openImageOverlay('${msg.fileData}')" style="max-width:100%; border-radius:10px; display:block; margin:2px 0;">`;
+  }
+  if (msg.type === "document") {
+    return `<div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">📄</span><a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit; text-decoration:underline; font-weight:600; font-size:13px; word-break:break-all;">${msg.fileName}</a></div>`;
+  }
   return msg.text || "";
 }
 
@@ -213,7 +234,7 @@ async function initChat() {
   }
   await syncMessages();
   hideChatLoader();
-  setInterval(syncMessages, 3500);
+  setInterval(syncMessages, 4000);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -230,7 +251,10 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.onclick = () => input.click();
       input.onchange = async (e) => {
         const file = e.target.files[0];
-        if (file) sendMessage({ type, fileName: file.name, fileData: await fileToBase64(file) });
+        if (file) {
+          if (file.size > 1024 * 1024 * 50) return showToast("File is too large (Max 50MB)");
+          sendMessage({ type, fileName: file.name, fileData: await fileToBase64(file) });
+        }
         e.target.value = "";
       };
     }
