@@ -4,29 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contact.com – Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
 /* RESET */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
-/* GLOBAL */
+/* GLOBAL - Blue Gradient Theme */
 body {
     background: linear-gradient(135deg, #4a6cff, #6f8cff);
-    color: #222;
+    color: #fff;
     min-height: 100vh;
 }
 
 /* NAVBAR */
 .navbar {
     width: 100%;
-    padding: 20px 40px;
+    height: 70px;
+    padding: 0 40px;
     display: flex;
     align-items: center;
     background: #ffffff;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 1000;
 }
 
 .hamburger {
@@ -37,16 +39,17 @@ body {
     margin-right: 20px;
 }
 .hamburger span {
-    width: 28px;
+    width: 26px;
     height: 3px;
-    background: #222;
+    background: #4a6cff;
     border-radius: 3px;
 }
 
 .logo {
-    font-size: 1.8rem;
-    font-weight: 700;
+    font-size: 1.6rem;
+    font-weight: 800;
     color: #222;
+    letter-spacing: -1px;
 }
 .logo span { color: #4a6cff; }
 
@@ -60,7 +63,8 @@ body {
 .nav-links a {
     text-decoration: none;
     color: #333;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 .btn-primary {
@@ -68,193 +72,186 @@ body {
     background: #4a6cff;
     color: #fff;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
 }
 
-/* MOBILE MENU */
+/* MOBILE MENU - ANCHORED LEFT */
 .mobile-menu {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    width: 250px;
+    background: #4a6cff;
     display: none;
     flex-direction: column;
-    background: #4a6cff;
-    padding: 10px 0;
-}
-.mobile-menu a,
-.mobile-menu button {
-    padding: 12px 18px;
-    color: white;
-    text-decoration: none;
-    border: none;
-    background: transparent;
-    text-align: left;
-    border-top: 1px solid rgba(255,255,255,0.2);
+    z-index: 9999;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    border-bottom-right-radius: 15px;
 }
 .mobile-menu.show { display: flex; }
 
-/* RESPONSIVE */
-@media (max-width: 700px) {
-    .hamburger { display: flex; }
-    .nav-links { display: none; }
+.mobile-menu a, .mobile-menu button {
+    padding: 18px 25px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    text-align: left;
+    border: none;
 }
 
-/* LOGIN CARD */
+/* LOGIN CARD - Modern White Card */
 .container {
-    width: 380px;
-    background: #f7f9fc;
+    width: 100%;
+    max-width: 400px;
+    background: #ffffff;
     color: #222;
-    padding: 30px;
-    border-radius: 12px;
-    margin: 60px auto;
+    padding: 40px;
+    border-radius: 24px;
+    margin: 80px auto;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
 }
 
 h2 {
-    margin-bottom: 20px;
-    color: #4a6cff;
+    margin-bottom: 10px;
+    color: #111;
+    font-weight: 800;
+    font-size: 2rem;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 30px;
 }
 
 input {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     margin: 10px 0;
-    border-radius: 8px;
-    border: 1px solid #ccc;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    font-size: 15px;
+    outline: none;
 }
 
-button {
+input:focus {
+    border-color: #4a6cff;
+}
+
+#loginBtn {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     background: #4a6cff;
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
-    margin-top: 10px;
-    font-weight: 600;
+    margin-top: 15px;
+    font-weight: 700;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(74, 108, 255, 0.3);
 }
 
 .toggle {
-    margin-top: 15px;
-    color: #333;
-    font-size: 0.9rem;
+    margin-top: 20px;
+    color: #666;
+    font-size: 0.95rem;
 }
 .toggle a {
     color: #4a6cff;
-    font-weight: 600;
+    font-weight: 700;
     text-decoration: none;
+}
+
+/* CENTERED GLOWING LOADER */
+.login-loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10000;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255,255,255,0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-text {
+    margin-top: 15px;
+    font-size: 16px;
+    color: #ffffff;
+    font-weight: 600;
 }
 
 /* POPUP */
 .popup-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.35);
+    background: rgba(0,0,0,0.5);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 999;
+    z-index: 10001;
 }
 
 .popup {
     background: #fff;
-    border-radius: 16px;
-    padding: 20px 22px;
-    max-width: 320px;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 340px;
     width: 90%;
-    box-shadow: 0 18px 45px rgba(0,0,0,0.18);
     text-align: center;
 }
 
-.popup-title {
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 16px;
-}
-
-.popup-message {
-    font-size: 14px;
-    color: #444;
-    margin-bottom: 18px;
-}
-
-/* CENTERED GLOWING LOGIN LOADER */
-.login-loader {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: none; /* hidden by default */
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none; /* does NOT block UI */
-  z-index: 999;
-}
-
-.spinner {
-  width: 42px;
-  height: 42px;
-  border: 4px solid rgba(255,255,255,0.25);
-  border-top-color: #00c3ff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite, glow 1.2s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes glow {
-  0% { box-shadow: 0 0 4px #00c3ff; }
-  50% { box-shadow: 0 0 14px #00c3ff; }
-  100% { box-shadow: 0 0 4px #00c3ff; }
-}
-
-.loading-text {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #00c3ff;
-  font-weight: 500;
-  text-shadow: 0 0 6px rgba(0,195,255,0.6);
-}
-
-        .mobile-menu {
-    position: absolute;
-    top: 70px;              /* match your navbar height */
-    left: 0;                /* ⭐ anchor to the LEFT */
-    width: 220px;           /* adjust as needed */
+.popup button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
     background: #4a6cff;
-    padding: 10px 0;
-    display: none;
-    flex-direction: column;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
 }
-.mobile-menu.show {
-    display: flex;
+
+@media (max-width: 850px) {
+    .hamburger { display: flex; }
+    .nav-links { display: none; }
+    .container { width: 90%; margin: 60px auto; }
 }
     </style>
 </head>
 
 <body>
-<!-- CENTERED LOADER -->
 <div id="loginLoader" class="login-loader">
   <div class="spinner"></div>
   <div class="loading-text">Logging in…</div>
 </div>
 
-<!-- NAVBAR -->
 <nav class="navbar" id="navbar"></nav>
-
-<!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu"></div>
 
-<!-- LOGIN CARD -->
 <div class="container">
     <h2>Login</h2>
+    <p class="subtitle">Welcome back to Contact.com</p>
 
-    <input id="email" type="email" placeholder="Email" required />
+    <input id="email" type="email" placeholder="Email Address" required />
     <input id="password" type="password" placeholder="Password" required />
     <button id="loginBtn" onclick="loginUser()">Login</button>
 
@@ -264,22 +261,17 @@ button {
     </div>
 </div>
 
-<!-- POPUP -->
 <div id="popupBackdrop" class="popup-backdrop">
     <div class="popup">
-        <div id="popupTitle" class="popup-title"></div>
-        <div id="popupMessage" class="popup-message"></div>
+        <div id="popupTitle" style="font-weight:800; font-size: 1.2rem; margin-bottom: 10px;"></div>
+        <div id="popupMessage" style="color:#666; font-size:14px;"></div>
         <button onclick="hidePopup()">OK</button>
     </div>
 </div>
 
 <script>
-const WEBAPP_URL =
-  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* ============================
-   POPUP SYSTEM
-============================ */
 function showPopup(title, message) {
   document.getElementById("popupTitle").innerText = title;
   document.getElementById("popupMessage").innerText = message;
@@ -290,9 +282,6 @@ function hidePopup() {
   document.getElementById("popupBackdrop").style.display = "none";
 }
 
-/* ============================
-   NAVBAR (DRY VERSION)
-============================ */
 function toggleMenu() {
   document.getElementById("mobileMenu").classList.toggle("show");
 }
@@ -302,124 +291,77 @@ function logout() {
   window.location.href = "index.html";
 }
 
-function navItem(label, href, isButton = false) {
-  return isButton
-    ? `<button class="btn-primary" onclick="window.location.href='${href}'">${label}</button>`
-    : `<a href="${href}">${label}</a>`;
-}
-
 function buildNavLinks(isLoggedIn) {
-  return isLoggedIn
+  const links = isLoggedIn 
     ? [
-        navItem("Dashboard", "dashboard.html"),
-        navItem("Communities", "communities.html"),
-        navItem("Events", "events.html"),
-        navItem("Profile", "profile.html"),
-        `<a href="#" onclick="logout()">Logout</a>`
-      ].join("")
+        {label: "Dashboard", href: "dashboard.html"},
+        {label: "Communities", href: "communities.html"},
+        {label: "Events", href: "events.html"},
+        {label: "Logout", href: "#", action: "logout()"}
+      ]
     : [
-        navItem("Home", "index.html"),
-        navItem("Communities", "communities.html"),
-        navItem("Events", "events.html"),
-        navItem("Login", "login.html"),
-        navItem("Sign Up", "signup.html", true)
-      ].join("");
+        {label: "Home", href: "index.html"},
+        {label: "Communities", href: "communities.html"},
+        {label: "Events", href: "events.html"},
+        {label: "Login", href: "login.html"},
+        {label: "Sign Up", href: "signup.html", isBtn: true}
+      ];
+
+  return links.map(link => {
+    if (link.isBtn) return `<button class="btn-primary" onclick="window.location.href='${link.href}'">${link.label}</button>`;
+    if (link.action) return `<a href="${link.href}" onclick="${link.action}">${link.label}</a>`;
+    return `<a href="${link.href}">${link.label}</a>`;
+  }).join("");
 }
 
 function loadNavbar() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  const isLoggedIn = Boolean(user);
-
-  const hamburger = `
-    <div class="hamburger" onclick="toggleMenu()">
-      <span></span><span></span><span></span>
-    </div>
-  `;
-
-  const logo = `<div class="logo">Contact<span>.</span>com</div>`;
+  const isLoggedIn = !!user;
 
   document.getElementById("navbar").innerHTML = `
-    ${hamburger}
-    ${logo}
+    <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="logo">Contact<span>.</span>com</div>
     <div class="nav-links">${buildNavLinks(isLoggedIn)}</div>
   `;
-
   document.getElementById("mobileMenu").innerHTML = buildNavLinks(isLoggedIn);
 }
 
-/* ============================
-   LOGIN WITH CENTERED LOADER
-============================ */
 async function loginUser() {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
   const loginBtn = document.getElementById("loginBtn");
   const loader = document.getElementById("loginLoader");
-  const loaderText = loader.querySelector(".loading-text");
 
   if (!email || !password) {
-    showPopup("Missing Fields", "Please enter both email and password.");
+    showPopup("Missing Info", "Please enter both email and password.");
     return;
   }
 
   loginBtn.disabled = true;
-  loginBtn.innerText = "Checking…";
-
   loader.style.display = "flex";
-  loaderText.innerText = "Checking credentials…";
 
-  const url = `${WEBAPP_URL}?module=login&email=${encodeURIComponent(
-    email
-  )}&password=${encodeURIComponent(password)}`;
+  const url = `${WEBAPP_URL}?module=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
 
   try {
     const res = await fetch(url);
     const result = await res.json();
 
     if (result.success) {
-      loaderText.innerText = "Welcome back!";
-
-      const u = result.user;
-
-      const normalizedPic = Array.isArray(u.profilePic)
-        ? u.profilePic[0]
-        : u.profilePic || "default-avatar.png";
-
-      localStorage.setItem(
-        "contact_user",
-        JSON.stringify({
-          fullName: u.fullName,
-          email: u.email,
-          about: u.about,
-          profession: u.profession,
-          skills: u.skills,
-          workLife: u.workLife,
-          profilePic: normalizedPic,
-          gallery: u.gallery || []
-        })
-      );
-
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 600);
+      localStorage.setItem("contact_user", JSON.stringify(result.user));
+      setTimeout(() => { window.location.href = "dashboard.html"; }, 600);
     } else {
       loader.style.display = "none";
       loginBtn.disabled = false;
-      loginBtn.innerText = "Login";
-
-      showPopup("Login Failed", result.message || "Invalid email or password.");
+      showPopup("Oops!", result.message || "Invalid credentials.");
     }
   } catch (err) {
     loader.style.display = "none";
     loginBtn.disabled = false;
-    loginBtn.innerText = "Login";
-
-    showPopup("Network Error", "Unable to connect. Please try again.");
+    showPopup("Error", "Something went wrong. Please try again.");
   }
 }
 
 document.addEventListener("DOMContentLoaded", loadNavbar);
 </script>
-
 </body>
 </html>
