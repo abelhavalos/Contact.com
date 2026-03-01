@@ -66,14 +66,17 @@ body {
     font-size: 14px;
 }
 
+/* BUTTONS - White Text Guaranteed */
 .btn-primary {
     padding: 10px 20px;
     background: #4a6cff;
-    color: #fff;
+    color: #ffffff !important; /* Forces text to white */
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 700;
+    text-decoration: none;
+    display: inline-block;
 }
 
 /* MOBILE MENU */
@@ -93,7 +96,7 @@ body {
 
 .mobile-menu a {
     padding: 18px 25px;
-    color: white;
+    color: #ffffff !important; /* Forces text to white */
     text-decoration: none;
     font-weight: 600;
     border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -154,15 +157,7 @@ body {
     margin-bottom: 15px;
 }
 
-.legal-section ul {
-    padding-left: 20px;
-}
-
-.legal-section a {
-    color: #4a6cff;
-    text-decoration: none;
-    font-weight: 700;
-}
+.legal-section ul { padding-left: 20px; }
 
 /* FOOTER */
 .footer {
@@ -190,50 +185,37 @@ body {
 
     <header class="legal-header">
         <h1>Privacy & Terms</h1>
-        <p>Your privacy matters. Contact.com is built to protect your data, not exploit it.</p>
+        <p>Your privacy matters. Contact.com is built to protect your data.</p>
     </header>
 
     <section class="legal-section">
         <h2>Privacy Policy</h2>
-        <p>
-            Contact.com is designed with privacy at its core. We collect only the information needed to
-            provide a fast, secure, and reliable experience. We never sell your data.
-        </p>
-
+        <p>Contact.com is designed with privacy at its core. We collect only the information needed to provide a fast, secure, and reliable experience.</p>
+        
         <h3>Information We Collect</h3>
         <ul>
-            <li><strong>Account Information:</strong> Name, email, and profile details you choose to share.</li>
-            <li><strong>Messages:</strong> Encrypted for transit and storage.</li>
-            <li><strong>Usage Data:</strong> Basic analytics to improve performance.</li>
+            <li><strong>Account Information:</strong> Name and email.</li>
+            <li><strong>Messages:</strong> Encrypted for your security.</li>
         </ul>
 
-        <h3>What We Never Do</h3>
-        <ul>
-            <li>We never sell your personal data to third parties.</li>
-            <li>We never use your private data for targeted advertising.</li>
-            <li>We never track your activity outside of Contact.com.</li>
-        </ul>
+        <h3>Our Commitment</h3>
+        <p>We never sell your personal data. We don't show ads. We don't track you across other websites.</p>
     </section>
 
     <section class="legal-section">
         <h2>Terms of Service</h2>
-        <h3>Using Contact.com</h3>
-        <p>
-            By creating an account, you agree to use Contact.com responsibly. You are responsible for the content you share and the interactions you initiate.
-        </p>
-
-        <h3>User Responsibilities</h3>
+        <p>By using our service, you agree to treat others with respect and maintain the security of your account.</p>
         <ul>
-            <li>Respect other users and their privacy.</li>
-            <li>Do not engage in harassment or illegal activity.</li>
-            <li>Maintain the security of your login credentials.</li>
+            <li>No harassment or abuse.</li>
+            <li>No illegal activities.</li>
+            <li>Respect the privacy of others.</li>
         </ul>
     </section>
 
     <section class="legal-section" style="text-align: center;">
-        <h2>Contact Us</h2>
-        <p>Questions about our policies? Reach out anytime.</p>
-        <a href="support-team.html" class="btn-primary" style="display: inline-block; padding: 12px 25px; margin-top: 10px;">Message Support</a>
+        <h2>Need Help?</h2>
+        <p>If you have questions about these terms, contact our team.</p>
+        <a href="support-team.html" class="btn-primary">Message Support</a>
     </section>
 
 </main>
@@ -256,7 +238,7 @@ function loadNavbar() {
         <a href="communities.html">Communities</a>
         <a href="events.html">Events</a>
         <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()" style="color:#ff3b3b;">Logout</a>
+        <a href="#" onclick="logout()" style="color:#ff3b3b !important;">Logout</a>
     ` : `
         <a href="index.html">Home</a>
         <a href="communities.html">Communities</a>
@@ -276,7 +258,7 @@ function loadNavbar() {
         <a href="communities.html">Communities</a>
         <a href="events.html">Events</a>
         <a href="login.html">Login</a>
-        <a href="signup.html">Sign Up</a>
+        <a href="signup.html" style="background: rgba(255,255,255,0.1);">Sign Up</a>
     `;
 }
 
