@@ -1,9 +1,8 @@
 /****************************************************
- * CONTACT.COM — ULTRA FAST MESSAGES.JS (V3)
- * - Parallel Meta Loading
- * - Delta-Sync via lastId
- * - Anti-Flicker Reconciliation
- * - Full Image/Doc Support
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS (V5)
+ * - Optimized PDF/Image Reconciliation
+ * - Simulated Upload Progress Bar
+ * - Delta-Syncing & Parallel Loading
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -27,14 +26,6 @@ let communityMembers = [];
 let otherUser = null;
 let colorCache = {};
 
-const BUBBLE_PALETTE = [
-  { bg: "#4A6CFF", text: "#FFFFFF" },
-  { bg: "#6F8CFF", text: "#FFFFFF" },
-  { bg: "#8FA3FF", text: "#000000" },
-  { bg: "#AFC0FF", text: "#000000" },
-  { bg: "#D1DDFF", text: "#000000" }
-];
-
 /****************************************************
  * HELPERS
  ****************************************************/
@@ -45,7 +36,7 @@ function getUserColor(email) {
     hash = (hash << 5) - hash + email.charCodeAt(i);
     hash |= 0;
   }
-  colorCache[email] = BUBBLE_PALETTE[Math.abs(hash) % BUBBLE_PALETTE.length];
+  colorCache[email] = ["#4A6CFF", "#6F8CFF", "#8FA3FF", "#AFC0FF", "#D1DDFF"][Math.abs(hash) % 5];
   return colorCache[email];
 }
 
@@ -62,45 +53,12 @@ function fileToBase64(file) {
   });
 }
 
-// Custom BTOA that handles Unicode/Emojis safely for data-tagging
 function safeBtoa(str) {
   return btoa(unescape(encodeURIComponent(str || "")));
 }
 
 /****************************************************
- * CORE INITIALIZATION
- ****************************************************/
-async function initChat() {
-  loadNavbar();
-  showChatLoader();
-
-  if (!activeConversationId) {
-    const setupUrl = mode === "community" 
-      ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
-      : `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
-    
-    try {
-      const res = await fetch(setupUrl);
-      const data = await res.json();
-      activeConversationId = data.conversationId;
-    } catch (e) { console.error("Conv Init Error:", e); }
-  }
-
-  const metaPromises = [];
-  if (mode === "private") {
-    metaPromises.push(loadOtherUserProfile());
-  } else {
-    metaPromises.push(loadCommunityInfo(), loadCommunityMembers());
-  }
-
-  await Promise.all([...metaPromises, syncMessages()]);
-  hideChatLoader();
-
-  setInterval(() => syncMessages(), 3500);
-}
-
-/****************************************************
- * MESSAGING ENGINE (ANTI-FLICKER)
+ * MESSAGING ENGINE (STABLE RECONCILIATION)
  ****************************************************/
 async function syncMessages() {
   if (!activeConversationId) return;
@@ -114,40 +72,94 @@ async function syncMessages() {
 
     if (newMessages.length > 0) {
       const container = document.getElementById("messages");
-      const fragment = document.createDocumentFragment();
       
       newMessages.forEach(msg => {
-        // RECONCILIATION: Look for a temporary bubble matching this content
         const lookupTag = safeBtoa(msg.text || msg.fileName);
-        const tempElement = document.querySelector(`[data-temp-content="${lookupTag}"]`);
+        const tempElement = document.querySelector(`[data-temp-tag="${lookupTag}"]`);
         
         if (tempElement) {
-          // Confirming existing bubble
+          // Confirming the message
           tempElement.id = `msg-${msg.messageId}`;
-          tempElement.removeAttribute('data-temp-content');
-          tempElement.style.opacity = "1"; 
+          tempElement.removeAttribute('data-temp-tag');
+          tempElement.style.opacity = "1";
+          // Remove progress bar if it exists
+          const pb = tempElement.querySelector(".progress-container");
+          if (pb) pb.remove();
           messages.push(msg);
         } else if (!document.getElementById(`msg-${msg.messageId}`)) {
-          // Adding new bubble from other user
           messages.push(msg);
-          fragment.appendChild(buildMessageRow(msg));
+          container.appendChild(buildMessageRow(msg));
         }
       });
-
-      container.appendChild(fragment);
       container.scrollTop = container.scrollHeight;
     }
   } catch (e) { console.error("Sync Error:", e); }
 }
 
+function sendMessage(payloadOverride = null) {
+  const input = document.getElementById("messageInput");
+  const text = (input?.value || "").trim();
+  if (!payloadOverride && (!text || !activeConversationId)) return;
+
+  const payload = payloadOverride || { type: "text", text };
+  const fingerprint = payload.type === "text" ? payload.text : payload.fileName;
+  const tempTag = safeBtoa(fingerprint);
+
+  // OPTIMISTIC RENDER
+  const container = document.getElementById("messages");
+  const row = buildMessageRow({ messageId: 0, senderEmail: loggedInUser.email, ...payload });
+  row.setAttribute('data-temp-tag', tempTag);
+  row.style.opacity = "0.7";
+  
+  // Add Progress Bar if it's a file
+  if (payload.type !== "text") {
+    const bubble = row.querySelector(".msg-bubble");
+    const progressHTML = `
+      <div class="progress-container" style="width:100%; height:4px; background:rgba(255,255,255,0.3); border-radius:2px; margin-top:8px; overflow:hidden;">
+        <div class="progress-bar" style="width:0%; height:100%; background:#fff; transition: width 0.3s ease;"></div>
+      </div>`;
+    bubble.insertAdjacentHTML('beforeend', progressHTML);
+    
+    // Simulate progress
+    const bar = row.querySelector(".progress-bar");
+    setTimeout(() => { if(bar) bar.style.width = "30%"; }, 100);
+    setTimeout(() => { if(bar) bar.style.width = "70%"; }, 1500);
+  }
+
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+  if (input) input.value = "";
+
+  // NETWORK SEND
+  const isText = payload.type === "text";
+  const url = isText 
+    ? `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`
+    : API_URL;
+
+  const options = isText ? {} : {
+    method: "POST",
+    body: JSON.stringify({ module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email, ...payload })
+  };
+
+  fetch(url, options).then(() => {
+    const bar = row.querySelector(".progress-bar");
+    if (bar) bar.style.width = "100%";
+    syncMessages();
+  });
+}
+
+/****************************************************
+ * RENDERING
+ ****************************************************/
 function buildMessageRow(msg) {
   const isMe = msg.senderEmail === loggedInUser.email;
-  const color = getUserColor(msg.senderEmail);
+  const color = isMe ? "#4A6CFF" : "#F1F1F1";
+  const textColor = isMe ? "#FFFFFF" : "#111827";
 
   const row = document.createElement("div");
-  row.id = `msg-${msg.messageId || 'temp-' + Date.now()}`;
   row.className = "msg-row";
-  row.style = `display:flex; margin-bottom:12px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'}; transition: opacity 0.3s ease;`;
+  row.id = msg.messageId ? `msg-${msg.messageId}` : `temp-${Date.now()}`;
+  row.style = `display:flex; margin-bottom:12px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'}; transition: all 0.3s ease;`;
 
   let pic, name;
   if (isMe) {
@@ -163,116 +175,85 @@ function buildMessageRow(msg) {
   }
 
   const avatarHTML = pic 
-    ? `<img class="chat-avatar" src="${pic}" />` 
-    : `<div class="chat-avatar-fallback">${getInitials(name)}</div>`;
+    ? `<img class="chat-avatar" src="${pic}" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" />` 
+    : `<div class="chat-avatar-fallback" style="width:36px; height:36px; border-radius:50%; background:#DDD; display:flex; align-items:center; justify-content:center; font-size:12px;">${getInitials(name)}</div>`;
 
-  const bubbleHTML = `
-    <div style="max-width:70%; padding:10px 14px; border-radius:18px; font-size:14px; background:${isMe ? color.bg : '#F1F1F1'}; color:${isMe ? color.text : '#111827'}">
-      ${renderMessageContent(msg)}
-    </div>
-  `;
+  const content = renderMessageContent(msg);
+  
+  row.innerHTML = isMe 
+    ? `<div class="msg-bubble" style="max-width:70%; padding:10px 14px; border-radius:18px; font-size:14px; background:${color}; color:${textColor}">${content}</div>${avatarHTML}`
+    : `${avatarHTML}<div class="msg-bubble" style="max-width:70%; padding:10px 14px; border-radius:18px; font-size:14px; background:${color}; color:${textColor}">${content}</div>`;
 
-  row.innerHTML = isMe ? `${bubbleHTML}<div style="width:36px">${avatarHTML}</div>` : `<div style="width:36px">${avatarHTML}</div>${bubbleHTML}`;
   return row;
 }
 
 function renderMessageContent(msg) {
-  if (msg.type === "image") return `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:10px; min-height:100px; display:block; margin-top:4px;">`;
-  if (msg.type === "document") return `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="text-decoration:none; color:inherit; font-weight:bold;">📄 ${msg.fileName}</a>`;
+  if (msg.type === "image") return `<img src="${msg.fileData}" style="max-width:100%; border-radius:10px; display:block;">`;
+  if (msg.type === "document") {
+    return `<div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:20px;">📄</span>
+              <a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit; text-decoration:underline; font-weight:600; word-break:break-all;">${msg.fileName}</a>
+            </div>`;
+  }
   return msg.text || "";
 }
 
-function sendMessage(payloadOverride = null) {
-  const input = document.getElementById("messageInput");
-  const text = (input?.value || "").trim();
-  if (!payloadOverride && (!text || !activeConversationId)) return;
+/****************************************************
+ * INITIALIZATION & EVENTS
+ ****************************************************/
+async function initChat() {
+  loadNavbar();
+  showChatLoader();
 
-  const payload = payloadOverride || { type: "text", text };
+  if (!activeConversationId) {
+    const setupUrl = mode === "community" 
+      ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
+      : `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
+    const res = await fetch(setupUrl);
+    const data = await res.json();
+    activeConversationId = data.conversationId;
+  }
 
-  // OPTIMISTIC RENDER
-  const container = document.getElementById("messages");
-  const row = buildMessageRow({ messageId: 0, senderEmail: loggedInUser.email, ...payload });
-  
-  // Tag it for syncMessages to find later
-  row.setAttribute('data-temp-content', safeBtoa(payload.text || payload.fileName));
-  row.style.opacity = "0.6"; 
-  
-  container.appendChild(row);
-  container.scrollTop = container.scrollHeight;
-  if (input) input.value = "";
+  const metaPromises = [
+    mode === "private" ? loadOtherUserProfile() : Promise.all([loadCommunityInfo(), loadCommunityMembers()])
+  ];
 
-  // NETWORK
-  const isText = payload.type === "text";
-  const url = isText 
-    ? `${API_URL}?module=sendMessage&conversationId=${encodeURIComponent(activeConversationId)}&senderEmail=${encodeURIComponent(loggedInUser.email)}&type=text&text=${encodeURIComponent(text)}`
-    : API_URL;
-
-  const options = isText ? {} : {
-    method: "POST",
-    body: JSON.stringify({ module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email, ...payload })
-  };
-
-  fetch(url, options).then(() => syncMessages());
+  await Promise.all([...metaPromises, syncMessages()]);
+  hideChatLoader();
+  setInterval(syncMessages, 3500);
 }
 
-/****************************************************
- * UI FETCHERS & EVENTS
- ****************************************************/
 async function loadOtherUserProfile() {
-  try {
-    const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`);
-    const d = await r.json();
-    otherUser = d?.user || {};
-    updateHeader(otherUser.fullName || otherUser.FullName || finalOtherEmail, otherUser.profilePic || otherUser.ProfilePic);
-  } catch (e) { console.error(e); }
+  const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`);
+  const d = await r.json();
+  otherUser = d?.user || {};
+  updateHeader(otherUser.fullName || otherUser.FullName || finalOtherEmail, otherUser.profilePic || otherUser.ProfilePic);
 }
 
 async function loadCommunityInfo() {
-  try {
-    const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
-    const d = await r.json();
-    updateHeader(d?.community?.name || "Community", null);
-  } catch (e) { console.error(e); }
+  const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
+  const d = await r.json();
+  updateHeader(d?.community?.name || "Community", null);
 }
 
 async function loadCommunityMembers() {
-  try {
-    const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
-    const d = await r.json();
-    const emails = (d.members || []).map(m => typeof m === "string" ? m : m.email);
-
-    const tasks = emails.map(async (email) => {
-      const res = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`);
-      const data = await res.json();
-      const u = data?.user || {};
-      return { email, fullName: u.fullName || u.FullName || email, profilePic: u.profilePic || u.ProfilePic || null };
-    });
-
-    communityMembers = await Promise.all(tasks);
-    renderCommunityMembersList(communityMembers);
-  } catch (e) { console.error(e); }
-}
-
-function renderCommunityMembersList(list) {
-  const container = document.getElementById("memberSidebar");
-  if (!container) return;
-  container.innerHTML = "<h3>Members</h3>";
-  list.forEach(m => {
-    const row = document.createElement("div");
-    row.className = "member-row";
-    row.style = "display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;";
-    row.onclick = () => window.location.href = `public-profile.html?email=${encodeURIComponent(m.email)}`;
-    const avatar = m.profilePic ? `<img class="chat-avatar" src="${m.profilePic}" />` : `<div class="chat-avatar-fallback">${getInitials(m.fullName)}</div>`;
-    row.innerHTML = `${avatar}<div class="member-name">${m.fullName}</div>`;
-    container.appendChild(row);
+  const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
+  const d = await r.json();
+  const emails = (d.members || []).map(m => typeof m === "string" ? m : m.email);
+  const tasks = emails.map(async (email) => {
+    const res = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    const u = data?.user || {};
+    return { email, fullName: u.fullName || u.FullName || email, profilePic: u.profilePic || u.ProfilePic || null };
   });
+  communityMembers = await Promise.all(tasks);
 }
 
 function updateHeader(title, pic) {
   const header = document.getElementById("headerTitle");
   if (!header) return;
-  const avatar = pic ? `<img class="chat-avatar" src="${pic}" />` : `<div class="chat-avatar-fallback">${getInitials(title)}</div>`;
-  header.innerHTML = `<div class="chat-header">${chatTitle ? '' : avatar}<div class="chat-header-main">${chatTitle || title}</div></div>`;
+  const avatar = pic ? `<img class="chat-avatar" src="${pic}" style="width:32px; height:32px; border-radius:50%;" />` : `<div class="chat-avatar-fallback">${getInitials(title)}</div>`;
+  header.innerHTML = `<div class="chat-header" style="display:flex; align-items:center; gap:10px;">${avatar}<div class="chat-header-main" style="font-weight:bold;">${chatTitle || title}</div></div>`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -302,10 +283,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function loadNavbar() {
   const nav = document.getElementById("navbar");
-  if (nav) nav.innerHTML = `<div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div><div class="logo">Contact<span>.</span>com</div><div class="nav-links"><a href="dashboard.html">Dashboard</a><a href="communities.html">Communities</a><a href="profile.html">Profile</a><a href="#" onclick="logout()">Logout</a></div>`;
+  if (nav) nav.innerHTML = `<div class="logo">Contact<span>.</span>com</div><div class="nav-links"><a href="dashboard.html">Dashboard</a><a href="#" onclick="logout()">Logout</a></div>`;
 }
-
-function toggleMenu() { document.getElementById("mobileMenu")?.classList.toggle("show"); }
 function showChatLoader() { document.getElementById("chatLoader")?.style.setProperty("display", "flex"); }
 function hideChatLoader() { document.getElementById("chatLoader")?.style.setProperty("display", "none"); }
 function logout() { localStorage.removeItem("contact_user"); window.location.href = "index.html"; }
