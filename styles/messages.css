@@ -12,7 +12,7 @@ body {
   overflow-x: hidden;
 }
 
-/* 2. NAVBAR & LOGO */
+/* 2. NAVBAR */
 .navbar {
   width: 100%;
   height: 70px;
@@ -45,10 +45,10 @@ body {
   font-weight: 500;
 }
 
-/* 3. CHAT LAYOUT ENGINE */
+/* 3. CHAT LAYOUT */
 #chat-container {
   display: flex;
-  height: calc(100vh - 70px); /* Fill remaining screen */
+  height: calc(100vh - 70px);
   overflow: hidden;
   position: relative;
 }
@@ -58,7 +58,7 @@ body {
   display: flex;
   flex-direction: column;
   background: #eef4ff;
-  min-width: 0; /* Prevents flex-item overflow */
+  min-width: 0;
 }
 
 #messages {
@@ -67,121 +67,20 @@ body {
   overflow-y: auto;
 }
 
-/* 4. MEMBER SIDEBAR (DESKTOP DEFAULT) */
-#memberSidebar {
-  width: 280px;
-  background: #ffffff;
-  border-left: 1px solid #ddd;
-  padding: 16px;
-  overflow-y: auto;
-  display: block; /* Visible on Desktop */
-}
-
-/* 5. BLUE TOGGLE BUTTON */
-#toggleMembers {
-  background-color: #4A6CFF !important;
-  color: white !important;
-  border: none !important;
-  padding: 8px 16px !important;
-  border-radius: 20px !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  display: none; /* HIDDEN ON DESKTOP */
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 2px 8px rgba(74, 108, 255, 0.3);
-}
-
-/* 6. RESPONSIVE LOGIC (THE FIX) */
-
-/* Desktop (Above 850px) */
-@media (min-width: 851px) {
-  #toggleMembers {
-    display: none !important; /* Force hide button on PC */
-  }
-  #memberSidebar {
-    display: block !important;
-    transform: none !important;
-    position: relative !important;
-  }
-}
-
-/* Mobile/Tablet (Below 850px) */
-@media (max-width: 850px) {
-  .navbar { padding: 0 20px; }
-  .nav-links { display: none; } /* Hide regular links */
-  
-  #toggleMembers {
-    display: flex !important; /* Show button on Mobile */
-  }
-
-  #memberSidebar {
-    position: fixed;
-    right: 0;
-    top: 70px; /* Sits below Navbar */
-    bottom: 0;
-    width: 260px;
-    z-index: 1000;
-    transform: translateX(100%); /* Hidden off-screen */
-    transition: transform 0.3s ease;
-    display: block !important; /* Keep block but use transform to hide */
-    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-  }
-
-  /* When JS adds .show or .active class */
-  #memberSidebar.show, 
-  #memberSidebar.active {
-    transform: translateX(0); /* Slide in */
-  }
-  
-  .hamburger {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    cursor: pointer;
-    margin-right: 15px;
-  }
-}
-
-/* 7. MESSAGE BUBBLES & CONTENT */
-.msg-row { margin-bottom: 15px; }
-
-.chat-image {
-  max-width: 100%;
-  height: auto;
-  border-radius: 10px;
-  margin-top: 5px;
-}
-
-#input-area {
-  display: flex;
-  padding: 15px;
-  background: #fff;
-  border-top: 1px solid #eee;
-}
-
-#messageInput {
-  flex: 1;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  outline: none;
-}
-
-/* CIRCULAR AVATARS FIX */
+/* 4. CIRCULAR AVATARS FIX */
 .chat-avatar, 
 .chat-avatar-fallback {
     width: 40px !important;
     height: 40px !important;
-    min-width: 40px !important; /* Prevents squishing */
+    min-width: 40px !important; 
     min-height: 40px !important;
-    border-radius: 50% !important; /* The Magic Circle */
-    object-fit: cover; /* Ensures image isn't stretched */
-    display: flex;
+    border-radius: 50% !important; 
+    object-fit: cover; 
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    overflow: hidden; /* Clips the image to the circle */
-    flex-shrink: 0;   /* Keeps it a circle even in tight flex rows */
+    overflow: hidden; 
+    flex-shrink: 0; /* Keeps it a perfect circle */
 }
 
 .chat-avatar-fallback {
@@ -192,10 +91,77 @@ body {
     text-transform: uppercase;
 }
 
-/* Sidebar Member Row Alignment */
-.member-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 0;
+/* 5. MEMBER SIDEBAR & ROWS */
+#memberSidebar {
+  width: 280px;
+  background: #ffffff;
+  border-left: 1px solid #ddd;
+  padding: 16px;
+  overflow-y: auto;
 }
+
+.member-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px;
+    padding: 10px 0;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.member-row:hover { background: #f9f9f9; }
+
+/* 6. BLUE TOGGLE BUTTON */
+#toggleMembers {
+  background-color: #4A6CFF !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 20px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: none; /* Hidden on Desktop */
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(74, 108, 255, 0.3);
+}
+
+/* 7. RESPONSIVE LOGIC */
+@media (min-width: 851px) {
+  #toggleMembers { display: none !important; }
+  #memberSidebar {
+    display: block !important;
+    transform: none !important;
+    position: relative !important;
+  }
+}
+
+@media (max-width: 850px) {
+  .navbar { padding: 0 20px; }
+  .nav-links { display: none; }
+  #toggleMembers { display: flex !important; }
+
+  #memberSidebar {
+    position: fixed;
+    right: 0;
+    top: 70px;
+    bottom: 0;
+    width: 260px;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    background: #fff;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+  }
+
+  #memberSidebar.show {
+    transform: translateX(0);
+  }
+  
+  .hamburger { display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+}
+
+/* 8. BUBBLES */
+.msg-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 15px; }
+.chat-image { max-width: 250px; border-radius: 10px; display: block; margin-top: 5px; cursor: pointer; }
+#input-area { display: flex; padding: 15px; background: #fff; border-top: 1px solid #eee; }
+#messageInput { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
