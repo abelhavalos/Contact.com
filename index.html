@@ -4,17 +4,202 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contact.com – Connect Better</title>
-  <link rel="stylesheet" href="styles/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-blue: #4A6CFF;
+      --bg-light: #F9FAFB;
+      --text-dark: #111827;
+      --text-gray: #6B7280;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+    }
+
+    /* NAVBAR MATCHING MESSAGES.JS */
+    .navbar {
+      display: flex;
+      align-items: center;
+      height: 60px;
+      padding: 0 20px;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .hamburger {
+      display: none; /* Hidden on desktop */
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      margin-right: 15px;
+    }
+
+    .hamburger span {
+      width: 22px;
+      height: 3px;
+      background: var(--primary-blue);
+      border-radius: 2px;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 1.3rem;
+      cursor: pointer;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      color: var(--primary-blue);
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-dark);
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary-blue);
+    }
+
+    /* BUTTONS MATCHING CHAT STYLE */
+    .btn-primary {
+      background: var(--primary-blue);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--primary-blue);
+      border: 1px solid var(--primary-blue);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover { opacity: 0.9; }
+
+    /* MOBILE MENU MATCHING MESSAGES.JS */
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      background: white;
+      width: 100%;
+      position: absolute;
+      top: 60px;
+      left: 0;
+      border-bottom: 1px solid #ddd;
+      z-index: 999;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    .mobile-menu.show { display: flex; }
+
+    .mobile-menu a, .mobile-menu button {
+      padding: 15px;
+      text-decoration: none;
+      color: var(--text-dark);
+      border-bottom: 1px solid #f9f9f9;
+      text-align: left;
+    }
+
+    /* HERO SECTION */
+    .hero {
+      padding: 80px 20px;
+      text-align: center;
+      background: white;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 15px;
+      color: var(--text-dark);
+    }
+
+    .hero p {
+      color: var(--text-gray);
+      max-width: 600px;
+      margin: 0 auto 30px;
+    }
+
+    .hero-buttons { display: flex; justify-content: center; gap: 15px; }
+
+    /* FEATURES */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      padding: 60px 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .feature {
+      background: #fff;
+      padding: 20px;
+      border-radius: 18px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    }
+
+    .feature-img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+
+    /* FOOTER */
+    .footer {
+      background: #fff;
+      border-top: 1px solid #eee;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-gray);
+    }
+
+    .logo-dot { color: var(--primary-blue); font-weight: bold; }
+
+    /* RESPONSIVE */
+    @media (max-width: 850px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+    }
+  </style>
 </head>
 <body>
-  <!-- NAVBAR -->
+
   <nav class="navbar">
     <div class="hamburger" onclick="toggleMenu()">
       <span></span>
       <span></span>
       <span></span>
     </div>
-    <div class="logo">Contact<span>.</span>com</div>
+    <div class="logo" onclick="window.location.href='index.html'">Contact<span>.</span>com</div>
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="communities.html">Communities</a>
@@ -29,7 +214,7 @@
     <a href="communities.html">Communities</a>
     <a href="events.html">Events</a>
     <a href="login.html">Login</a>
-    <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
+    <button class="btn-primary" style="margin: 10px; border-radius: 8px;" onclick="window.location.href='signup.html'">Sign Up</button>
   </div>
 
   <header class="hero">
@@ -66,31 +251,24 @@
     </div>
   </section>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <div class="footer-inner">
-      <div class="footer-brand">
-        <span class="logo-main">Contact</span><span class="logo-dot">.</span><span class="logo-sub">com</span>
+      <div class="footer-brand" style="margin-bottom: 15px; font-weight: bold; color: #111;">
+        Contact<span class="logo-dot">.</span>com
       </div>
-      <div class="footer-links">
-        <a href="learnmore.html">Learn more</a>
-        <a href="privacy.html">Privacy</a>
-        <a href="privacy.html">Terms</a>
+      <div class="footer-links" style="margin-bottom: 15px; display: flex; justify-content: center; gap: 20px;">
+        <a href="learnmore.html" style="text-decoration: none; color: var(--text-gray); font-size: 13px;">Learn more</a>
+        <a href="privacy.html" style="text-decoration: none; color: var(--text-gray); font-size: 13px;">Privacy</a>
+        <a href="privacy.html" style="text-decoration: none; color: var(--text-gray); font-size: 13px;">Terms</a>
       </div>
-      <p class="footer-note">Connect better. No noise, just people.</p>
+      <p style="font-size: 12px;">Connect better. No noise, just people.</p>
     </div>
   </footer>
 
-  <script src="scripts/app.js"></script>
   <script>
     function toggleMenu() {
-      document.querySelector(".nav-links").classList.toggle("show");
-      document.getElementById("mobileMenu").classList.toggle("show");
-    }
-
-    function logout() {
-      localStorage.removeItem("contact_user");
-      window.location.href = "index.html";
+      const menu = document.getElementById("mobileMenu");
+      menu.classList.toggle("show");
     }
   </script>
 </body>
