@@ -167,3 +167,35 @@ body {
   border-radius: 8px;
   outline: none;
 }
+
+/* CIRCULAR AVATARS FIX */
+.chat-avatar, 
+.chat-avatar-fallback {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important; /* Prevents squishing */
+    min-height: 40px !important;
+    border-radius: 50% !important; /* The Magic Circle */
+    object-fit: cover; /* Ensures image isn't stretched */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Clips the image to the circle */
+    flex-shrink: 0;   /* Keeps it a circle even in tight flex rows */
+}
+
+.chat-avatar-fallback {
+    background-color: #4a6cff;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Sidebar Member Row Alignment */
+.member-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
