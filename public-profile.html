@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contact.com – Public Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
+        /* RESET & GLOBAL */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
         body {
@@ -14,16 +16,18 @@
             min-height: 100vh;
         }
 
+        /* NAVBAR */
         .navbar {
             width: 100%;
-            padding: 20px 40px;
+            height: 70px;
+            padding: 0 40px;
             display: flex;
             align-items: center;
             background: #ffffff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 1000;
         }
 
         .hamburger {
@@ -34,16 +38,17 @@
             margin-right: 20px;
         }
         .hamburger span {
-            width: 28px;
+            width: 26px;
             height: 3px;
-            background: #222;
+            background: #4a6cff;
             border-radius: 3px;
         }
 
         .logo {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.6rem;
+            font-weight: 800;
             color: #222;
+            letter-spacing: -1px;
         }
         .logo span { color: #4a6cff; }
 
@@ -57,212 +62,194 @@
         .nav-links a {
             text-decoration: none;
             color: #333;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 14px;
         }
 
+        /* MOBILE MENU - Anchored Left */
         .mobile-menu {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: 250px;
+            background: #4a6cff;
             display: none;
             flex-direction: column;
-            background: #4a6cff;
-            padding: 10px 0;
-        }
-        .mobile-menu a {
-            padding: 12px 18px;
-            color: white;
-            text-decoration: none;
-            border-top: 1px solid rgba(255,255,255,0.2);
+            z-index: 9999;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+            border-bottom-right-radius: 15px;
         }
         .mobile-menu.show { display: flex; }
-
-        .popup-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.35);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 999;
-        }
-
-        .popup {
-            background: #fff;
-            border-radius: 16px;
-            padding: 20px 22px;
-            max-width: 320px;
-            width: 90%;
-            box-shadow: 0 18px 45px rgba(0,0,0,0.18);
-            text-align: center;
-        }
-
-        .popup-title {
+        .mobile-menu a {
+            padding: 18px 25px;
+            color: #ffffff !important;
+            text-decoration: none;
             font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        .popup-message {
-            font-size: 14px;
-            color: #444;
-            margin-bottom: 18px;
-        }
-
-        .popup button {
-            border: none;
-            border-radius: 999px;
-            padding: 8px 18px;
-            background: #2563eb;
-            color: #fff;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .popup button:hover {
-            background: #1d4ed8;
-        }
-
-        @media (max-width: 700px) {
-            .hamburger { display: flex; }
-            .nav-links { display: none; }
-        }
-
+        /* PROFILE CARD (BUBBLE THEME) */
         .profile-card {
-            background: #fff;
+            background: #ffffff;
             color: #222;
             width: 90%;
             max-width: 600px;
-            margin: 40px auto;
-            padding: 30px;
-            border-radius: 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin: 50px auto;
+            padding: 40px;
+            border-radius: 28px; /* Extra bubbly */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             text-align: center;
         }
 
+        #publicProfilePic {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 25px auto;
+            display: block;
+            border: 5px solid #f0f2f5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
         .profile-card h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #111;
+            letter-spacing: -1px;
             margin-bottom: 5px;
         }
 
-        .profile-card p {
-            opacity: 0.8;
-            margin-bottom: 20px;
+        .profile-card p#profession {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4a6cff;
+            margin-bottom: 30px;
         }
 
         .section-title {
-            color: #4a6cff;
-            font-weight: 700;
-            margin-top: 20px;
-            margin-bottom: 6px;
+            color: #111;
+            font-weight: 800;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 25px;
+            margin-bottom: 8px;
             text-align: left;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 5px;
         }
 
         .section-text {
             text-align: left;
-            opacity: 0.9;
-            line-height: 1.5;
+            color: #555;
+            line-height: 1.6;
+            font-size: 1rem;
+            margin-bottom: 10px;
         }
 
+        /* BUTTONS */
         .btn-row {
-            margin-top: 25px;
+            margin-top: 35px;
             display: flex;
             justify-content: center;
             gap: 15px;
         }
 
         .btn {
-            padding: 12px 22px;
-            border-radius: 8px;
+            flex: 1;
+            padding: 14px 22px;
+            border-radius: 14px;
             border: none;
             cursor: pointer;
-            font-weight: 600;
-            color: #fff;
+            font-weight: 700;
+            color: #ffffff !important;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .btn:active { transform: scale(0.96); }
+
+        .btn-message { background: #4a6cff; box-shadow: 0 4px 12px rgba(74, 108, 255, 0.3); }
+        .btn-add { background: #222; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+        /* POPUP */
+        .popup-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+        .popup {
+            background: #fff;
+            border-radius: 24px;
+            padding: 35px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+            color: #222;
+        }
+        .popup-title { font-weight: 800; font-size: 1.4rem; margin-bottom: 10px; }
+        .popup-message { color: #666; margin-bottom: 20px; line-height: 1.5; }
+        .popup button {
+            width: 100%;
+            padding: 12px;
+            background: #4a6cff;
+            color: white !important;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
         }
 
-        .btn-message { background: #4a6cff; }
-        .btn-add { background: #28c76f; }
-
+        /* LOADING ANIMATION */
         .public-animation {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 10, 10, 0.85);
+            inset: 0;
+            background: #4a6cff;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.4s ease;
         }
-
-        .public-animation.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
+        .public-animation.hidden { opacity: 0; pointer-events: none; }
         .spinner {
-            width: 55px;
-            height: 55px;
-            border: 5px solid #444;
-            border-top-color: #00c3ff;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
             border-radius: 50%;
-            animation: spin 0.9s linear infinite;
+            animation: spin 1s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @media (max-width: 700px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
+            .profile-card { padding: 25px; width: 95%; }
+            .btn-row { flex-direction: column; }
         }
-
-        .public-text {
-            margin-top: 20px;
-            color: white;
-            font-size: 1.2rem;
-            letter-spacing: 0.5px;
-        }
-
-        .mobile-menu {
-    position: absolute;
-    top: 70px;              /* match your navbar height */
-    left: 0;                /* ⭐ anchor to the LEFT */
-    width: 220px;           /* adjust as needed */
-    background: #4a6cff;
-    padding: 10px 0;
-    display: none;
-    flex-direction: column;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.mobile-menu.show {
-    display: flex;
-}
     </style>
 </head>
 
 <body>
-<div id="publicProfileAnimation" class="public-animation hidden">
+
+<div id="publicProfileAnimation" class="public-animation">
     <div class="spinner"></div>
-    <div class="public-text" id="publicAnimText">Loading profile...</div>
+    <div style="margin-top: 20px; font-weight: 700; letter-spacing: 1px;">LOADING PROFILE...</div>
 </div>
 
 <nav class="navbar" id="navbar"></nav>
 <div class="mobile-menu" id="mobileMenu"></div>
 
 <div class="profile-card">
+    <img id="publicProfilePic" src="" alt="Profile Picture" style="display:none;">
 
-    <img id="publicProfilePic"
-         src=""
-         alt="Profile Picture"
-         style="
-            width:120px;
-            height:120px;
-            border-radius:50%;
-            object-fit:cover;
-            margin:0 auto 20px auto;
-            display:block;
-         ">
-
-    <h1 id="name">Loading...</h1>
-    <p id="profession">Loading...</p>
+    <h1 id="name">...</h1>
+    <p id="profession">...</p>
 
     <div class="section-title">About</div>
     <div id="about" class="section-text"></div>
@@ -274,158 +261,131 @@
     <div id="workLife" class="section-text"></div>
 
     <div class="btn-row">
-        <button class="btn btn-message" onclick="openChat()">Message</button>
+        <button class="btn btn-message" onclick="openChat()">Send Message</button>
         <button class="btn btn-add" onclick="addToContacts()">Add to Contacts</button>
     </div>
+</div>
 
-    <div id="popupBackdrop" class="popup-backdrop">
-        <div class="popup">
-            <div id="popupTitle" class="popup-title"></div>
-            <div id="popupMessage" class="popup-message"></div>
-            <button onclick="hidePopup()">OK</button>
-        </div>
+<div id="popupBackdrop" class="popup-backdrop">
+    <div class="popup">
+        <div id="popupTitle" class="popup-title"></div>
+        <div id="popupMessage" class="popup-message"></div>
+        <button onclick="hidePopup()">Got it</button>
     </div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-function toggleMenu() {
-    document.getElementById("mobileMenu").classList.toggle("show");
-}
+    function toggleMenu() {
+        document.getElementById("mobileMenu").classList.toggle("show");
+    }
 
-function loadNavbar() {
-    const nav = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
-
-        <div class="logo">Contact<span>.</span>com</div>
-
-        <div class="nav-links">
+    function loadNavbar() {
+        const navItems = `
             <a href="dashboard.html">Dashboard</a>
             <a href="communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="contacts.html">Contacts</a>
             <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        </div>
-    `;
+            <a href="#" onclick="logout()" style="color:#ff4a4a !important;">Logout</a>
+        `;
 
-    document.getElementById("navbar").innerHTML = nav;
-
-    document.getElementById("mobileMenu").innerHTML = `
-        <a href="dashboard.html">Dashboard</a>
-        <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
-        <a href="contacts.html">Contacts</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()">Logout</a>
-    `;
-}
-
-function showPopup(title, message) {
-    document.getElementById("popupTitle").innerText = title;
-    document.getElementById("popupMessage").innerText = message;
-    document.getElementById("popupBackdrop").style.display = "flex";
-}
-
-function hidePopup() {
-    document.getElementById("popupBackdrop").style.display = "none";
-}
-
-function logout() {
-    localStorage.removeItem("contact_user");
-    window.location.href = "index.html";
-}
-
-const params = new URLSearchParams(window.location.search);
-const profileEmail = params.get("email");
-
-async function loadPublicProfile() {
-    if (!profileEmail) {
-        showPopup("Error", "No profile specified.");
-        return;
+        document.getElementById("navbar").innerHTML = `
+            <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+            <div class="logo">Contact<span>.</span>com</div>
+            <div class="nav-links">${navItems}</div>
+        `;
+        document.getElementById("mobileMenu").innerHTML = navItems;
     }
 
-    const cached = localStorage.getItem("cached_public_profile_" + profileEmail);
-    if (cached) {
-        fillProfile(JSON.parse(cached));
+    function showPopup(title, message) {
+        document.getElementById("popupTitle").innerText = title;
+        document.getElementById("popupMessage").innerText = message;
+        document.getElementById("popupBackdrop").style.display = "flex";
     }
 
-    try {
-        const url = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(profileEmail)}`;
-        const res = await fetch(url);
-        const data = await res.json();
+    function hidePopup() {
+        document.getElementById("popupBackdrop").style.display = "none";
+    }
 
-        if (!data.success) {
-            if (!cached) showPopup("Not Found", "This profile does not exist.");
+    function logout() {
+        localStorage.removeItem("contact_user");
+        window.location.href = "index.html";
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const profileEmail = params.get("email");
+
+    async function loadPublicProfile() {
+        if (!profileEmail) {
+            showPopup("Error", "No profile specified.");
             return;
         }
 
-        const u = data.user;
+        try {
+            const url = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(profileEmail)}`;
+            const res = await fetch(url);
+            const data = await res.json();
 
-        fillProfile(u);
-
-        localStorage.setItem("cached_public_profile_" + profileEmail, JSON.stringify(u));
-
-    } catch (err) {
-        if (!cached) showPopup("Network Error", "Unable to load profile.");
-    }
-}
-
-function fillProfile(u) {
-    document.getElementById("name").innerText = u.fullName || "";
-    document.getElementById("profession").innerText = u.profession || "";
-    document.getElementById("about").innerText = u.about || "";
-    document.getElementById("skills").innerText = u.skills || "";
-    document.getElementById("workLife").innerText = u.workLife || "";
-
-    const pic = u.profilePic || u.ProfilePic || null;
-    const imgEl = document.getElementById("publicProfilePic");
-
-    if (pic) {
-        imgEl.src = pic;
-        imgEl.style.display = "block";
-    } else {
-        imgEl.style.display = "none";
-    }
-}
-
-function openChat() {
-    window.location.href = `messages.html?otherEmail=${encodeURIComponent(profileEmail)}`;
-}
-
-async function addToContacts() {
-    const me = JSON.parse(localStorage.getItem("contact_user"));
-    if (!me) return window.location.href = "login.html";
-
-    showPopup("Adding...", "Adding this contact...");
-
-    try {
-        const url =
-            `${API_URL}?module=addContact`
-            + `&userEmail=${encodeURIComponent(me.email)}`
-            + `&contactEmail=${encodeURIComponent(profileEmail)}`;
-
-        const res = await fetch(url);
-        const result = await res.json();
-
-        if (result.success) {
-            showPopup("Contact Added", "This person is now in your contacts.");
-        } else {
-            showPopup("Error", result.message || "Failed to add contact.");
+            if (data.success) {
+                fillProfile(data.user);
+            } else {
+                showPopup("Not Found", "This profile does not exist.");
+            }
+        } catch (err) {
+            showPopup("Error", "Unable to load profile.");
+        } finally {
+            // Hide the full-screen loading animation
+            document.getElementById("publicProfileAnimation").classList.add("hidden");
         }
-
-    } catch (err) {
-        showPopup("Network Error", "Unable to add contact.");
     }
-}
 
-document.addEventListener("DOMContentLoaded", () => {
-    loadNavbar();
-    loadPublicProfile();
-});
+    function fillProfile(u) {
+        document.getElementById("name").innerText = u.fullName || "Anonymous User";
+        document.getElementById("profession").innerText = u.profession || "Member";
+        document.getElementById("about").innerText = u.about || "No bio provided.";
+        document.getElementById("skills").innerText = u.skills || "Not specified.";
+        document.getElementById("workLife").innerText = u.workLife || "No details provided.";
+
+        const pic = u.profilePic || u.ProfilePic || null;
+        const imgEl = document.getElementById("publicProfilePic");
+
+        if (pic) {
+            imgEl.src = pic;
+            imgEl.style.display = "block";
+        }
+    }
+
+    function openChat() {
+        window.location.href = `messages.html?otherEmail=${encodeURIComponent(profileEmail)}`;
+    }
+
+    async function addToContacts() {
+        const me = JSON.parse(localStorage.getItem("contact_user"));
+        if (!me) return window.location.href = "login.html";
+
+        showPopup("Working...", "Adding contact to your list...");
+
+        try {
+            const url = `${API_URL}?module=addContact&userEmail=${encodeURIComponent(me.email)}&contactEmail=${encodeURIComponent(profileEmail)}`;
+            const res = await fetch(url);
+            const result = await res.json();
+
+            if (result.success) {
+                showPopup("Success!", "Contact has been added.");
+            } else {
+                showPopup("Note", result.message || "Could not add contact.");
+            }
+        } catch (err) {
+            showPopup("Network Error", "Please check your connection.");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadNavbar();
+        loadPublicProfile();
+    });
 </script>
 </body>
 </html>
