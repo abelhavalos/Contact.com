@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contact.com – Connect Better</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary-blue: #4A6CFF;
-      --bg-light: #F9FAFB;
-      --text-dark: #111827;
-      --text-gray: #6B7280;
+      --soft-blue: #EEF2FF;
+      --bg-light: #F8FAFF; /* Very slight blue tint for the background */
+      --text-dark: #1E293B;
+      --text-gray: #64748B;
     }
 
     body {
@@ -18,23 +19,24 @@
       font-family: 'Inter', sans-serif;
       background-color: var(--bg-light);
       color: var(--text-dark);
+      line-height: 1.6;
     }
 
-    /* NAVBAR MATCHING MESSAGES.JS */
+    /* NAVBAR - MATCHES CHATROOM V10 */
     .navbar {
       display: flex;
       align-items: center;
-      height: 60px;
+      height: 65px;
       padding: 0 20px;
       background: #fff;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #E2E8F0;
       position: sticky;
       top: 0;
       z-index: 1000;
     }
 
     .hamburger {
-      display: none; /* Hidden on desktop */
+      display: none;
       flex-direction: column;
       gap: 4px;
       cursor: pointer;
@@ -49,10 +51,11 @@
     }
 
     .logo {
-      font-weight: bold;
-      font-size: 1.3rem;
+      font-weight: 800;
+      font-size: 1.4rem;
       cursor: pointer;
-      letter-spacing: -0.5px;
+      letter-spacing: -1px;
+      color: var(--text-dark);
     }
 
     .logo span {
@@ -63,14 +66,14 @@
       margin-left: auto;
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 25px;
     }
 
     .nav-links a {
       text-decoration: none;
       color: var(--text-dark);
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       transition: color 0.2s;
     }
 
@@ -78,116 +81,132 @@
       color: var(--primary-blue);
     }
 
-    /* BUTTONS MATCHING CHAT STYLE */
+    /* PRIMARY BUTTON - CHAT STYLE */
     .btn-primary {
       background: var(--primary-blue);
-      color: #fff;
+      color: #fff !important;
       border: none;
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 700;
       cursor: pointer;
-      transition: opacity 0.2s;
+      box-shadow: 0 4px 14px rgba(74, 108, 255, 0.25);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(74, 108, 255, 0.35);
     }
 
     .btn-secondary {
-      background: #fff;
+      background: var(--soft-blue);
       color: var(--primary-blue);
-      border: 1px solid var(--primary-blue);
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-weight: 600;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 700;
       cursor: pointer;
     }
 
-    .btn-primary:hover { opacity: 0.9; }
-
-    /* MOBILE MENU MATCHING MESSAGES.JS */
+    /* MOBILE MENU */
     .mobile-menu {
       display: none;
       flex-direction: column;
       background: white;
       width: 100%;
       position: absolute;
-      top: 60px;
+      top: 65px;
       left: 0;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #E2E8F0;
       z-index: 999;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
 
     .mobile-menu.show { display: flex; }
 
-    .mobile-menu a, .mobile-menu button {
-      padding: 15px;
+    .mobile-menu a {
+      padding: 18px 25px;
       text-decoration: none;
       color: var(--text-dark);
-      border-bottom: 1px solid #f9f9f9;
-      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid #F1F5F9;
     }
 
-    /* HERO SECTION */
+    /* HERO */
     .hero {
-      padding: 80px 20px;
+      padding: 100px 20px;
       text-align: center;
-      background: white;
+      background: radial-gradient(circle at top right, #f0f4ff, #ffffff);
     }
 
     .hero h1 {
-      font-size: 2.5rem;
-      margin-bottom: 15px;
-      color: var(--text-dark);
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: -2px;
+      margin-bottom: 20px;
+      line-height: 1.1;
     }
 
     .hero p {
       color: var(--text-gray);
+      font-size: 1.1rem;
       max-width: 600px;
-      margin: 0 auto 30px;
+      margin: 0 auto 40px;
     }
 
     .hero-buttons { display: flex; justify-content: center; gap: 15px; }
 
-    /* FEATURES */
+    /* FEATURE CARDS - MATCHES BUBBLE STYLE */
     .features {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 30px;
-      padding: 60px 20px;
-      max-width: 1100px;
+      padding: 80px 20px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
     .feature {
       background: #fff;
-      padding: 20px;
-      border-radius: 18px;
-      text-align: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      padding: 30px;
+      border-radius: 24px;
+      text-align: left;
+      border: 1px solid #F1F5F9;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+      transition: transform 0.3s;
     }
+
+    .feature:hover { transform: translateY(-5px); }
 
     .feature-img {
       width: 100%;
-      height: 180px;
+      height: 200px;
       object-fit: cover;
-      border-radius: 12px;
-      margin-bottom: 15px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+
+    .feature h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--primary-blue);
     }
 
     /* FOOTER */
     .footer {
+      padding: 60px 20px;
       background: #fff;
-      border-top: 1px solid #eee;
-      padding: 40px 20px;
       text-align: center;
-      color: var(--text-gray);
+      border-top: 1px solid #E2E8F0;
     }
 
-    .logo-dot { color: var(--primary-blue); font-weight: bold; }
+    .logo-dot { color: var(--primary-blue); font-weight: 900; }
 
-    /* RESPONSIVE */
     @media (max-width: 850px) {
       .nav-links { display: none; }
       .hamburger { display: flex; }
+      .hero h1 { font-size: 2.5rem; }
     }
   </style>
 </head>
@@ -214,17 +233,15 @@
     <a href="communities.html">Communities</a>
     <a href="events.html">Events</a>
     <a href="login.html">Login</a>
-    <button class="btn-primary" style="margin: 10px; border-radius: 8px;" onclick="window.location.href='signup.html'">Sign Up</button>
+    <a href="signup.html" style="color: var(--primary-blue);">Sign Up</a>
   </div>
 
   <header class="hero">
-    <div class="hero-content">
-      <h1>Contact the People Who Matter</h1>
-      <p>A clean, modern social network built for real connections — not noise.</p>
-      <div class="hero-buttons">
-        <button class="btn-primary" onclick="window.location.href='signup.html'">Get Started</button>
-        <button class="btn-secondary" onclick="window.location.href='learnmore.html'">Learn More</button>
-      </div>
+    <h1>Contact the People <br>Who <span>Matter.</span></h1>
+    <p>A clean, modern social network built for real connections — not noise.</p>
+    <div class="hero-buttons">
+      <button class="btn-primary" onclick="window.location.href='signup.html'">Get Started</button>
+      <button class="btn-secondary" onclick="window.location.href='learnmore.html'">Learn More</button>
     </div>
   </header>
 
@@ -232,37 +249,28 @@
     <div class="feature">
       <img src="images/Communities.jpeg" alt="Communities" class="feature-img" />
       <h3>Real Connections</h3>
-      <p>Stay close to friends, family, and communities without the clutter.</p>
+      <p>Stay close to friends, family, and communities without the clutter of algorithms.</p>
     </div>
     <div class="feature">
       <img src="images/Events.jpeg" alt="Events" class="feature-img" />
       <h3>Privacy First</h3>
-      <p>Your data stays yours. No ads, no tracking, no manipulation.</p>
+      <p>Your data stays yours. No tracking, just pure communication between humans.</p>
     </div>
     <div class="feature">
       <img src="images/contacts.jpeg" alt="Contacts" class="feature-img" />
       <h3>Simple & Modern</h3>
-      <p>A fast, clean interface designed for humans, not algorithms.</p>
-    </div>
-    <div class="feature">
-      <img src="images/Profile.jpeg" alt="Profile" class="feature-img" />
-      <h3>Control Your Identity</h3>
-      <p>Update your details and manage your account with ease.</p>
+      <p>A fast, clean interface designed to get out of your way and let you talk.</p>
     </div>
   </section>
 
   <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-brand" style="margin-bottom: 15px; font-weight: bold; color: #111;">
-        Contact<span class="logo-dot">.</span>com
-      </div>
-      <div class="footer-links" style="margin-bottom: 15px; display: flex; justify-content: center; gap: 20px;">
-        <a href="learnmore.html" style="text-decoration: none; color: var(--text-gray); font-size: 13px;">Learn more</a>
-        <a href="privacy.html" style="text-decoration: none; color: var(--text-gray); font-size: 13px;">Privacy</a>
-        <a href="privacy.html" style="text-decoration: none; color: var(--text-gray); font-size: 13px;">Terms</a>
-      </div>
-      <p style="font-size: 12px;">Connect better. No noise, just people.</p>
+    <div class="logo" style="margin-bottom: 20px;">Contact<span class="logo-dot">.</span>com</div>
+    <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 30px;">
+      <a href="learnmore.html" style="text-decoration: none; color: var(--text-gray); font-weight: 600;">Learn</a>
+      <a href="privacy.html" style="text-decoration: none; color: var(--text-gray); font-weight: 600;">Privacy</a>
+      <a href="terms.html" style="text-decoration: none; color: var(--text-gray); font-weight: 600;">Terms</a>
     </div>
+    <p style="font-size: 13px; color: var(--text-gray);">© 2026 Contact.com. All rights reserved.</p>
   </footer>
 
   <script>
