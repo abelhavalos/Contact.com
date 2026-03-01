@@ -1,9 +1,9 @@
 /****************************************************
- * CONTACT.COM — ULTRA FAST MESSAGES.JS (V2)
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS (V3)
  * - Parallel Meta Loading
  * - Delta-Sync via lastId
- * - Optimistic UI Rendering
- * - Color Caching
+ * - Anti-Flicker Reconciliation
+ * - Full Image/Doc Support
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -22,7 +22,7 @@ const finalOtherEmail = url.searchParams.get("otherEmail") || url.searchParams.g
 const chatTitle = url.searchParams.get("title") || "";
 
 let activeConversationId = url.searchParams.get("conversationId") || null;
-let messages = []; // Local state of all messages
+let messages = []; 
 let communityMembers = [];
 let otherUser = null;
 let colorCache = {};
@@ -62,6 +62,11 @@ function fileToBase64(file) {
   });
 }
 
+// Custom BTOA that handles Unicode/Emojis safely for data-tagging
+function safeBtoa(str) {
+  return btoa(unescape(encodeURIComponent(str || "")));
+}
+
 /****************************************************
  * CORE INITIALIZATION
  ****************************************************/
@@ -69,7 +74,6 @@ async function initChat() {
   loadNavbar();
   showChatLoader();
 
-  // 1. Resolve Conversation ID if missing
   if (!activeConversationId) {
     const setupUrl = mode === "community" 
       ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
@@ -82,7 +86,6 @@ async function initChat() {
     } catch (e) { console.error("Conv Init Error:", e); }
   }
 
-  // 2. Fire metadata and first message load in parallel
   const metaPromises = [];
   if (mode === "private") {
     metaPromises.push(loadOtherUserProfile());
@@ -90,22 +93,18 @@ async function initChat() {
     metaPromises.push(loadCommunityInfo(), loadCommunityMembers());
   }
 
-  // Initial full load (lastId = 0)
   await Promise.all([...metaPromises, syncMessages()]);
-  
   hideChatLoader();
 
-  // 3. Background Sync (Poll every 3 seconds for new messages)
-  setInterval(() => syncMessages(), 3000);
+  setInterval(() => syncMessages(), 3500);
 }
 
 /****************************************************
- * MESSAGING ENGINE (DELTA SYNC)
+ * MESSAGING ENGINE (ANTI-FLICKER)
  ****************************************************/
 async function syncMessages() {
   if (!activeConversationId) return;
 
-  // Determine the last ID we have locally to request only new data
   const lastId = messages.reduce((max, m) => (m.messageId > max ? m.messageId : max), 0);
   
   try {
@@ -115,14 +114,21 @@ async function syncMessages() {
 
     if (newMessages.length > 0) {
       const container = document.getElementById("messages");
-      if (!container) return;
-
       const fragment = document.createDocumentFragment();
       
       newMessages.forEach(msg => {
-        // Ensure we don't duplicate a message that was added optimistically
-        const existing = document.getElementById(`msg-${msg.messageId}`);
-        if (!existing) {
+        // RECONCILIATION: Look for a temporary bubble matching this content
+        const lookupTag = safeBtoa(msg.text || msg.fileName);
+        const tempElement = document.querySelector(`[data-temp-content="${lookupTag}"]`);
+        
+        if (tempElement) {
+          // Confirming existing bubble
+          tempElement.id = `msg-${msg.messageId}`;
+          tempElement.removeAttribute('data-temp-content');
+          tempElement.style.opacity = "1"; 
+          messages.push(msg);
+        } else if (!document.getElementById(`msg-${msg.messageId}`)) {
+          // Adding new bubble from other user
           messages.push(msg);
           fragment.appendChild(buildMessageRow(msg));
         }
@@ -131,9 +137,7 @@ async function syncMessages() {
       container.appendChild(fragment);
       container.scrollTop = container.scrollHeight;
     }
-  } catch (e) {
-    console.error("Sync Error:", e);
-  }
+  } catch (e) { console.error("Sync Error:", e); }
 }
 
 function buildMessageRow(msg) {
@@ -141,10 +145,9 @@ function buildMessageRow(msg) {
   const color = getUserColor(msg.senderEmail);
 
   const row = document.createElement("div");
-  // Use messageId if it exists, otherwise use a temporary timestamp ID
   row.id = `msg-${msg.messageId || 'temp-' + Date.now()}`;
   row.className = "msg-row";
-  row.style = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'}`;
+  row.style = `display:flex; margin-bottom:12px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'}; transition: opacity 0.3s ease;`;
 
   let pic, name;
   if (isMe) {
@@ -164,7 +167,7 @@ function buildMessageRow(msg) {
     : `<div class="chat-avatar-fallback">${getInitials(name)}</div>`;
 
   const bubbleHTML = `
-    <div style="max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : '#F3F4F6'}; color:${isMe ? color.text : '#111827'}">
+    <div style="max-width:70%; padding:10px 14px; border-radius:18px; font-size:14px; background:${isMe ? color.bg : '#F1F1F1'}; color:${isMe ? color.text : '#111827'}">
       ${renderMessageContent(msg)}
     </div>
   `;
@@ -174,8 +177,8 @@ function buildMessageRow(msg) {
 }
 
 function renderMessageContent(msg) {
-  if (msg.type === "image") return `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:8px; min-height:150px; display:block;">`;
-  if (msg.type === "document") return `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">📄 ${msg.fileName}</a>`;
+  if (msg.type === "image") return `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:10px; min-height:100px; display:block; margin-top:4px;">`;
+  if (msg.type === "document") return `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="text-decoration:none; color:inherit; font-weight:bold;">📄 ${msg.fileName}</a>`;
   return msg.text || "";
 }
 
@@ -186,37 +189,34 @@ function sendMessage(payloadOverride = null) {
 
   const payload = payloadOverride || { type: "text", text };
 
-  // OPTIMISTIC UI: Render locally before server response
-  const tempMsg = {
-    messageId: 0, // Placeholder
-    senderEmail: loggedInUser.email,
-    ...payload
-  };
+  // OPTIMISTIC RENDER
   const container = document.getElementById("messages");
-  container.appendChild(buildMessageRow(tempMsg));
+  const row = buildMessageRow({ messageId: 0, senderEmail: loggedInUser.email, ...payload });
+  
+  // Tag it for syncMessages to find later
+  row.setAttribute('data-temp-content', safeBtoa(payload.text || payload.fileName));
+  row.style.opacity = "0.6"; 
+  
+  container.appendChild(row);
   container.scrollTop = container.scrollHeight;
   if (input) input.value = "";
 
-  // NETWORK SEND
+  // NETWORK
   const isText = payload.type === "text";
-  if (isText) {
-    fetch(`${API_URL}?module=sendMessage&conversationId=${encodeURIComponent(activeConversationId)}&senderEmail=${encodeURIComponent(loggedInUser.email)}&type=text&text=${encodeURIComponent(text)}`)
-      .then(() => syncMessages());
-  } else {
-    fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ 
-        module: "sendMessage", 
-        conversationId: activeConversationId, 
-        senderEmail: loggedInUser.email, 
-        ...payload 
-      })
-    }).then(() => syncMessages());
-  }
+  const url = isText 
+    ? `${API_URL}?module=sendMessage&conversationId=${encodeURIComponent(activeConversationId)}&senderEmail=${encodeURIComponent(loggedInUser.email)}&type=text&text=${encodeURIComponent(text)}`
+    : API_URL;
+
+  const options = isText ? {} : {
+    method: "POST",
+    body: JSON.stringify({ module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email, ...payload })
+  };
+
+  fetch(url, options).then(() => syncMessages());
 }
 
 /****************************************************
- * UI DATA FETCHERS
+ * UI FETCHERS & EVENTS
  ****************************************************/
 async function loadOtherUserProfile() {
   try {
@@ -253,6 +253,21 @@ async function loadCommunityMembers() {
   } catch (e) { console.error(e); }
 }
 
+function renderCommunityMembersList(list) {
+  const container = document.getElementById("memberSidebar");
+  if (!container) return;
+  container.innerHTML = "<h3>Members</h3>";
+  list.forEach(m => {
+    const row = document.createElement("div");
+    row.className = "member-row";
+    row.style = "display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;";
+    row.onclick = () => window.location.href = `public-profile.html?email=${encodeURIComponent(m.email)}`;
+    const avatar = m.profilePic ? `<img class="chat-avatar" src="${m.profilePic}" />` : `<div class="chat-avatar-fallback">${getInitials(m.fullName)}</div>`;
+    row.innerHTML = `${avatar}<div class="member-name">${m.fullName}</div>`;
+    container.appendChild(row);
+  });
+}
+
 function updateHeader(title, pic) {
   const header = document.getElementById("headerTitle");
   if (!header) return;
@@ -260,26 +275,13 @@ function updateHeader(title, pic) {
   header.innerHTML = `<div class="chat-header">${chatTitle ? '' : avatar}<div class="chat-header-main">${chatTitle || title}</div></div>`;
 }
 
-/****************************************************
- * BOOTSTRAP & EVENTS
- ****************************************************/
 document.addEventListener("DOMContentLoaded", () => {
   initChat();
+  document.getElementById("sendBtn")?.addEventListener("click", () => sendMessage());
+  document.getElementById("messageInput")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
 
-  const sendBtn = document.getElementById("sendBtn");
-  if (sendBtn) sendBtn.onclick = () => sendMessage();
-
-  const messageInput = document.getElementById("messageInput");
-  if (messageInput) {
-    messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-  }
-
-  // File Uploads
   const setupUpload = (btnId, inputId, type) => {
     const btn = document.getElementById(btnId);
     const input = document.getElementById(inputId);
@@ -303,6 +305,7 @@ function loadNavbar() {
   if (nav) nav.innerHTML = `<div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div><div class="logo">Contact<span>.</span>com</div><div class="nav-links"><a href="dashboard.html">Dashboard</a><a href="communities.html">Communities</a><a href="profile.html">Profile</a><a href="#" onclick="logout()">Logout</a></div>`;
 }
 
+function toggleMenu() { document.getElementById("mobileMenu")?.classList.toggle("show"); }
 function showChatLoader() { document.getElementById("chatLoader")?.style.setProperty("display", "flex"); }
 function hideChatLoader() { document.getElementById("chatLoader")?.style.setProperty("display", "none"); }
 function logout() { localStorage.removeItem("contact_user"); window.location.href = "index.html"; }
