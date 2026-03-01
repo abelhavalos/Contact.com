@@ -294,3 +294,57 @@ body {
   border-radius: 10px;
   display: block;
 }
+
+/* THE BLUE MEMBERS BUTTON */
+#toggleMembers {
+    background-color: #4A6CFF !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 20px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(74, 108, 255, 0.3);
+    transition: opacity 0.2s;
+}
+
+#toggleMembers:hover {
+    opacity: 0.9;
+}
+
+/* DESKTOP BEHAVIOR (Hide Button, Show Sidebar) */
+@media (min-width: 851px) {
+    #toggleMembers {
+        display: none !important; /* Button disappears on PC */
+    }
+    #memberSidebar {
+        display: block !important; /* Sidebar always visible on PC */
+        width: 280px !important;
+        position: relative !important;
+        transform: none !important;
+        border-left: 1px solid #eee;
+    }
+}
+
+/* MOBILE BEHAVIOR (Show Button, Toggle Sidebar) */
+@media (max-width: 850px) {
+    #memberSidebar {
+        display: none; /* Hidden by default */
+        position: fixed;
+        right: 0;
+        top: 70px;
+        bottom: 0;
+        width: 250px;
+        background: white;
+        z-index: 9999;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        padding: 20px;
+    }
+    /* The class the JS will trigger */
+    #memberSidebar.active {
+        display: block !important;
+    }
+}
