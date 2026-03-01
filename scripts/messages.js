@@ -1,9 +1,9 @@
 /****************************************************
- * CONTACT.COM — ULTRA FAST MESSAGES.JS (V8)
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS (V9 - FINAL)
+ * - Restored fileToBase64 helper
  * - Hamburger on Left (Blue Theme)
  * - Copy Message Context Menu
- * - Click-to-Zoom Image Overlay
- * - Anti-Flicker File Sync & Progress Bar
+ * - Click-to-Zoom & Progress Bar
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -23,8 +23,21 @@ let communityMembers = [];
 let otherUser = null;
 
 /****************************************************
- * UTILS: COPY & TOAST & ZOOM
+ * CRITICAL HELPERS (Restored)
  ****************************************************/
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
+function safeBtoa(str) {
+  return btoa(unescape(encodeURIComponent(str || "")));
+}
+
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => {
     showToast("Message copied!", "success");
@@ -50,7 +63,7 @@ function showToast(msg, type = "error") {
   if (!toast) {
     toast = document.createElement("div");
     toast.id = "chat-toast";
-    toast.style = "position:fixed; top:80px; left:50%; transform:translateX(-50%); padding:10px 20px; border-radius:20px; color:white; font-size:13px; z-index:9999; transition: opacity 0.4s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2);";
+    toast.style = "position:fixed; top:80px; left:50%; transform:translateX(-50%); padding:10px 20px; border-radius:20px; color:white; font-size:13px; z-index:9999; transition: opacity 0.4s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2); pointer-events:none;";
     document.body.appendChild(toast);
   }
   toast.style.backgroundColor = type === "error" ? "#EF4444" : "#4A6CFF";
@@ -75,7 +88,7 @@ function loadNavbar() {
         <div style="width:22px; height:3px; background:#4A6CFF; border-radius:2px;"></div>
       </div>
 
-      <div class="logo" style="font-weight:bold; font-size:1.2rem; flex-grow:0;">Contact<span style="color:#4A6CFF;">.</span>com</div>
+      <div class="logo" style="font-weight:bold; font-size:1.2rem;">Contact<span style="color:#4A6CFF;">.</span>com</div>
       
       <div class="nav-links desktop-nav" style="display:flex; gap:20px; margin-left:auto;">
         <a href="dashboard.html" style="text-decoration:none; color:#333; font-size:14px;">Dashboard</a>
@@ -127,8 +140,7 @@ async function syncMessages() {
     if (newMessages.length > 0) {
       const container = document.getElementById("messages");
       newMessages.forEach(msg => {
-        const fingerprint = msg.type === "text" ? msg.text : msg.fileName;
-        const lookupTag = btoa(unescape(encodeURIComponent(fingerprint)));
+        const lookupTag = safeBtoa(msg.text || msg.fileName);
         const tempElement = document.querySelector(`[data-temp-tag="${lookupTag}"]`);
         
         if (tempElement) {
@@ -154,7 +166,7 @@ function sendMessage(payloadOverride = null) {
   if (!payloadOverride && (!text || !activeConversationId)) return;
 
   const payload = payloadOverride || { type: "text", text };
-  const tempTag = btoa(unescape(encodeURIComponent(payload.text || payload.fileName)));
+  const tempTag = safeBtoa(payload.text || payload.fileName);
 
   const container = document.getElementById("messages");
   const row = buildMessageRow({ messageId: 0, senderEmail: loggedInUser.email, ...payload });
@@ -190,9 +202,6 @@ function sendMessage(payloadOverride = null) {
   });
 }
 
-/****************************************************
- * RENDERING
- ****************************************************/
 function buildMessageRow(msg) {
   const isMe = msg.senderEmail === loggedInUser.email;
   const row = document.createElement("div");
@@ -205,7 +214,6 @@ function buildMessageRow(msg) {
   bubble.style = `max-width:75%; padding:10px 15px; border-radius:18px; font-size:14px; background:${isMe ? "#4A6CFF" : "#F1F1F1"}; color:${isMe ? "#FFF" : "#111"}; cursor:pointer; position:relative;`;
   bubble.innerHTML = renderMessageContent(msg);
 
-  // Copy on Context Menu (Desktop) or Long Press (Mobile)
   bubble.oncontextmenu = (e) => {
     e.preventDefault();
     if (msg.text) copyToClipboard(msg.text);
@@ -252,7 +260,14 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.onclick = () => input.click();
       input.onchange = async (e) => {
         const file = e.target.files[0];
-        if (file) sendMessage({ type, fileName: file.name, fileData: await fileToBase64(file) });
+        if (file) {
+          try {
+            const base64Data = await fileToBase64(file);
+            sendMessage({ type, fileName: file.name, fileData: base64Data });
+          } catch (err) {
+            showToast("Error processing file.");
+          }
+        }
         e.target.value = "";
       };
     }
