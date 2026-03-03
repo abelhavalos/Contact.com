@@ -57,7 +57,7 @@
 
         .nav-links { display: none; }
 
-        /* MOBILE MENU (Slide-out) */
+        /* MOBILE MENU */
         .mobile-menu {
             position: fixed;
             top: 0;
@@ -104,7 +104,7 @@
             color: #222;
         }
 
-        /* CONTACT LIST STYLING */
+        /* CONTACT LIST */
         .group-title {
             font-size: 1.1rem;
             font-weight: 800;
@@ -115,16 +115,22 @@
 
         .contact-card {
             display: flex;
-            flex-direction: column;
+            align-items: center;
             background: #ffffff;
-            padding: 18px;
-            border-radius: 24px;
-            margin-bottom: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 15px 20px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             color: #222;
+            text-decoration: none; /* Make it feel like a link */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
         }
 
-        .contact-main { display: flex; align-items: center; width: 100%; margin-bottom: 15px; }
+        .contact-card:active {
+            transform: scale(0.98);
+            background: #f9f9f9;
+        }
 
         .contact-avatar, .contact-avatar-img {
             width: 50px; height: 50px; border-radius: 50%; margin-right: 15px;
@@ -134,17 +140,16 @@
         }
 
         .contact-info { flex: 1; min-width: 0; }
-        .contact-name { font-size: 1.1rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .contact-email { font-size: 0.85rem; color: #666; word-break: break-all; }
+        .contact-name { font-size: 1.1rem; font-weight: 700; color: #222; }
+        .contact-email { font-size: 0.85rem; color: #666; overflow: hidden; text-overflow: ellipsis; }
 
-        .contact-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-
-        .contact-btn {
-            padding: 12px; background: #4a6cff; color: #ffffff !important;
-            border: none; border-radius: 12px; text-align: center;
-            text-decoration: none; font-size: 14px; font-weight: 700; cursor: pointer;
+        /* Chevron Icon for Hinting Clickability */
+        .contact-chevron {
+            color: #ccc;
+            font-size: 1.2rem;
+            margin-left: 10px;
+            font-weight: 400;
         }
-        .contact-btn.secondary { background: #222; }
 
         /* DESKTOP QUERIES */
         @media (min-width: 768px) {
@@ -152,14 +157,9 @@
             .hamburger { display: none; }
             .nav-links { display: flex !important; align-items: center; gap: 20px; margin-left: auto; }
             .nav-links a { text-decoration: none; color: #333; font-weight: 600; font-size: 14px; }
-            
             .page { padding: 40px 20px; }
             .page-title { font-size: 2.8rem; }
-            
-            .contact-card { flex-direction: row; align-items: center; justify-content: space-between; }
-            .contact-main { margin-bottom: 0; width: auto; }
-            .contact-actions { width: auto; display: flex; margin-left: auto; }
-            .contact-btn { padding: 10px 18px; }
+            .contact-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
         }
 
         /* LOADER */
@@ -206,7 +206,6 @@
 
         let allContacts = [];
 
-        /* INITIALIZE */
         document.addEventListener("DOMContentLoaded", () => {
             loadNavbar();
             showLoader(true);
@@ -215,7 +214,6 @@
             setupSearch();
         });
 
-        /* NAVBAR & MOBILE MENU LOGIC */
         function loadNavbar() {
             const navLinksHTML = `
                 <a href="dashboard.html">Dashboard</a>
@@ -253,7 +251,6 @@
             window.location.href = "index.html";
         }
 
-        /* DATA HANDLING */
         function showLoader(show) {
             document.getElementById("contactsLoader").style.display = show ? "flex" : "none";
         }
@@ -295,7 +292,6 @@
                 showLoader(false);
             } catch (e) {
                 showLoader(false);
-                console.error("API Error:", e);
             }
         }
 
@@ -327,20 +323,18 @@
                         ? `<img class="contact-avatar-img" src="${c.profilePic}">` 
                         : `<div class="contact-avatar">${initials}</div>`;
 
-                    const card = document.createElement("div");
+                    // Entire card is now a clickable <a> tag
+                    const card = document.createElement("a");
                     card.className = "contact-card";
+                    card.href = `public-profile.html?email=${encodeURIComponent(c.email)}`;
+                    
                     card.innerHTML = `
-                        <div class="contact-main">
-                            ${avatarHTML}
-                            <div class="contact-info">
-                                <div class="contact-name">${c.fullName}</div>
-                                <div class="contact-email">${c.email}</div>
-                            </div>
+                        ${avatarHTML}
+                        <div class="contact-info">
+                            <div class="contact-name">${c.fullName}</div>
+                            <div class="contact-email">${c.email}</div>
                         </div>
-                        <div class="contact-actions">
-                            <button class="contact-btn" onclick="location.href='messages.html?otherEmail=${encodeURIComponent(c.email)}'">Message</button>
-                            <button class="contact-btn secondary" onclick="location.href='public-profile.html?email=${encodeURIComponent(c.email)}'">Profile</button>
-                        </div>
+                        <div class="contact-chevron">›</div>
                     `;
                     groupDiv.appendChild(card);
                 });
