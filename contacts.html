@@ -57,11 +57,11 @@
 
         .nav-links { display: none; }
 
-        /* MOBILE MENU (Profile Page Style) */
+        /* MOBILE MENU (Slide-out) */
         .mobile-menu {
             position: fixed;
             top: 0;
-            left: -280px; /* Fully hidden */
+            left: -280px; 
             width: 260px;
             height: 100vh;
             background: #4a6cff;
@@ -240,7 +240,6 @@
             document.getElementById("mobileMenu").classList.toggle("show");
         }
 
-        // Close menu if user clicks outside
         document.addEventListener("click", (e) => {
             const menu = document.getElementById("mobileMenu");
             const burger = document.querySelector(".hamburger");
@@ -277,7 +276,6 @@
                     return;
                 }
 
-                // Hydrate details for each contact
                 const hydrated = await Promise.all(
                     d.contacts.map(email =>
                         fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`)
