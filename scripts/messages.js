@@ -1,10 +1,5 @@
 /****************************************************
- * CONTACT.COM — ULTRA FAST MESSAGES.JS
- * - Full history load (no slicing)
- * - No caching
- * - Instant optimistic send
- * - Append-only rendering (no full re-render)
- * - Modern clean UI
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS (FIXED SIDEBAR)
  ****************************************************/
 
 const API_URL =
@@ -13,10 +8,8 @@ const API_URL =
 /* USER */
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
-loggedInUser.fullName =
-  loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
-loggedInUser.profilePic =
-  loggedInUser.profilePic || loggedInUser.ProfilePic || null;
+loggedInUser.fullName = loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
+loggedInUser.profilePic = loggedInUser.profilePic || loggedInUser.ProfilePic || null;
 
 /* URL PARAMS */
 const url = new URL(window.location.href);
@@ -60,13 +53,7 @@ function getUserColor(email) {
 
 function getInitials(name) {
   if (!name) return "?";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((p) => p[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
+  return name.split(" ").filter(Boolean).map((p) => p[0]).join("").substring(0, 2).toUpperCase();
 }
 
 function fileToBase64(file) {
@@ -78,13 +65,13 @@ function fileToBase64(file) {
 }
 
 /****************************************************
- * NAVBAR
+ * NAVBAR & SIDEBAR TOGGLE
  ****************************************************/
 function loadNavbar() {
   const nav = document.getElementById("navbar");
   if (nav) {
     nav.innerHTML = `
-      <div class="hamburger" onclick="toggleMenu()">
+      <div class="hamburger" onclick="toggleMenu(event)">
         <span></span><span></span><span></span>
       </div>
       <div class="logo">Contact<span>.</span>com</div>
@@ -112,10 +99,31 @@ function loadNavbar() {
   }
 }
 
-function toggleMenu() {
+function toggleMenu(e) {
+  if (e) e.stopPropagation();
   const menu = document.getElementById("mobileMenu");
   if (menu) menu.classList.toggle("show");
 }
+
+// Global click listener to close sidebars
+document.addEventListener("click", (e) => {
+  // Close Mobile Navbar
+  const mobileMenu = document.getElementById("mobileMenu");
+  if (mobileMenu && mobileMenu.classList.contains("show") && !mobileMenu.contains(e.target) && !e.target.closest(".hamburger")) {
+    mobileMenu.classList.remove("show");
+  }
+
+  // Close Member Sidebar on Mobile
+  const sidebar = document.getElementById("memberSidebar");
+  const toggleBtn = document.getElementById("toggleMembers");
+  if (sidebar && sidebar.classList.contains("active") && !sidebar.contains(e.target) && !e.target.closest("#toggleMembers")) {
+    sidebar.classList.remove("active");
+    if (toggleBtn) {
+        toggleBtn.classList.remove("active");
+        toggleBtn.innerText = "Members";
+    }
+  }
+});
 
 function logout() {
   localStorage.removeItem("contact_user");
@@ -126,18 +134,14 @@ function logout() {
  * HEADERS
  ****************************************************/
 async function loadOtherUserProfile() {
-  const r = await fetch(
-    `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`
-  );
+  const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`);
   const d = await r.json();
   otherUser = d?.user || {};
 
-  const fullName =
-    otherUser.fullName || otherUser.FullName || finalOtherEmail;
+  const fullName = otherUser.fullName || otherUser.FullName || finalOtherEmail;
   const initials = getInitials(fullName);
 
-  const avatar =
-    otherUser.profilePic || otherUser.ProfilePic
+  const avatar = otherUser.profilePic || otherUser.ProfilePic
       ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
       : `<div class="chat-avatar-fallback">${initials}</div>`;
 
@@ -150,43 +154,30 @@ async function loadOtherUserProfile() {
 }
 
 async function loadCommunityInfo() {
-  const r = await fetch(
-    `${API_URL}?module=getCommunityById&communityId=${communityId}`
-  );
+  const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
   const d = await r.json();
   const name = d?.community?.name || "Community";
 
   const header = document.getElementById("headerTitle");
   if (!header) return;
 
-  header.innerHTML = `
-    <div class="chat-header">
-      <div class="chat-header-main">${name}</div>
-    </div>
-  `;
+  header.innerHTML = `<div class="chat-header"><div class="chat-header-main">${name}</div></div>`;
 }
 
 /****************************************************
  * COMMUNITY MEMBERS
  ****************************************************/
 async function loadCommunityMembers() {
-  const r = await fetch(
-    `${API_URL}?module=getCommunityMembers&communityId=${communityId}`
-  );
+  const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
   const d = await r.json();
 
-  const emails = (d.members || []).map((m) =>
-    typeof m === "string" ? m : m.email
-  );
+  const emails = (d.members || []).map((m) => typeof m === "string" ? m : m.email);
 
   const tasks = emails.map(async (email) => {
     try {
-      const r = await fetch(
-        `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`
-      );
+      const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`);
       const d = await r.json();
       const u = d?.user || {};
-
       return {
         email,
         fullName: u.fullName || u.FullName || email,
@@ -218,18 +209,14 @@ function renderCommunityMembersList(list) {
     row.className = "member";
     row.style.cursor = "pointer";
     row.style.marginBottom = "12px";
-    row.onclick = () =>
-      (window.location.href = `public-profile.html?email=${encodeURIComponent(
-        m.email
-      )}`);
+    row.onclick = () => (window.location.href = `public-profile.html?email=${encodeURIComponent(m.email)}`);
 
     row.innerHTML = `
-      <div class="member-row">
+      <div class="member-row" style="display:flex; align-items:center; gap:10px;">
         ${avatar}
-        <div class="member-name">${m.fullName}</div>
+        <div class="member-name" style="color:#333; font-weight:500;">${m.fullName}</div>
       </div>
     `;
-
     fragment.appendChild(row);
   });
 
@@ -237,39 +224,28 @@ function renderCommunityMembersList(list) {
 }
 
 /****************************************************
- * MESSAGES — ONE-SHOT FULL LOAD
+ * MESSAGES
  ****************************************************/
 async function loadMessagesOnce() {
   if (!activeConversationId) return;
+  showChatLoader();
 
-  showChatLoader(); // ⭐ show loader immediately
-
-  const r = await fetch(
-    `${API_URL}?module=getMessages&conversationId=${activeConversationId}`
-  );
+  const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
   const data = await r.json();
 
   messages = data.messages || [];
   renderAllMessages(messages);
-
-  hideChatLoader(); // ⭐ hide loader after render
+  hideChatLoader();
 }
 
-/****************************************************
- * RENDERING
- ****************************************************/
 function renderMessageContent(msg) {
-  if (msg.type === "image") {
-    return `<img src="${msg.fileData}" class="chat-image">`;
-  }
-  if (msg.type === "document") {
-    return `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">📄 ${msg.fileName}</a>`;
-  }
+  if (msg.type === "image") return `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:10px;">`;
+  if (msg.type === "document") return `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="color:inherit; text-decoration:underline;">📄 ${msg.fileName}</a>`;
   return msg.text || "";
 }
 
 function renderAllMessages(list) {
-  const container = document.getElementById("messages");
+  const container = document.getElementById("messageList");
   if (!container) return;
 
   container.innerHTML = "";
@@ -277,10 +253,10 @@ function renderAllMessages(list) {
   list.forEach((msg) => fragment.appendChild(buildMessageRow(msg)));
 
   container.appendChild(fragment);
-  container.scrollTop = container.scrollHeight;
+  const msgArea = document.getElementById("messages");
+  if(msgArea) msgArea.scrollTop = msgArea.scrollHeight;
 }
 
-/* ✅ FIXED: other user's avatar in private chat */
 function buildMessageRow(msg) {
   const isMe = msg.senderEmail === loggedInUser.email;
   const contentHTML = renderMessageContent(msg);
@@ -289,93 +265,65 @@ function buildMessageRow(msg) {
   const row = document.createElement("div");
   row.className = "msg-row";
   row.style.display = "flex";
-  row.style.marginBottom = "10px";
+  row.style.marginBottom = "15px";
   row.style.gap = "8px";
   row.style.alignItems = "flex-end";
   row.style.justifyContent = isMe ? "flex-end" : "flex-start";
 
-  const avatar = document.createElement("div");
-  avatar.style.width = "36px";
-  avatar.style.display = "flex";
-  avatar.style.justifyContent = "center";
+  const initials = isMe ? getInitials(loggedInUser.fullName) : getInitials(msg.senderEmail);
+  let pic = isMe ? loggedInUser.profilePic : null;
 
-  if (isMe) {
-    const myInitials = getInitials(loggedInUser.fullName);
-    avatar.innerHTML = loggedInUser.profilePic
-      ? `<img class="chat-avatar" src="${loggedInUser.profilePic}" />`
-      : `<div class="chat-avatar-fallback">${myInitials}</div>`;
-  } else {
-    if (mode === "community") {
-      const sender =
-        communityMembers.find((m) => m.email === msg.senderEmail) || {};
-      const fullName = sender.fullName || msg.senderEmail;
-      const initials = getInitials(fullName);
-      avatar.innerHTML = sender.profilePic
-        ? `<img class="chat-avatar" src="${sender.profilePic}" />`
-        : `<div class="chat-avatar-fallback">${initials}</div>`;
-    } else {
-      const fullName =
-        (otherUser && (otherUser.fullName || otherUser.FullName)) ||
-        finalOtherEmail ||
-        msg.senderEmail;
-      const initials = getInitials(fullName);
-      const pic =
-        (otherUser && (otherUser.profilePic || otherUser.ProfilePic)) || null;
-
-      avatar.innerHTML = pic
-        ? `<img class="chat-avatar" src="${pic}" />`
-        : `<div class="chat-avatar-fallback">${initials}</div>`;
-    }
+  if (!isMe) {
+      if (mode === "community") {
+          const s = communityMembers.find(m => m.email === msg.senderEmail);
+          if (s) pic = s.profilePic;
+      } else if (otherUser) {
+          pic = otherUser.profilePic || otherUser.ProfilePic;
+      }
   }
+
+  const avatar = pic 
+    ? `<img class="chat-avatar" src="${pic}" style="width:32px; height:32px; border-radius:50%;" />`
+    : `<div class="chat-avatar-fallback" style="width:32px; height:32px; border-radius:50%; font-size:12px; background:#eee; display:flex; align-items:center; justify-content:center;">${initials}</div>`;
 
   const bubble = document.createElement("div");
   bubble.style.maxWidth = "70%";
-  bubble.style.padding = "8px 12px";
-  bubble.style.borderRadius = "16px";
+  bubble.style.padding = "10px 14px";
+  bubble.style.borderRadius = isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
   bubble.style.fontSize = "14px";
-  bubble.style.lineHeight = "1.4";
-  bubble.style.background = isMe ? color.bg : "#F3F4F6";
-  bubble.style.color = isMe ? color.text : "#111827";
+  bubble.style.background = isMe ? color.bg : "#E5E7EB";
+  bubble.style.color = isMe ? color.text : "#1F2937";
   bubble.innerHTML = contentHTML;
 
   if (isMe) {
+    row.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end;"><div style="font-size:10px; color:#999; margin-bottom:2px;">You</div></div>`;
     row.appendChild(bubble);
-    row.appendChild(avatar);
+    row.innerHTML += `<div style="margin-left:5px;">${avatar}</div>`;
   } else {
-    row.appendChild(avatar);
+    row.innerHTML = `<div style="margin-right:5px;">${avatar}</div>`;
     row.appendChild(bubble);
   }
 
   return row;
 }
 
-/****************************************************
- * INSTANT OPTIMISTIC APPEND
- ****************************************************/
 function appendSingleMessage(msg) {
-  const container = document.getElementById("messages");
+  const container = document.getElementById("messageList");
   if (!container) return;
-
   container.appendChild(buildMessageRow(msg));
-  container.scrollTop = container.scrollHeight;
+  const msgArea = document.getElementById("messages");
+  if(msgArea) msgArea.scrollTop = msgArea.scrollHeight;
 }
 
 /****************************************************
- * SEND MESSAGE
+ * SEND LOGIC
  ****************************************************/
 function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
+  if (!payloadOverride && (!text || !activeConversationId)) return;
 
-  const isText = !payloadOverride;
-  if (isText && (!text || !activeConversationId)) return;
-
-  const payload = payloadOverride || {
-    module: "sendMessage",
-    type: "text",
-    text
-  };
-
+  const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   const optimisticMsg = {
     id: "temp_" + Date.now(),
     senderEmail: loggedInUser.email,
@@ -385,37 +333,17 @@ function sendMessage(payloadOverride = null) {
     fileData: payload.fileData || null
   };
 
-  messages.push(optimisticMsg);
   appendSingleMessage(optimisticMsg);
-
-  if (isText) {
-    const url =
-      `${API_URL}?module=sendMessage`
-      + `&conversationId=${encodeURIComponent(activeConversationId)}`
-      + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-      + `&type=text`
-      + `&text=${encodeURIComponent(payload.text)}`;
-
-    fetch(url)
-      .then((r) => r.json())
-      .then(() => loadMessagesOnce())
-      .catch(console.error);
-
-    if (input) input.value = "";
-    return;
-  }
+  if (input) input.value = "";
 
   const body = JSON.stringify({
-    module: "sendMessage",
+    ...payload,
     conversationId: activeConversationId,
-    senderEmail: loggedInUser.email,
-    type: payload.type,
-    fileName: payload.fileName,
-    fileData: payload.fileData
+    senderEmail: loggedInUser.email
   });
 
   fetch(API_URL, { method: "POST", body })
-    .then((r) => r.json())
+    .then(r => r.json())
     .then(() => loadMessagesOnce())
     .catch(console.error);
 }
@@ -425,17 +353,26 @@ function sendMessage(payloadOverride = null) {
  ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
-  showChatLoader(); // ⭐ show loader as soon as page loads
+  showChatLoader();
 
-  if (mode === "private") {
-    const toggle = document.getElementById("toggleMembers");
-    const sidebar = document.getElementById("memberSidebar");
-    if (toggle) toggle.style.display = "none";
-    if (sidebar) sidebar.style.display = "none";
-    await loadOtherUserProfile();
+  // SIDEBAR TOGGLE LOGIC (FIXED)
+  const toggleBtn = document.getElementById("toggleMembers");
+  const sidebar = document.getElementById("memberSidebar");
+
+  if (toggleBtn && sidebar) {
+    toggleBtn.onclick = (e) => {
+        e.stopPropagation();
+        const isActive = sidebar.classList.toggle("active");
+        toggleBtn.classList.toggle("active");
+        toggleBtn.innerText = isActive ? "Close" : "Members";
+    };
   }
 
-  if (mode === "community") {
+  if (mode === "private") {
+    if (toggleBtn) toggleBtn.style.display = "none";
+    if (sidebar) sidebar.style.display = "none";
+    await loadOtherUserProfile();
+  } else {
     await loadCommunityInfo();
     await loadCommunityMembers();
   }
@@ -453,66 +390,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  const toggleMembersBtn = document.getElementById("toggleMembers");
-  if (toggleMembersBtn) {
-    toggleMembersBtn.onclick = () => {
-      const sidebar = document.getElementById("memberSidebar");
-      if (sidebar) sidebar.classList.toggle("show");
-    };
-  }
+  // File Upload Triggers
+  document.getElementById("uploadDocBtn").onclick = () => document.getElementById("docInput").click();
+  document.getElementById("uploadImgBtn").onclick = () => document.getElementById("imgInput").click();
 
-  const uploadDocBtn = document.getElementById("uploadDocBtn");
-  const uploadImgBtn = document.getElementById("uploadImgBtn");
-  const docInput = document.getElementById("docInput");
-  const imgInput = document.getElementById("imgInput");
+  document.getElementById("docInput").onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const base64 = await fileToBase64(file);
+    sendMessage({ type: "document", fileName: file.name, fileData: base64 });
+    e.target.value = "";
+  };
 
-  if (uploadDocBtn && docInput) {
-    uploadDocBtn.onclick = () => docInput.click();
-    docInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const base64 = await fileToBase64(file);
-      sendMessage({ type: "document", fileName: file.name, fileData: base64 });
-      e.target.value = "";
-    });
-  }
-
-  if (uploadImgBtn && imgInput) {
-    uploadImgBtn.onclick = () => imgInput.click();
-    imgInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const base64 = await fileToBase64(file);
-      sendMessage({ type: "image", fileName: file.name, fileData: base64 });
-      e.target.value = "";
-    });
-  }
+  document.getElementById("imgInput").onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const base64 = await fileToBase64(file);
+    sendMessage({ type: "image", fileName: file.name, fileData: base64 });
+    e.target.value = "";
+  };
 
   if (activeConversationId) {
     loadMessagesOnce();
-  } else if (mode === "community") {
-    const r = await fetch(
-      `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
-    );
-    const d = await r.json();
-    activeConversationId = d.conversationId;
-    loadMessagesOnce();
-  } else if (finalOtherEmail) {
-    const r = await fetch(
-      `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`
-    );
+  } else {
+    let fetchUrl = mode === "community" 
+        ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
+        : `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
+    
+    const r = await fetch(fetchUrl);
     const d = await r.json();
     activeConversationId = d.conversationId;
     loadMessagesOnce();
   }
 });
 
-function showChatLoader() {
-  const el = document.getElementById("chatLoader");
-  if (el) el.style.display = "flex";
-}
-
-function hideChatLoader() {
-  const el = document.getElementById("chatLoader");
-  if (el) el.style.display = "none";
-}
+function showChatLoader() { document.getElementById("chatLoader").style.display = "flex"; }
+function hideChatLoader() { document.getElementById("chatLoader").style.display = "none"; }
