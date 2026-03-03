@@ -37,7 +37,7 @@
             gap: 5px;
             cursor: pointer;
             margin-right: 15px;
-            z-index: 1100;
+            z-index: 1100; /* Stays above menu */
         }
         .hamburger span {
             width: 24px;
@@ -55,13 +55,14 @@
         }
         .logo span { color: #4a6cff; }
 
-        .nav-links { display: none; }
+        .nav-links { display: none; } /* Hidden on mobile */
 
         .nav-links a {
             text-decoration: none;
             color: #333;
             font-weight: 600;
             font-size: 14px;
+            margin-left: 20px;
         }
 
         .btn-primary {
@@ -74,12 +75,12 @@
             font-weight: 700;
         }
 
-        /* MOBILE MENU (Slide-out) */
+        /* MOBILE MENU (Slide-out Drawer) */
         .mobile-menu {
             position: fixed;
             top: 0;
             left: -280px; 
-            width: 260px;
+            width: 260px; /* Fixed width, does not extend full screen */
             height: 100vh;
             background: #4a6cff;
             display: flex;
@@ -89,7 +90,9 @@
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 5px 0 15px rgba(0,0,0,0.2);
         }
+        
         .mobile-menu.show { left: 0; }
+
         .mobile-menu a, .mobile-menu button {
             padding: 18px 25px;
             color: #ffffff !important;
@@ -100,11 +103,12 @@
             text-align: left;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             font-size: 1rem;
+            width: 100%;
         }
 
         /* HERO SECTION */
-        .hero { text-align: center; margin-top: 60px; padding: 0 20px; }
-        .hero h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; }
+        .hero { text-align: center; margin-top: 40px; padding: 0 20px; }
+        .hero h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; }
         .hero p { font-size: 1.1rem; max-width: 700px; margin: 0 auto; opacity: 0.9; line-height: 1.6; }
 
         /* FEATURES */
@@ -112,7 +116,7 @@
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 40px;
+            margin-top: 30px;
             padding: 20px;
             gap: 20px;
         }
@@ -123,7 +127,7 @@
             background: #ffffff;
             color: #222;
             padding: 20px;
-            border-radius: 20px;
+            border-radius: 24px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             text-align: center;
         }
@@ -132,7 +136,7 @@
             width: 100%;
             height: 160px;
             object-fit: cover;
-            border-radius: 12px;
+            border-radius: 16px;
             margin-bottom: 15px;
         }
 
@@ -145,19 +149,22 @@
             padding: 16px 32px;
             background: #ffffff;
             color: #4a6cff;
-            border-radius: 14px;
+            border-radius: 16px;
             text-decoration: none;
             font-weight: 800;
             font-size: 1.1rem;
             box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            display: inline-block;
         }
+        .cta a:active { transform: scale(0.95); }
 
         /* DESKTOP QUERIES */
         @media (min-width: 768px) {
             .navbar { padding: 0 40px; }
             .hamburger { display: none; }
-            .nav-links { display: flex; align-items: center; gap: 20px; margin-left: auto; }
-            .hero h1 { font-size: 3.5rem; }
+            .nav-links { display: flex; align-items: center; }
+            .hero h1 { font-size: 3.2rem; }
         }
     </style>
 </head>
@@ -206,12 +213,13 @@
 </section>
 
 <script>
+// Toggle Mobile Menu
 function toggleMenu(e) {
     if (e) e.stopPropagation();
     document.getElementById("mobileMenu").classList.toggle("show");
 }
 
-// Close menu if clicking outside
+// Close menu if clicking anywhere outside the drawer
 document.addEventListener("click", (e) => {
     const menu = document.getElementById("mobileMenu");
     const burger = document.querySelector(".hamburger");
@@ -223,53 +231,43 @@ document.addEventListener("click", (e) => {
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
-    const loggedInNav = `
+    // Desktop & Mobile inner content
+    const loggedInLinks = `
+        <a href="dashboard.html">Dashboard</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="contacts.html">Contacts</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()" style="color:#ff4a4a !important;">Logout</a>
+    `;
+
+    const publicLinks = `
+        <a href="index.html">Home</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="login.html">Login</a>
+        <button class="btn-primary" onclick="window.location.href='signup.html'" style="margin-left:15px;">Sign Up</button>
+    `;
+
+    const mobilePublicLinks = `
+        <a href="index.html">Home</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="login.html">Login</a>
+        <a href="signup.html" style="background: rgba(255,255,255,0.1)">Sign Up</a>
+    `;
+
+    // Construct Navbar
+    document.getElementById("navbar").innerHTML = `
         <div class="hamburger" onclick="toggleMenu(event)">
             <span></span><span></span><span></span>
         </div>
         <div class="logo">Contact<span>.</span>com</div>
-        <div class="nav-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        </div>
+        <div class="nav-links">${user ? loggedInLinks : publicLinks}</div>
     `;
 
-    const publicNav = `
-        <div class="hamburger" onclick="toggleMenu(event)">
-            <span></span><span></span><span></span>
-        </div>
-        <div class="logo">Contact<span>.</span>com</div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        </div>
-    `;
-
-    document.getElementById("navbar").innerHTML = user ? loggedInNav : publicNav;
-
-    document.getElementById("mobileMenu").innerHTML = user
-        ? `
-            <a href="dashboard.html">Dashboard</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="contacts.html">Contacts</a>
-            <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()" style="color:#ff4a4a !important;">Logout</a>
-        `
-        : `
-            <a href="index.html">Home</a>
-            <a href="communities.html">Communities</a>
-            <a href="events.html">Events</a>
-            <a href="login.html">Login</a>
-            <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-        `;
+    // Construct Mobile Drawer
+    document.getElementById("mobileMenu").innerHTML = user ? loggedInLinks : mobilePublicLinks;
 }
 
 function logout() {
