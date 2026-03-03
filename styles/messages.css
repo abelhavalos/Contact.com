@@ -294,3 +294,62 @@ body {
   border-radius: 10px;
   display: block;
 }
+
+/* CIRCULAR AVATARS */
+.chat-avatar, 
+.chat-avatar-fallback,
+.member-row img {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    flex-shrink: 0;
+}
+
+/* TOGGLE BUTTON STYLE */
+#toggleMembers {
+    background: #4a6cff !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 20px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    display: none; /* Hidden on Desktop */
+}
+
+/* DESKTOP VIEW */
+@media (min-width: 851px) {
+    #memberSidebar {
+        width: 280px;
+        display: block !important;
+        border-left: 1px solid #eee;
+    }
+}
+
+/* MOBILE VIEW */
+@media (max-width: 850px) {
+    #toggleMembers {
+        display: block !important; /* Show button on mobile */
+    }
+
+    #memberSidebar {
+        position: fixed;
+        right: 0;
+        top: 120px; /* Adjust based on your header+nav height */
+        bottom: 0;
+        width: 260px;
+        background: white;
+        z-index: 999;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        transform: translateX(100%); /* Start off-screen */
+        transition: transform 0.3s ease-in-out;
+        display: block !important;
+    }
+
+    /* THE MAGIC CLASS */
+    #memberSidebar.active {
+        transform: translateX(0) !important;
+    }
+}
