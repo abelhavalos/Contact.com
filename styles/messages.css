@@ -1,3 +1,4 @@
+/* 1. GLOBAL RESET */
 * {
   margin: 0;
   padding: 0;
@@ -8,34 +9,21 @@
 body {
   background: #f5f5f5;
   color: #222;
+  overflow-x: hidden;
 }
 
-/* NAVBAR */
+/* 2. NAVBAR & NAVIGATION */
 .navbar {
   width: 100%;
-  padding: 20px 40px;
+  height: 70px;
+  padding: 0 40px;
   display: flex;
   align-items: center;
   background: #ffffff;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   position: sticky;
   top: 0;
-  z-index: 10;
-}
-
-.hamburger {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  cursor: pointer;
-  margin-right: 20px;
-}
-
-.hamburger span {
-  width: 28px;
-  height: 3px;
-  background: #222;
-  border-radius: 3px;
+  z-index: 1000;
 }
 
 .logo {
@@ -47,7 +35,6 @@ body {
 
 .nav-links {
   display: flex;
-  align-items: center;
   gap: 20px;
   margin-left: auto;
 }
@@ -60,83 +47,66 @@ body {
 }
 .nav-links a:hover { color: #4a6cff; }
 
-/* COMMUNITY ROW */
-.community-row {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 18px;
-}
-
-.community-avatar-col {
-  width: 70px;
-  text-align: center;
-}
-
-.community-name {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
-}
-
-.community-bubble-left,
-.community-bubble-right {
-  max-width: 60%;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 15px;
-  line-height: 1.4;
-}
-
-.community-bubble-left {
-  background: #e5e5ea;
-  margin-left: 10px;
-}
-
-.community-bubble-right {
-  background: #0084ff;
-  color: white;
-  margin-left: auto;
-}
-
-/* MOBILE MENU */
-.mobile-menu {
+.hamburger {
   display: none;
   flex-direction: column;
-  background: #4a6cff;
+  gap: 5px;
+  cursor: pointer;
 }
+
+.hamburger span {
+  width: 25px;
+  height: 3px;
+  background: #333;
+  border-radius: 3px;
+}
+
+/* 3. MOBILE MENU (LEFT ANCHOR) */
+.mobile-menu {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  width: 240px;
+  height: calc(100vh - 70px);
+  background: #4a6cff;
+  display: none;
+  flex-direction: column;
+  z-index: 9999;
+  box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+  padding: 20px 0;
+}
+
 .mobile-menu a {
-  padding: 12px 18px;
+  padding: 15px 25px;
   color: white;
   text-decoration: none;
-  border-top: 1px solid rgba(255,255,255,0.2);
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
+
 .mobile-menu.show { display: flex; }
 
-@media (max-width: 700px) {
-  .hamburger { display: flex; }
-  .nav-links { display: none; }
-  .navbar { padding: 20px; }
-}
-
-/* HEADER */
+/* 4. CHAT HEADER */
 #header {
   background: #fff;
-  color: #222;
-  padding: 12px 16px;
-  font-size: 18px;
-  font-weight: bold;
-  border-bottom: 1px solid #e5e5e5;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-/* CHAT LAYOUT */
+#headerTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* 5. CHAT LAYOUT */
 #chat-container {
   display: flex;
-  height: calc(100dvh - 120px);
+  height: calc(100vh - 140px); /* Adjust based on nav + header */
   overflow: hidden;
-  position: relative; /* Needed for mobile sidebar */
+  position: relative;
 }
 
 #chat {
@@ -144,158 +114,28 @@ body {
   display: flex;
   flex-direction: column;
   background: #eef4ff;
-  min-height: 0;
 }
 
 #messages {
   flex: 1;
-  padding: 16px;
+  padding: 20px;
   overflow-y: auto;
-  min-height: 0;
 }
 
-/* Incoming message wrapper */
-.incoming-wrapper {
+/* 6. BUBBLES & CONTENT */
+.msg-row-container {
+  margin-bottom: 15px;
   display: flex;
-  align-items: flex-start;
-  margin-bottom: 12px;
-  max-width: 80%;
-}
-
-.msg {
-  margin-bottom: 12px;
-  padding: 10px 14px;
-  background: #ffffff;
-  border-radius: 8px;
-  max-width: 70%;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.me {
-  background: #d1eaff;
-  margin-left: auto;
-}
-
-/* Input area */
-#input-area {
-  display: flex;
-  padding: 12px;
-  background: #fff;
-  border-top: 1px solid #e5e5e5;
-}
-
-#messageInput {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-#sendBtn {
-  margin-left: 10px;
-  padding: 10px 16px;
-  background: #4a6cff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-#sendBtn:hover { background: #3a56d6; }
-
-/* MEMBER SIDEBAR */
-#memberSidebar {
-  width: 260px;
-  background: #ffffff;
-  border-left: 1px solid #ddd;
-  padding: 16px;
-  overflow-y: auto;
-  transition: transform 0.25s ease;
-}
-
-/* AVATARS */
-.chat-avatar,
-.chat-avatar-fallback {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #4a6cff;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 15px;
-  margin-right: 10px;
-}
-
-/* Hide toggle button on desktop */
-.mobile-toggle {
-  display: none;
-}
-
-/* MOBILE SIDEBAR FIX */
-@media (max-width: 768px) {
-
-  /* Sidebar hidden by default */
-  #memberSidebar {
-    position: absolute;
-    right: 0;
-    top: 0px; /* was 120px — now sits right under the header */
-    height: calc(100dvh - 60px);
-    width: 260px;
-    background: #ffffff;
-    border-left: 1px solid #ddd;
-    padding: 16px;
-    overflow-y: auto;
-    transform: translateX(100%);
-    transition: transform 0.25s ease;
-    z-index: 20;
-  }
-
-  /* Sidebar visible */
-  #memberSidebar.show {
-    transform: translateX(0);
-  }
-
-  /* Toggle button visible */
-  .mobile-toggle {
-    display: inline-block;
-    padding: 8px 12px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-}
-.mobile-menu {
-    position: absolute;
-    top: 70px;              /* match your navbar height */
-    left: 0;                /* ⭐ anchor to the LEFT */
-    width: 220px;           /* adjust as needed */
-    background: #4a6cff;
-    padding: 10px 0;
-    display: none;
-    flex-direction: column;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.mobile-menu.show {
-    display: flex;
 }
 
 .chat-image {
-  max-width: 220px;      /* or 180px, 250px — your choice */
-  height: auto;
-  border-radius: 10px;
+  max-width: 250px;
+  border-radius: 12px;
   display: block;
+  margin-top: 5px;
 }
 
-/* CIRCULAR AVATARS */
+/* 7. CIRCULAR AVATARS (LOCKED) */
 .chat-avatar, 
 .chat-avatar-fallback,
 .member-row img {
@@ -305,9 +145,61 @@ body {
     border-radius: 50% !important;
     object-fit: cover !important;
     flex-shrink: 0;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
 }
 
-/* TOGGLE BUTTON STYLE */
+.chat-avatar-fallback {
+  background: #4a6cff;
+  color: white;
+  font-weight: 700;
+}
+
+/* 8. INPUT AREA */
+#input-area {
+  display: flex;
+  padding: 15px;
+  background: #fff;
+  border-top: 1px solid #eee;
+  gap: 10px;
+}
+
+#messageInput {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 25px;
+  outline: none;
+}
+
+#sendBtn {
+  background: #4a6cff;
+  color: white;
+  border: none;
+  padding: 0 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* 9. MEMBER SIDEBAR & TOGGLE */
+#memberSidebar {
+    width: 280px;
+    background: #ffffff;
+    border-left: 1px solid #eee;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
 #toggleMembers {
     background: #4a6cff !important;
     color: white !important;
@@ -316,40 +208,44 @@ body {
     border-radius: 20px !important;
     font-weight: 600 !important;
     cursor: pointer;
-    display: none; /* Hidden on Desktop */
+    display: none; /* Desktop hidden */
 }
 
-/* DESKTOP VIEW */
+/* 10. RESPONSIVE ENGINE */
+
+/* Desktop Only */
 @media (min-width: 851px) {
-    #memberSidebar {
-        width: 280px;
-        display: block !important;
-        border-left: 1px solid #eee;
-    }
+  #memberSidebar {
+    display: block !important;
+    transform: none !important;
+    position: relative !important;
+  }
 }
 
-/* MOBILE VIEW */
+/* Tablet & Mobile */
 @media (max-width: 850px) {
-    #toggleMembers {
-        display: block !important; /* Show button on mobile */
-    }
+  .navbar { padding: 0 20px; }
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
 
-    #memberSidebar {
-        position: fixed;
-        right: 0;
-        top: 120px; /* Adjust based on your header+nav height */
-        bottom: 0;
-        width: 260px;
-        background: white;
-        z-index: 999;
-        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-        transform: translateX(100%); /* Start off-screen */
-        transition: transform 0.3s ease-in-out;
-        display: block !important;
-    }
+  #toggleMembers {
+    display: block !important;
+  }
 
-    /* THE MAGIC CLASS */
-    #memberSidebar.active {
-        transform: translateX(0) !important;
-    }
+  #memberSidebar {
+    position: fixed;
+    right: 0;
+    top: 70px; /* Sits below Navbar */
+    bottom: 0;
+    width: 260px;
+    z-index: 999;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  /* JavaScript Toggle Class */
+  #memberSidebar.active {
+    transform: translateX(0) !important;
+  }
 }
