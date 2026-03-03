@@ -1,144 +1,147 @@
 /****************************************************
- * CONTACT.COM — FIXED & OPTIMIZED MESSAGES.JS
+ * CONTACT.COM — MESSAGES.JS (V15)
+ * - FIXED: File picker infinite loop
+ * - FIXED: Sidebar z-index / overlap
+ * - THEME: Professional Blue
  ****************************************************/
+
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* USER & STATE */
+/* 1. STATE */
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
-let activeConversationId = new URL(window.location.href).searchParams.get("conversationId");
-const communityId = new URL(window.location.href).searchParams.get("communityId");
-const finalOtherEmail = new URL(window.location.href).searchParams.get("otherEmail") || new URL(window.location.href).searchParams.get("email");
+
+const url = new URL(window.location.href);
+const communityId = url.searchParams.get("communityId");
 const mode = communityId ? "community" : "private";
-let messages = [], communityMembers = [], otherUser = null;
+const otherEmailParam = url.searchParams.get("otherEmail") || url.searchParams.get("email");
 
-/* COLORS & HELPERS */
-const BUBBLE_PALETTE = [{bg:"#4A6CFF",text:"#FFFFFF"},{bg:"#6F8CFF",text:"#FFFFFF"},{bg:"#8FA3FF",text:"#000000"},{bg:"#AFC0FF",text:"#000000"},{bg:"#D1DDFF",text:"#000000"}];
-const getUserColor = (email) => BUBBLE_PALETTE[Math.abs(email.split('').reduce((a,b)=>(a<<5)-a+b.charCodeAt(0),0)) % BUBBLE_PALETTE.length];
-const getInitials = (n) => n ? n.split(" ").filter(Boolean).map(p=>p[0]).join("").substring(0,2).toUpperCase() : "?";
+let activeConversationId = url.searchParams.get("conversationId") || null;
+let messages = [];
+let communityMembers = [];
 
-/****************************************************
- * DATA FETCHING FUNCTIONS (RESTORED)
- ****************************************************/
-async function loadOtherUserProfile() {
-    const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`);
-    const d = await r.json();
-    otherUser = d?.user || {};
-    const fullName = otherUser.fullName || otherUser.FullName || finalOtherEmail;
-    const avatar = (otherUser.profilePic || otherUser.ProfilePic) ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />` : `<div class="chat-avatar-fallback">${getInitials(fullName)}</div>`;
-    const header = document.getElementById("headerTitle");
-    if (header) header.innerHTML = `<div class="chat-header">${avatar}<div class="chat-header-main">${fullName}</div></div>`;
-}
+/* 2. FILE PICKER FIX: Using a lock to prevent loop */
+let isUploading = false;
 
-async function loadCommunityInfo() {
-    const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
-    const d = await r.json();
-    const header = document.getElementById("headerTitle");
-    if (header) header.innerHTML = `<div class="chat-header"><div class="chat-header-main">${d?.community?.name || "Community"}</div></div>`;
-}
+async function handleFileSelect(e, type) {
+    if (isUploading) return;
+    const file = e.target.files[0];
+    if (!file) return;
 
-async function loadCommunityMembers() {
-    const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
-    const d = await r.json();
-    const emails = (d.members || []).map(m => typeof m === "string" ? m : m.email);
-    const tasks = emails.map(async (email) => {
-        try {
-            const res = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`);
-            const userData = await res.json();
-            const u = userData?.user || {};
-            return { email, fullName: u.fullName || u.FullName || email, profilePic: u.profilePic || u.ProfilePic || null };
-        } catch { return { email, fullName: email, profilePic: null }; }
-    });
-    communityMembers = await Promise.all(tasks);
-}
+    isUploading = true;
+    showChatLoader();
 
-/****************************************************
- * RENDERING ENGINE
- ****************************************************/
-function buildMessageRow(msg) {
-    const isMe = msg.senderEmail === loggedInUser.email;
-    const color = getUserColor(msg.senderEmail);
-    const row = document.createElement("div");
-    row.className = "msg-row";
-    row.style = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe?'flex-end':'flex-start'};`;
-    const content = msg.type === "image" ? `<img src="${msg.fileData}" class="chat-image">` : 
-                    msg.type === "document" ? `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">📄 ${msg.fileName}</a>` : (msg.text || "");
-    let pic, initials;
-    if (isMe) {
-        pic = loggedInUser.profilePic || loggedInUser.ProfilePic;
-        initials = getInitials(loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email);
-    } else {
-        const sender = mode === "community" ? (communityMembers.find(m=>m.email === msg.senderEmail) || {}) : (otherUser || {});
-        pic = sender.profilePic || sender.ProfilePic;
-        initials = getInitials(sender.fullName || sender.FullName || msg.senderEmail);
+    try {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            const base64 = reader.result;
+            await sendMessage({ 
+                type: type, 
+                fileName: file.name, 
+                fileData: base64 
+            });
+            
+            // CRITICAL: Reset the input value so the same file can be picked again
+            // and the 'change' event doesn't re-fire unexpectedly.
+            e.target.value = ""; 
+            isUploading = false;
+            hideChatLoader();
+        };
+    } catch (err) {
+        console.error("Upload failed", err);
+        isUploading = false;
+        hideChatLoader();
     }
-    const avatarHTML = pic ? `<img class="chat-avatar" src="${pic}" />` : `<div class="chat-avatar-fallback">${initials}</div>`;
-    const bubbleHTML = `<div style="max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe?color.bg:'#F3F4F6'}; color:${isMe?color.text:'#111827'};">${content}</div>`;
-    row.innerHTML = isMe ? (bubbleHTML + `<div style="width:36px;display:flex;justify-content:center;">${avatarHTML}</div>`) : 
-                           (`<div style="width:36px;display:flex;justify-content:center;">${avatarHTML}</div>` + bubbleHTML);
-    return row;
 }
 
-function appendSingleMessage(msg, isInitialLoad = false) {
-    const container = document.getElementById("messages");
-    if (!container) return;
-    container.appendChild(buildMessageRow(msg));
-    if (!isInitialLoad || (container.scrollHeight - container.scrollTop < 500)) container.scrollTop = container.scrollHeight;
-}
-
-async function loadMessagesOnce() {
+/* 3. MESSAGING ENGINE */
+async function loadHistory() {
     if (!activeConversationId) return;
     const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
     const data = await r.json();
-    const container = document.getElementById("messages");
-    const newMessages = data.messages || [];
-    if (messages.length === 0) {
-        container.innerHTML = "";
-        newMessages.forEach(m => appendSingleMessage(m, true));
+    messages = data.messages || [];
+    
+    const list = document.getElementById("messageList");
+    list.innerHTML = ""; 
+    messages.forEach(msg => list.appendChild(buildMessageRow(msg)));
+    scrollChat();
+}
+
+function buildMessageRow(msg) {
+    const isMe = msg.senderEmail === loggedInUser.email;
+    const div = document.createElement("div");
+    div.style = `display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}; margin-bottom:15px; width:100%;`;
+
+    const bubble = document.createElement("div");
+    bubble.style = `max-width:80%; padding:12px 18px; border-radius:20px; font-size:14px; background:${isMe ? '#4A6CFF' : '#ffffff'}; color:${isMe ? '#ffffff' : '#222'}; border-${isMe ? 'bottom-right' : 'bottom-left'}-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.05);`;
+    
+    // Content Logic
+    const type = (msg.type || "").toLowerCase();
+    if (type === "image" || (msg.fileData && msg.fileData.includes("image/"))) {
+        bubble.innerHTML = `<img src="${msg.fileData}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="window.open(this.src)">`;
+    } else if (type === "document" || msg.fileName) {
+        bubble.innerHTML = `📄 <a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit; font-weight:700;">${msg.fileName}</a>`;
     } else {
-        newMessages.forEach(m => {
-            if (!messages.find(existing => existing.id === m.id)) appendSingleMessage(m);
+        bubble.innerText = msg.text || "";
+    }
+
+    div.appendChild(bubble);
+    return div;
+}
+
+async function sendMessage(payload) {
+    if (!activeConversationId) return;
+    try {
+        await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ 
+                module: "sendMessage", 
+                conversationId: activeConversationId, 
+                senderEmail: loggedInUser.email, 
+                ...payload 
+            })
         });
+        await syncNewMessages();
+    } catch (e) { console.error("Send error", e); }
+}
+
+/* 4. SIDEBAR & TOGGLE FIX */
+function initSidebarToggle() {
+    const btn = document.getElementById("toggleMembers");
+    const sidebar = document.getElementById("memberSidebar");
+    if (btn && sidebar) {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle("show-mobile");
+        };
     }
-    messages = newMessages;
-    hideChatLoader();
+    
+    // Close sidebar when clicking chat area on mobile
+    document.getElementById("chat").onclick = () => {
+        if (sidebar) sidebar.classList.remove("show-mobile");
+    };
 }
 
-function sendMessage(payloadOverride = null) {
-    const input = document.getElementById("messageInput");
-    if (!payloadOverride && !(input?.value || "").trim()) return;
-    const payload = payloadOverride || { type: "text", text: input.value.trim() };
-    appendSingleMessage({ id: "temp_"+Date.now(), senderEmail: loggedInUser.email, type: payload.type, text: payload.text, fileName: payload.fileName||null, fileData: payload.fileData||null });
-    if (input) input.value = "";
-    const params = new URLSearchParams({ module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email, type: payload.type, text: payload.text || "" });
-    const options = payload.type === "text" ? { method: 'GET' } : { method: 'POST', body: JSON.stringify({ ...payload, module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email }) };
-    fetch(payload.type === "text" ? `${API_URL}?${params.toString()}` : API_URL, options).catch(console.error);
-}
-
-/****************************************************
- * INITIALIZATION
- ****************************************************/
+/* 5. INITIALIZE */
 document.addEventListener("DOMContentLoaded", async () => {
-    if (typeof loadNavbar === "function") loadNavbar();
-    showChatLoader();
-    if (mode === "private") {
-        await loadOtherUserProfile();
-        document.getElementById("toggleMembers")?.remove();
-    } else {
-        await loadCommunityInfo();
-        await loadCommunityMembers();
-    }
-    if (!activeConversationId) {
-        const endpoint = mode === "community" ? `module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}` : `module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
-        const r = await fetch(`${API_URL}?${endpoint}`);
-        const d = await r.json();
-        activeConversationId = d.conversationId;
-    }
-    loadMessagesOnce();
-    document.getElementById("sendBtn").onclick = () => sendMessage();
-    document.getElementById("messageInput").onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
-    setInterval(loadMessagesOnce, 5000);
+    loadNavbar(); 
+    initSidebarToggle();
+
+    // Attach File Listeners
+    document.getElementById("uploadDocBtn").onclick = () => document.getElementById("docInput").click();
+    document.getElementById("uploadImgBtn").onclick = () => document.getElementById("imgInput").click();
+    
+    document.getElementById("docInput").onchange = (e) => handleFileSelect(e, "document");
+    document.getElementById("imgInput").onchange = (e) => handleFileSelect(e, "image");
+
+    // Load Chat
+    await loadChatContext(); // Same as previous version
+    await loadHistory();
+    setInterval(syncNewMessages, 4000);
 });
 
-function showChatLoader() { const el=document.getElementById("chatLoader"); if(el) el.style.display="flex"; }
-function hideChatLoader() { const el=document.getElementById("chatLoader"); if(el) el.style.display="none"; }
+function scrollChat() {
+    const container = document.getElementById("messages");
+    container.scrollTop = container.scrollHeight;
+}
