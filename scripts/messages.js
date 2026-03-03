@@ -1,5 +1,8 @@
 /****************************************************
- * CONTACT.COM — ULTRA FAST MESSAGES.JS (FIXED SIDEBAR)
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS
+ * - Private Mode: Hides Sidebar/Toggle
+ * - Input Guard: Locks input until conversationId is ready
+ * - Responsive: Handles mobile drawer & desktop sidebar
  ****************************************************/
 
 const API_URL =
@@ -107,13 +110,11 @@ function toggleMenu(e) {
 
 // Global click listener to close sidebars
 document.addEventListener("click", (e) => {
-  // Close Mobile Navbar
   const mobileMenu = document.getElementById("mobileMenu");
   if (mobileMenu && mobileMenu.classList.contains("show") && !mobileMenu.contains(e.target) && !e.target.closest(".hamburger")) {
     mobileMenu.classList.remove("show");
   }
 
-  // Close Member Sidebar on Mobile
   const sidebar = document.getElementById("memberSidebar");
   const toggleBtn = document.getElementById("toggleMembers");
   if (sidebar && sidebar.classList.contains("active") && !sidebar.contains(e.target) && !e.target.closest("#toggleMembers")) {
@@ -228,6 +229,16 @@ function renderCommunityMembersList(list) {
  ****************************************************/
 async function loadMessagesOnce() {
   if (!activeConversationId) return;
+
+  // Unlock input area
+  const input = document.getElementById("messageInput");
+  const sendBtn = document.getElementById("sendBtn");
+  if (input) {
+      input.disabled = false;
+      input.placeholder = "Type a message...";
+  }
+  if (sendBtn) sendBtn.disabled = false;
+
   showChatLoader();
 
   const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
@@ -282,7 +293,7 @@ function buildMessageRow(msg) {
       }
   }
 
-  const avatar = pic 
+  const avatarHTML = pic 
     ? `<img class="chat-avatar" src="${pic}" style="width:32px; height:32px; border-radius:50%;" />`
     : `<div class="chat-avatar-fallback" style="width:32px; height:32px; border-radius:50%; font-size:12px; background:#eee; display:flex; align-items:center; justify-content:center;">${initials}</div>`;
 
@@ -296,11 +307,16 @@ function buildMessageRow(msg) {
   bubble.innerHTML = contentHTML;
 
   if (isMe) {
-    row.innerHTML = `<div style="display:flex; flex-direction:column; align-items:flex-end;"><div style="font-size:10px; color:#999; margin-bottom:2px;">You</div></div>`;
     row.appendChild(bubble);
-    row.innerHTML += `<div style="margin-left:5px;">${avatar}</div>`;
+    const avatarDiv = document.createElement("div");
+    avatarDiv.style.marginLeft = "5px";
+    avatarDiv.innerHTML = avatarHTML;
+    row.appendChild(avatarDiv);
   } else {
-    row.innerHTML = `<div style="margin-right:5px;">${avatar}</div>`;
+    const avatarDiv = document.createElement("div");
+    avatarDiv.style.marginRight = "5px";
+    avatarDiv.innerHTML = avatarHTML;
+    row.appendChild(avatarDiv);
     row.appendChild(bubble);
   }
 
@@ -355,34 +371,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
   showChatLoader();
 
-  // SIDEBAR TOGGLE LOGIC (FIXED)
+  // Initially lock input
+  const input = document.getElementById("messageInput");
+  const sendBtn = document.getElementById("sendBtn");
+  if (input) {
+      input.disabled = true;
+      input.placeholder = "Connecting...";
+  }
+  if (sendBtn) sendBtn.disabled = true;
+
   const toggleBtn = document.getElementById("toggleMembers");
   const sidebar = document.getElementById("memberSidebar");
 
-  if (toggleBtn && sidebar) {
-    toggleBtn.onclick = (e) => {
-        e.stopPropagation();
-        const isActive = sidebar.classList.toggle("active");
-        toggleBtn.classList.toggle("active");
-        toggleBtn.innerText = isActive ? "Close" : "Members";
-    };
-  }
-
+  // Private vs Community UI Logic
   if (mode === "private") {
     if (toggleBtn) toggleBtn.style.display = "none";
     if (sidebar) sidebar.style.display = "none";
     await loadOtherUserProfile();
   } else {
+    if (toggleBtn) {
+        toggleBtn.style.display = "block";
+        toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            const isActive = sidebar.classList.toggle("active");
+            toggleBtn.classList.toggle("active");
+            toggleBtn.innerText = isActive ? "Close" : "Members";
+        };
+    }
     await loadCommunityInfo();
     await loadCommunityMembers();
   }
 
-  const sendBtn = document.getElementById("sendBtn");
+  // Event Listeners
   if (sendBtn) sendBtn.onclick = () => sendMessage();
-
-  const messageInput = document.getElementById("messageInput");
-  if (messageInput) {
-    messageInput.addEventListener("keydown", (e) => {
+  if (input) {
+    input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
@@ -390,7 +413,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // File Upload Triggers
+  // File Uploads
   document.getElementById("uploadDocBtn").onclick = () => document.getElementById("docInput").click();
   document.getElementById("uploadImgBtn").onclick = () => document.getElementById("imgInput").click();
 
@@ -410,6 +433,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.target.value = "";
   };
 
+  // Connection Logic
   if (activeConversationId) {
     loadMessagesOnce();
   } else {
@@ -417,10 +441,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
         : `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
     
-    const r = await fetch(fetchUrl);
-    const d = await r.json();
-    activeConversationId = d.conversationId;
-    loadMessagesOnce();
+    try {
+        const r = await fetch(fetchUrl);
+        const d = await r.json();
+        if (d.conversationId) {
+            activeConversationId = d.conversationId;
+            loadMessagesOnce();
+        }
+    } catch (err) {
+        console.error("Connection failed", err);
+        if (input) input.placeholder = "Connection failed...";
+    }
   }
 });
 
