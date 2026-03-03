@@ -1,7 +1,8 @@
 /****************************************************
- * CONTACT.COM — ULTRA-OPTIMIZED MESSAGES.JS
+ * CONTACT.COM — FIXED & OPTIMIZED MESSAGES.JS
  ****************************************************/
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+
 /* USER & STATE */
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
@@ -10,10 +11,47 @@ const communityId = new URL(window.location.href).searchParams.get("communityId"
 const finalOtherEmail = new URL(window.location.href).searchParams.get("otherEmail") || new URL(window.location.href).searchParams.get("email");
 const mode = communityId ? "community" : "private";
 let messages = [], communityMembers = [], otherUser = null;
+
 /* COLORS & HELPERS */
 const BUBBLE_PALETTE = [{bg:"#4A6CFF",text:"#FFFFFF"},{bg:"#6F8CFF",text:"#FFFFFF"},{bg:"#8FA3FF",text:"#000000"},{bg:"#AFC0FF",text:"#000000"},{bg:"#D1DDFF",text:"#000000"}];
 const getUserColor = (email) => BUBBLE_PALETTE[Math.abs(email.split('').reduce((a,b)=>(a<<5)-a+b.charCodeAt(0),0)) % BUBBLE_PALETTE.length];
 const getInitials = (n) => n ? n.split(" ").filter(Boolean).map(p=>p[0]).join("").substring(0,2).toUpperCase() : "?";
+
+/****************************************************
+ * DATA FETCHING FUNCTIONS (RESTORED)
+ ****************************************************/
+async function loadOtherUserProfile() {
+    const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`);
+    const d = await r.json();
+    otherUser = d?.user || {};
+    const fullName = otherUser.fullName || otherUser.FullName || finalOtherEmail;
+    const avatar = (otherUser.profilePic || otherUser.ProfilePic) ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />` : `<div class="chat-avatar-fallback">${getInitials(fullName)}</div>`;
+    const header = document.getElementById("headerTitle");
+    if (header) header.innerHTML = `<div class="chat-header">${avatar}<div class="chat-header-main">${fullName}</div></div>`;
+}
+
+async function loadCommunityInfo() {
+    const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
+    const d = await r.json();
+    const header = document.getElementById("headerTitle");
+    if (header) header.innerHTML = `<div class="chat-header"><div class="chat-header-main">${d?.community?.name || "Community"}</div></div>`;
+}
+
+async function loadCommunityMembers() {
+    const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
+    const d = await r.json();
+    const emails = (d.members || []).map(m => typeof m === "string" ? m : m.email);
+    const tasks = emails.map(async (email) => {
+        try {
+            const res = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`);
+            const userData = await res.json();
+            const u = userData?.user || {};
+            return { email, fullName: u.fullName || u.FullName || email, profilePic: u.profilePic || u.ProfilePic || null };
+        } catch { return { email, fullName: email, profilePic: null }; }
+    });
+    communityMembers = await Promise.all(tasks);
+}
+
 /****************************************************
  * RENDERING ENGINE
  ****************************************************/
@@ -22,7 +60,6 @@ function buildMessageRow(msg) {
     const color = getUserColor(msg.senderEmail);
     const row = document.createElement("div");
     row.className = "msg-row";
-    row.setAttribute('data-id', msg.id);
     row.style = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe?'flex-end':'flex-start'};`;
     const content = msg.type === "image" ? `<img src="${msg.fileData}" class="chat-image">` : 
                     msg.type === "document" ? `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">📄 ${msg.fileName}</a>` : (msg.text || "");
@@ -41,15 +78,14 @@ function buildMessageRow(msg) {
                            (`<div style="width:36px;display:flex;justify-content:center;">${avatarHTML}</div>` + bubbleHTML);
     return row;
 }
+
 function appendSingleMessage(msg, isInitialLoad = false) {
     const container = document.getElementById("messages");
     if (!container) return;
     container.appendChild(buildMessageRow(msg));
     if (!isInitialLoad || (container.scrollHeight - container.scrollTop < 500)) container.scrollTop = container.scrollHeight;
 }
-/****************************************************
- * DATA & ACTIONS
- ****************************************************/
+
 async function loadMessagesOnce() {
     if (!activeConversationId) return;
     const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
@@ -67,30 +103,30 @@ async function loadMessagesOnce() {
     messages = newMessages;
     hideChatLoader();
 }
+
 function sendMessage(payloadOverride = null) {
     const input = document.getElementById("messageInput");
-    const text = (input?.value || "").trim();
-    if (!payloadOverride && !text) return;
-    const payload = payloadOverride || { type: "text", text: text };
-    const optimisticMsg = { id: "temp_"+Date.now(), senderEmail: loggedInUser.email, type: payload.type, text: payload.text, fileName: payload.fileName||null, fileData: payload.fileData||null };
-    appendSingleMessage(optimisticMsg);
+    if (!payloadOverride && !(input?.value || "").trim()) return;
+    const payload = payloadOverride || { type: "text", text: input.value.trim() };
+    appendSingleMessage({ id: "temp_"+Date.now(), senderEmail: loggedInUser.email, type: payload.type, text: payload.text, fileName: payload.fileName||null, fileData: payload.fileData||null });
     if (input) input.value = "";
     const params = new URLSearchParams({ module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email, type: payload.type, text: payload.text || "" });
     const options = payload.type === "text" ? { method: 'GET' } : { method: 'POST', body: JSON.stringify({ ...payload, module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email }) };
     fetch(payload.type === "text" ? `${API_URL}?${params.toString()}` : API_URL, options).catch(console.error);
 }
+
 /****************************************************
  * INITIALIZATION
  ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
-    loadNavbar();
+    if (typeof loadNavbar === "function") loadNavbar();
     showChatLoader();
     if (mode === "private") {
-        loadOtherUserProfile();
+        await loadOtherUserProfile();
         document.getElementById("toggleMembers")?.remove();
     } else {
-        loadCommunityInfo();
-        loadCommunityMembers();
+        await loadCommunityInfo();
+        await loadCommunityMembers();
     }
     if (!activeConversationId) {
         const endpoint = mode === "community" ? `module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}` : `module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
@@ -103,7 +139,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("messageInput").onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
     setInterval(loadMessagesOnce, 5000);
 });
-/* HELPERS */
+
 function showChatLoader() { const el=document.getElementById("chatLoader"); if(el) el.style.display="flex"; }
 function hideChatLoader() { const el=document.getElementById("chatLoader"); if(el) el.style.display="none"; }
-async function fileToBase64(file) { return new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result); reader.readAsDataURL(file); }); }
