@@ -57,7 +57,7 @@
 
         .nav-links { display: none; }
 
-        /* MOBILE MENU (Slide-out) */
+        /* MOBILE MENU (Slide-out matching Contacts) */
         .mobile-menu {
             position: fixed;
             top: 0;
@@ -95,132 +95,44 @@
         }
 
         #publicProfilePic {
-            width: 120px;
-            height: 120px;
+            width: 120px; height: 120px;
             border-radius: 50%;
             object-fit: cover;
             margin: 0 auto 20px auto;
-            display: block;
             border: 4px solid #f0f2f5;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        .profile-card h1 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #111;
-            letter-spacing: -1px;
-            margin-bottom: 5px;
-        }
-
-        .profile-card p#profession {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #4a6cff;
-            margin-bottom: 25px;
-        }
+        .profile-card h1 { font-size: 1.8rem; font-weight: 800; color: #111; letter-spacing: -1px; }
+        #profession { font-size: 1rem; font-weight: 600; color: #4a6cff; margin-bottom: 25px; }
 
         .section-title {
-            color: #111;
-            font-weight: 800;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            margin-top: 25px;
-            margin-bottom: 8px;
-            text-align: left;
-            border-bottom: 2px solid #f0f2f5;
-            padding-bottom: 5px;
+            color: #111; font-weight: 800; font-size: 0.85rem;
+            text-transform: uppercase; letter-spacing: 1.2px;
+            margin-top: 25px; margin-bottom: 8px; text-align: left;
+            border-bottom: 2px solid #f0f2f5; padding-bottom: 5px;
         }
 
-        .section-text {
-            text-align: left;
-            color: #555;
-            line-height: 1.5;
-            font-size: 0.95rem;
-            margin-bottom: 10px;
-        }
+        .section-text { text-align: left; color: #555; line-height: 1.5; font-size: 0.95rem; margin-bottom: 10px; }
 
         /* BUTTONS */
-        .btn-row {
-            margin-top: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
+        .btn-row { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
         .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 16px;
-            border: none;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 1rem;
-            color: #ffffff !important;
-            transition: transform 0.2s, background 0.2s;
-            text-decoration: none;
-            display: block;
+            width: 100%; padding: 14px; border-radius: 16px; border: none;
+            cursor: pointer; font-weight: 700; font-size: 1rem;
+            color: #ffffff !important; transition: transform 0.2s;
         }
         .btn:active { transform: scale(0.97); }
-
         .btn-message { background: #4a6cff; }
         .btn-add { background: #222; }
 
         /* POPUP */
         .popup-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10001;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            display: none; align-items: center; justify-content: center; z-index: 10001;
         }
-        .popup {
-            background: #fff;
-            border-radius: 24px;
-            padding: 30px;
-            max-width: 320px;
-            width: 85%;
-            text-align: center;
-            color: #222;
-        }
-        .popup-title { font-weight: 800; font-size: 1.3rem; margin-bottom: 10px; }
-        .popup-message { color: #666; margin-bottom: 20px; font-size: 0.95rem; }
-        .popup button {
-            width: 100%;
-            padding: 12px;
-            background: #4a6cff;
-            color: white !important;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        /* ANIMATION */
-        .public-animation {
-            position: fixed;
-            inset: 0;
-            background: #4a6cff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            transition: opacity 0.4s ease;
-        }
-        .public-animation.hidden { opacity: 0; pointer-events: none; }
-        .spinner {
-            width: 45px;
-            height: 45px;
-            border: 4px solid rgba(255,255,255,0.2);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .popup { background: #fff; border-radius: 24px; padding: 30px; max-width: 320px; width: 85%; text-align: center; }
+        .popup button { width: 100%; padding: 12px; background: #4a6cff; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
         /* DESKTOP QUERIES */
         @media (min-width: 768px) {
@@ -228,26 +140,18 @@
             .hamburger { display: none; }
             .nav-links { display: flex !important; align-items: center; gap: 20px; margin-left: auto; }
             .nav-links a { text-decoration: none; color: #333; font-weight: 600; font-size: 14px; }
-            
             .btn-row { flex-direction: row; }
-            .profile-card { margin: 50px auto; padding: 40px; }
         }
     </style>
 </head>
 
 <body>
 
-<div id="publicProfileAnimation" class="public-animation">
-    <div class="spinner"></div>
-    <div style="margin-top: 15px; font-weight: 700; letter-spacing: 1px;">LOADING PROFILE...</div>
-</div>
-
 <nav class="navbar" id="navbar"></nav>
 <div class="mobile-menu" id="mobileMenu"></div>
 
 <div class="profile-card">
     <img id="publicProfilePic" src="" alt="Profile Picture" style="display:none;">
-
     <h1 id="name">...</h1>
     <p id="profession">...</p>
 
@@ -268,14 +172,22 @@
 
 <div id="popupBackdrop" class="popup-backdrop">
     <div class="popup">
-        <div id="popupTitle" class="popup-title"></div>
-        <div id="popupMessage" class="popup-message"></div>
+        <div id="popupTitle" class="popup-title" style="font-weight: 800; margin-bottom: 10px;"></div>
+        <div id="popupMessage" class="popup-message" style="color: #666; margin-bottom: 20px;"></div>
         <button onclick="hidePopup()">Got it</button>
     </div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+    const params = new URLSearchParams(window.location.search);
+    const profileEmail = params.get("email");
+
+    /* UI FUNCTIONS */
+    function toggleMenu(e) {
+        if (e) e.stopPropagation();
+        document.getElementById("mobileMenu").classList.toggle("show");
+    }
 
     function loadNavbar() {
         const navItems = `
@@ -284,7 +196,7 @@
             <a href="events.html">Events</a>
             <a href="contacts.html">Contacts</a>
             <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()" style="color:#ff4a4a !important;">Logout</a>
+            <a href="#" onclick="logout()">Logout</a>
         `;
         document.getElementById("navbar").innerHTML = `
             <div class="hamburger" onclick="toggleMenu(event)"><span></span><span></span><span></span></div>
@@ -294,15 +206,10 @@
         document.getElementById("mobileMenu").innerHTML = navItems;
     }
 
-    function toggleMenu(e) {
-        if (e) e.stopPropagation();
-        document.getElementById("mobileMenu").classList.toggle("show");
-    }
-
     document.addEventListener("click", (e) => {
         const menu = document.getElementById("mobileMenu");
         const burger = document.querySelector(".hamburger");
-        if (menu.classList.contains("show") && !menu.contains(e.target) && !burger.contains(e.target)) {
+        if (menu && menu.classList.contains("show") && !menu.contains(e.target) && !burger.contains(e.target)) {
             menu.classList.remove("show");
         }
     });
@@ -313,23 +220,22 @@
         document.getElementById("popupBackdrop").style.display = "flex";
     }
 
-    function hidePopup() {
-        document.getElementById("popupBackdrop").style.display = "none";
-    }
+    function hidePopup() { document.getElementById("popupBackdrop").style.display = "none"; }
 
     function logout() {
         localStorage.removeItem("contact_user");
         window.location.href = "index.html";
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const profileEmail = params.get("email");
-
+    /* DATA FUNCTIONS */
     async function loadPublicProfile() {
         if (!profileEmail) {
             showPopup("Error", "No profile specified.");
             return;
         }
+
+        const cached = localStorage.getItem("cached_public_profile_" + profileEmail);
+        if (cached) fillProfile(JSON.parse(cached));
 
         try {
             const url = `${API_URL}?module=getPublicProfile&email=${encodeURIComponent(profileEmail)}`;
@@ -338,29 +244,29 @@
 
             if (data.success) {
                 fillProfile(data.user);
-            } else {
+                localStorage.setItem("cached_public_profile_" + profileEmail, JSON.stringify(data.user));
+            } else if (!cached) {
                 showPopup("Not Found", "This profile does not exist.");
             }
         } catch (err) {
-            showPopup("Error", "Unable to load profile.");
-        } finally {
-            document.getElementById("publicProfileAnimation").classList.add("hidden");
+            if (!cached) showPopup("Network Error", "Unable to load profile.");
         }
     }
 
     function fillProfile(u) {
-        document.getElementById("name").innerText = u.fullName || "Anonymous User";
+        document.getElementById("name").innerText = u.fullName || "Anonymous";
         document.getElementById("profession").innerText = u.profession || "Member";
-        document.getElementById("about").innerText = u.about || "No bio provided.";
-        document.getElementById("skills").innerText = u.skills || "Not specified.";
-        document.getElementById("workLife").innerText = u.workLife || "No details provided.";
+        document.getElementById("about").innerText = u.about || "";
+        document.getElementById("skills").innerText = u.skills || "";
+        document.getElementById("workLife").innerText = u.workLife || "";
 
         const pic = u.profilePic || u.ProfilePic || null;
         const imgEl = document.getElementById("publicProfilePic");
-
         if (pic) {
             imgEl.src = pic;
             imgEl.style.display = "block";
+        } else {
+            imgEl.style.display = "none";
         }
     }
 
@@ -372,7 +278,7 @@
         const me = JSON.parse(localStorage.getItem("contact_user"));
         if (!me) return window.location.href = "login.html";
 
-        showPopup("Working...", "Adding contact to your list...");
+        showPopup("Adding...", "Adding this contact...");
 
         try {
             const url = `${API_URL}?module=addContact&userEmail=${encodeURIComponent(me.email)}&contactEmail=${encodeURIComponent(profileEmail)}`;
@@ -380,12 +286,12 @@
             const result = await res.json();
 
             if (result.success) {
-                showPopup("Success!", "Contact has been added.");
+                showPopup("Contact Added", "This person is now in your contacts.");
             } else {
-                showPopup("Note", result.message || "Could not add contact.");
+                showPopup("Error", result.message || "Failed to add contact.");
             }
         } catch (err) {
-            showPopup("Network Error", "Please check your connection.");
+            showPopup("Network Error", "Unable to add contact.");
         }
     }
 
