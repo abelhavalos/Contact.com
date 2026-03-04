@@ -1,13 +1,15 @@
 /****************************************************
- * CONTACT.COM — MESSAGES.JS (V15)
- * - FIXED: File picker infinite loop
- * - FIXED: Sidebar z-index / overlap
- * - THEME: Professional Blue
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS
+ * - Full history load (no slicing)
+ * - No caching
+ * - Instant optimistic send
+ * - Append-only rendering (no full re-render)
+ * - Modern clean UI
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* 1. STATE */
+/* 1. STATE & USER */
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
 
@@ -15,133 +17,190 @@ const url = new URL(window.location.href);
 const communityId = url.searchParams.get("communityId");
 const mode = communityId ? "community" : "private";
 const otherEmailParam = url.searchParams.get("otherEmail") || url.searchParams.get("email");
+const paramTitle = url.searchParams.get("title") || "";
 
 let activeConversationId = url.searchParams.get("conversationId") || null;
 let messages = [];
 let communityMembers = [];
 
-/* 2. FILE PICKER FIX: Using a lock to prevent loop */
-let isUploading = false;
-
-async function handleFileSelect(e, type) {
-    if (isUploading) return;
-    const file = e.target.files[0];
-    if (!file) return;
-
-    isUploading = true;
-    showChatLoader();
-
-    try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-            const base64 = reader.result;
-            await sendMessage({ 
-                type: type, 
-                fileName: file.name, 
-                fileData: base64 
-            });
-            
-            // CRITICAL: Reset the input value so the same file can be picked again
-            // and the 'change' event doesn't re-fire unexpectedly.
-            e.target.value = ""; 
-            isUploading = false;
-            hideChatLoader();
-        };
-    } catch (err) {
-        console.error("Upload failed", err);
-        isUploading = false;
-        hideChatLoader();
-    }
+/****************************************************
+ * HELPERS
+ ****************************************************/
+function getInitials(name) {
+  if (!name) return "?";
+  return name.split(" ").filter(Boolean).map(p => p[0]).join("").substring(0, 2).toUpperCase();
 }
 
-/* 3. MESSAGING ENGINE */
-async function loadHistory() {
-    if (!activeConversationId) return;
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+/****************************************************
+ * RENDERING
+ ****************************************************/
+async function loadMessagesOnce() {
+  if (!activeConversationId) return;
+  showChatLoader();
+  try {
     const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
     const data = await r.json();
     messages = data.messages || [];
-    
-    const list = document.getElementById("messageList");
-    list.innerHTML = ""; 
-    messages.forEach(msg => list.appendChild(buildMessageRow(msg)));
-    scrollChat();
+    renderAllMessages(messages);
+  } catch (e) { console.error(e); }
+  hideChatLoader();
+}
+
+function renderAllMessages(list) {
+  const container = document.getElementById("messages");
+  if (!container) return;
+  container.innerHTML = "";
+  list.forEach(msg => container.appendChild(buildMessageRow(msg)));
+  container.scrollTop = container.scrollHeight;
 }
 
 function buildMessageRow(msg) {
-    const isMe = msg.senderEmail === loggedInUser.email;
-    const div = document.createElement("div");
-    div.style = `display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}; margin-bottom:15px; width:100%;`;
+  const isMe = msg.senderEmail === loggedInUser.email;
+  const row = document.createElement("div");
+  row.className = "msg-row";
+  row.style.justifyContent = isMe ? "flex-end" : "flex-start";
 
-    const bubble = document.createElement("div");
-    bubble.style = `max-width:80%; padding:12px 18px; border-radius:20px; font-size:14px; background:${isMe ? '#4A6CFF' : '#ffffff'}; color:${isMe ? '#ffffff' : '#222'}; border-${isMe ? 'bottom-right' : 'bottom-left'}-radius:4px; box-shadow:0 2px 5px rgba(0,0,0,0.05);`;
+  const bubble = document.createElement("div");
+  bubble.style = `max-width:70%; padding:10px 14px; border-radius:18px; font-size:14px; background:${isMe ? '#4A6CFF' : '#fff'}; color:${isMe ? '#fff' : '#222'}; border: ${isMe ? 'none' : '1px solid #ddd'};`;
+
+  if (msg.type === "image") {
+    bubble.innerHTML = `<img src="${msg.fileData}" class="chat-image" onclick="window.open(this.src)">`;
+  } else if (msg.type === "document") {
+    bubble.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit; font-weight:700;">📄 ${msg.fileName}</a>`;
+  } else {
+    bubble.innerText = msg.text || "";
+  }
+
+  row.appendChild(bubble);
+  return row;
+}
+
+/****************************************************
+ * MEMBERS (CIRCULAR)
+ ****************************************************/
+async function loadCommunityMembers() {
+  const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
+  const d = await r.json();
+  const emails = (d.members || []).map(m => typeof m === "string" ? m : m.email);
+
+  const tasks = emails.map(async (email) => {
+    const res = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    const u = data?.user || {};
+    return { email, fullName: u.fullName || u.FullName || email, profilePic: u.profilePic || u.ProfilePic || null };
+  });
+
+  communityMembers = await Promise.all(tasks);
+  renderMembersList();
+}
+
+function renderMembersList() {
+  const container = document.getElementById("memberSidebar");
+  if (!container) return;
+  container.innerHTML = "<h3 style='margin-bottom:15px; font-size:16px;'>Participants</h3>";
+
+  communityMembers.forEach(m => {
+    const initials = getInitials(m.fullName);
+    const avatarHTML = m.profilePic 
+      ? `<img class="chat-avatar" src="${m.profilePic}" />` 
+      : `<div class="chat-avatar-fallback">${initials}</div>`;
     
-    // Content Logic
-    const type = (msg.type || "").toLowerCase();
-    if (type === "image" || (msg.fileData && msg.fileData.includes("image/"))) {
-        bubble.innerHTML = `<img src="${msg.fileData}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="window.open(this.src)">`;
-    } else if (type === "document" || msg.fileName) {
-        bubble.innerHTML = `📄 <a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit; font-weight:700;">${msg.fileName}</a>`;
-    } else {
-        bubble.innerText = msg.text || "";
-    }
-
-    div.appendChild(bubble);
-    return div;
+    const row = document.createElement("div");
+    row.className = "member-row";
+    row.onclick = () => window.location.href = `public-profile.html?email=${encodeURIComponent(m.email)}`;
+    row.innerHTML = `${avatarHTML} <div class="member-name">${m.fullName}</div>`;
+    container.appendChild(row);
+  });
 }
 
-async function sendMessage(payload) {
-    if (!activeConversationId) return;
-    try {
-        await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({ 
-                module: "sendMessage", 
-                conversationId: activeConversationId, 
-                senderEmail: loggedInUser.email, 
-                ...payload 
-            })
-        });
-        await syncNewMessages();
-    } catch (e) { console.error("Send error", e); }
+/****************************************************
+ * SEND & PICKERS
+ ****************************************************/
+async function sendMessage(payloadOverride = null) {
+  const input = document.getElementById("messageInput");
+  const text = (input?.value || "").trim();
+  if (!payloadOverride && !text) return;
+
+  const payload = payloadOverride || { type: "text", text };
+  if (input) input.value = "";
+
+  // Optimistic UI
+  messages.push({ ...payload, senderEmail: loggedInUser.email });
+  renderAllMessages(messages);
+
+  await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email, ...payload })
+  });
+  loadMessagesOnce();
 }
 
-/* 4. SIDEBAR & TOGGLE FIX */
-function initSidebarToggle() {
-    const btn = document.getElementById("toggleMembers");
-    const sidebar = document.getElementById("memberSidebar");
-    if (btn && sidebar) {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            sidebar.classList.toggle("show-mobile");
-        };
-    }
-    
-    // Close sidebar when clicking chat area on mobile
-    document.getElementById("chat").onclick = () => {
-        if (sidebar) sidebar.classList.remove("show-mobile");
-    };
-}
-
-/* 5. INITIALIZE */
+/****************************************************
+ * DOM READY
+ ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
-    loadNavbar(); 
-    initSidebarToggle();
+  // 1. UI Elements
+  const toggleBtn = document.getElementById("toggleMembers");
+  const sidebar = document.getElementById("memberSidebar");
+  const docInput = document.getElementById("docInput");
+  const imgInput = document.getElementById("imgInput");
 
-    // Attach File Listeners
-    document.getElementById("uploadDocBtn").onclick = () => document.getElementById("docInput").click();
-    document.getElementById("uploadImgBtn").onclick = () => document.getElementById("imgInput").click();
-    
-    document.getElementById("docInput").onchange = (e) => handleFileSelect(e, "document");
-    document.getElementById("imgInput").onchange = (e) => handleFileSelect(e, "image");
+  // 2. Sidebar Toggle
+  if (toggleBtn) {
+    toggleBtn.onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle("show"); };
+  }
 
-    // Load Chat
-    await loadChatContext(); // Same as previous version
-    await loadHistory();
-    setInterval(syncNewMessages, 4000);
+  // 3. File Pickers (Anti-Loop)
+  document.getElementById("uploadDocBtn").onclick = () => docInput.click();
+  document.getElementById("uploadImgBtn").onclick = () => imgInput.click();
+
+  docInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const base64 = await fileToBase64(file);
+    await sendMessage({ type: "document", fileName: file.name, fileData: base64 });
+    e.target.value = ""; // Clear loop
+  };
+
+  imgInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const base64 = await fileToBase64(file);
+    await sendMessage({ type: "image", fileName: file.name, fileData: base64 });
+    e.target.value = ""; // Clear loop
+  };
+
+  // 4. Mode Setup
+  if (mode === "community") {
+    await loadCommunityMembers();
+  } else {
+    if (toggleBtn) toggleBtn.style.display = "none";
+    if (sidebar) sidebar.style.display = "none";
+  }
+
+  // 5. Start Conv
+  if (!activeConversationId) {
+    const setupUrl = mode === "community" 
+      ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
+      : `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${otherEmailParam}`;
+    const res = await fetch(setupUrl);
+    const data = await res.json();
+    activeConversationId = data.conversationId;
+  }
+
+  loadMessagesOnce();
+
+  document.getElementById("sendBtn").onclick = () => sendMessage();
+  document.getElementById("messageInput").onkeydown = (e) => { if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); }};
 });
 
-function scrollChat() {
-    const container = document.getElementById("messages");
-    container.scrollTop = container.scrollHeight;
-}
+function showChatLoader() { document.getElementById("chatLoader").style.display = "flex"; }
+function hideChatLoader() { document.getElementById("chatLoader").style.display = "none"; }
