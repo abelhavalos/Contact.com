@@ -6,15 +6,12 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0
 function showPopup(title, message) {
     const titleEl = document.getElementById("popupTitle");
     const msgEl = document.getElementById("popupMessage");
-    const backdrop = document.getElementById("popupBackdrop");
-    const mainPopup = document.getElementById("mainPopup");
-
     if (titleEl) titleEl.innerText = title;
     if (msgEl) msgEl.innerText = message;
 
     document.getElementById("deleteConfirmPopup").style.display = "none";
-    if (mainPopup) mainPopup.style.display = "block";
-    if (backdrop) backdrop.style.display = "flex";
+    document.getElementById("mainPopup").style.display = "block";
+    document.getElementById("popupBackdrop").style.display = "flex";
 }
 
 function hidePopup() {
@@ -72,6 +69,7 @@ function loadNavbar() {
     }
 }
 
+// Close menu when clicking outside
 document.addEventListener("click", (e) => {
     const menu = document.getElementById("mobileMenu");
     const hamburger = document.querySelector(".hamburger");
@@ -111,7 +109,8 @@ async function loadProfile() {
 
     hideLoader();
 
-    // FIXED: Added fallback for 'name' or 'fullName' to fix the initial login bug
+    // FIXED: The user object often uses 'name' from Google Sheets on first login.
+    // We check both keys so the name appears immediately.
     const nameToDisplay = user.fullName || user.name || "";
 
     setText("fullNameDisplay", nameToDisplay);
@@ -148,12 +147,19 @@ function getVal(id) {
    EDITING LOGIC
 ============================ */
 function enableEditing() {
-    document
-        .querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
-        .forEach((el) => (el.disabled = false));
+    document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
+            .forEach((el) => (el.disabled = false));
 
     document.getElementById("saveBtn").style.display = "block";
     document.getElementById("editBtn").style.display = "none";
+}
+
+function disableEditing() {
+    document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
+            .forEach((el) => (el.disabled = true));
+
+    document.getElementById("saveBtn").style.display = "none";
+    document.getElementById("editBtn").style.display = "block";
 }
 
 /* ============================
@@ -172,9 +178,10 @@ async function saveProfile() {
         workLife: getVal("workLife"),
     };
 
-    // Update Local Storage immediately for snappy UI
+    // Update Local Storage immediately for instant UI feedback
     localStorage.setItem("contact_user", JSON.stringify(updatedUser));
     loadProfile();
+    disableEditing();
 
     showLoader("Saving changes...");
 
@@ -193,35 +200,26 @@ async function saveProfile() {
         if (result.success) {
             showLoader("Profile updated!");
             setTimeout(hideLoader, 1000);
-            
-            // Re-disable inputs
-            document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
-                    .forEach((el) => (el.disabled = true));
-            document.getElementById("saveBtn").style.display = "none";
-            document.getElementById("editBtn").style.display = "block";
         } else {
             hideLoader();
-            showPopup("Update Failed", result.message || "Failed to update profile.");
+            showPopup("Update Failed", result.message || "Could not sync with database.");
         }
     } catch (e) {
         hideLoader();
-        showPopup("Network Error", "Could not reach the server.");
+        showPopup("Network Error", "Saved locally, but server connection failed.");
     }
 }
 
 /* ============================
-   ACCOUNT ACTIONS
+   ACCOUNT SETTINGS
 ============================ */
 async function changePassword() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) return;
-
     const newPass = getVal("newPassword");
     const confirmPass = getVal("confirmPassword");
 
     if (!newPass || newPass !== confirmPass) {
-        showPopup("Error", "Passwords do not match or are empty.");
-        return;
+        return showPopup("Error", "Passwords do not match.");
     }
 
     showLoader("Updating password...");
@@ -229,15 +227,15 @@ async function changePassword() {
         const res = await fetch(`${API_URL}?module=changePassword&email=${encodeURIComponent(user.email)}&newPassword=${encodeURIComponent(newPass)}`);
         const result = await res.json();
         if (result.success) {
-            showLoader("Password updated!");
+            showLoader("Password Updated!");
             setTimeout(hideLoader, 1000);
         } else {
             hideLoader();
-            showPopup("Failed", result.message);
+            showPopup("Error", result.message);
         }
     } catch (e) {
         hideLoader();
-        showPopup("Network Error", "Could not connect.");
+        showPopup("Error", "Server unreachable.");
     }
 }
 
@@ -255,9 +253,9 @@ async function confirmDeleteAccount() {
             hideLoader();
             showPopup("Error", result.message);
         }
-    } catch (err) {
+    } catch (e) {
         hideLoader();
-        showPopup("Error", "Server unreachable.");
+        showPopup("Error", "Network error.");
     }
 }
 
@@ -267,7 +265,7 @@ function logout() {
 }
 
 /* ============================
-   PROFILE PICTURE HANDLING
+   PROFILE PICTURE
 ============================ */
 function initProfilePictureHandler() {
     const preview = document.getElementById("profilePicPreview");
@@ -275,7 +273,6 @@ function initProfilePictureHandler() {
 
     if (!preview || !input) return;
 
-    // Optional: Allow clicking the image to trigger the file input
     preview.addEventListener("click", () => input.click());
 
     input.addEventListener("change", () => {
@@ -295,19 +292,17 @@ function initProfilePictureHandler() {
 function compressAndUpload(img) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-
     const MAX_WIDTH = 300;
     const scale = MAX_WIDTH / img.width;
 
     canvas.width = MAX_WIDTH;
     canvas.height = img.height * scale;
-
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     let quality = 0.25;
     let base64 = canvas.toDataURL("image/jpeg", quality);
 
-    while (base64.length > 115000 && quality > 0.1) {
+    while (base64.length > 110000 && quality > 0.1) {
         quality -= 0.05;
         base64 = canvas.toDataURL("image/jpeg", quality);
     }
@@ -318,8 +313,6 @@ function compressAndUpload(img) {
 
 async function saveProfilePic(base64) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) return;
-
     showLoader("Updating picture...");
 
     try {
@@ -331,19 +324,15 @@ async function saveProfilePic(base64) {
                 profilePic: base64
             })
         });
-
         const data = await res.json();
         if (data.success) {
             user.profilePic = base64;
             localStorage.setItem("contact_user", JSON.stringify(user));
-            showLoader("Picture updated!");
+            showLoader("Picture Updated!");
             setTimeout(hideLoader, 1000);
-        } else {
-            hideLoader();
-            showPopup("Update Failed", data.message);
         }
     } catch (err) {
         hideLoader();
-        showPopup("Network Error", "Connection failed.");
+        showPopup("Error", "Upload failed.");
     }
 }
