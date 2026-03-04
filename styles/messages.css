@@ -1,15 +1,22 @@
-/* 1. GLOBAL RESET */
+/* * CONTACT.COM — HIGH-PERFORMANCE STYLE 
+ * Optimized for: 60fps scrolling, instant rendering, and flex-chat layout
+ */
+
+/* 1. GLOBAL RESET & BASE */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Inter", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body {
   background: #f5f5f5;
   color: #222;
   overflow-x: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 2. NAVBAR & NAVIGATION */
@@ -24,26 +31,29 @@ body {
   position: sticky;
   top: 0;
   z-index: 1000;
+  flex-shrink: 0;
 }
 
 .logo {
-  font-size: 1.8rem;
-  font-weight: 700;
+  font-size: 1.6rem;
+  font-weight: 800;
   color: #222;
+  letter-spacing: -0.5px;
 }
 .logo span { color: #4a6cff; }
 
 .nav-links {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   margin-left: auto;
 }
 
 .nav-links a {
   text-decoration: none;
-  color: #333;
-  font-weight: 500;
-  transition: 0.2s;
+  color: #555;
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 0.2s;
 }
 .nav-links a:hover { color: #4a6cff; }
 
@@ -52,59 +62,63 @@ body {
   flex-direction: column;
   gap: 5px;
   cursor: pointer;
+  padding: 5px;
 }
 
 .hamburger span {
-  width: 25px;
-  height: 3px;
+  width: 22px;
+  height: 2px;
   background: #333;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
-/* 3. MOBILE MENU (LEFT ANCHOR) */
+/* 3. MOBILE MENU */
 .mobile-menu {
   position: fixed;
   top: 70px;
   left: 0;
-  width: 240px;
-  height: calc(100vh - 70px);
+  width: 260px;
+  height: auto;
+  max-height: calc(100vh - 70px);
   background: #4a6cff;
   display: none;
   flex-direction: column;
-  z-index: 9999;
-  box-shadow: 4px 0 12px rgba(0,0,0,0.1);
-  padding: 20px 0;
-}
-
-.mobile-menu a {
-  padding: 15px 25px;
-  color: white;
-  text-decoration: none;
-  font-weight: 500;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  z-index: 10001;
+  box-shadow: 4px 4px 15px rgba(0,0,0,0.15);
+  border-radius: 0 0 20px 0;
+  overflow-y: auto;
 }
 
 .mobile-menu.show { display: flex; }
 
-/* 4. CHAT HEADER */
+.mobile-menu a {
+  padding: 16px 24px;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* 4. CHAT HEADER & WRAPPERS */
 #header {
   background: #fff;
-  padding: 15px 20px;
+  padding: 12px 20px;
   border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 #headerTitle {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
 }
 
-/* 5. CHAT LAYOUT */
+/* 5. MAIN CHAT LAYOUT */
 #chat-container {
   display: flex;
-  height: calc(100vh - 140px); /* Adjust based on nav + header */
+  flex: 1; /* Fills remaining height below Navbar/Header */
   overflow: hidden;
   position: relative;
 }
@@ -114,28 +128,73 @@ body {
   display: flex;
   flex-direction: column;
   background: #eef4ff;
+  position: relative;
 }
 
 #messages {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
+  scroll-behavior: smooth;
+  /* Optimization: Prevents layout shifts during scroll */
+  overflow-anchor: none; 
 }
 
-/* 6. BUBBLES & CONTENT */
-.msg-row-container {
-  margin-bottom: 15px;
+/* 6. HIGH-PERFORMANCE BUBBLES */
+.msg-row {
   display: flex;
+  margin-bottom: 16px;
+  gap: 10px;
+  align-items: flex-end;
+  /* Use hardware acceleration */
+  will-change: transform;
 }
 
-.chat-image {
-  max-width: 250px;
+.msg-row.me { justify-content: flex-end; }
+.msg-row.them { justify-content: flex-start; }
+
+.msg-bubble {
+  max-width: 75%;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.msg-row.me .msg-bubble {
+  border-radius: 18px 18px 4px 18px;
+}
+
+.msg-row.them .msg-bubble {
+  border-radius: 18px 18px 18px 4px;
+}
+
+/* 7. MEDIA & DOCUMENTS */
+.chat-image-fast {
+  max-width: 100%;
+  max-height: 320px;
   border-radius: 12px;
   display: block;
-  margin-top: 5px;
+  object-fit: cover;
 }
 
-/* 7. CIRCULAR AVATARS (LOCKED) */
+.chat-doc {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* 8. AVATARS (STRICT 44px CIRCLES) */
+.msg-avatar-wrapper {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
 .chat-avatar, 
 .chat-avatar-fallback,
 .member-row img {
@@ -144,7 +203,6 @@ body {
     min-width: 44px !important;
     border-radius: 50% !important;
     object-fit: cover !important;
-    flex-shrink: 0;
     display: flex !important;
     align-items: center;
     justify-content: center;
@@ -153,39 +211,55 @@ body {
 .chat-avatar-fallback {
   background: #4a6cff;
   color: white;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
 }
 
-/* 8. INPUT AREA */
+/* 9. INPUT AREA */
 #input-area {
   display: flex;
-  padding: 15px;
+  padding: 15px 20px;
   background: #fff;
   border-top: 1px solid #eee;
-  gap: 10px;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 #messageInput {
   flex: 1;
-  padding: 12px;
-  border: 1px solid #ddd;
+  padding: 12px 18px;
+  border: 1px solid #e0e0e0;
   border-radius: 25px;
   outline: none;
+  font-size: 14px;
+  background: #f9f9f9;
+  transition: border 0.2s;
+}
+
+#messageInput:focus {
+  border-color: #4a6cff;
+  background: #fff;
 }
 
 #sendBtn {
   background: #4a6cff;
   color: white;
   border: none;
+  height: 40px;
   padding: 0 20px;
-  border-radius: 25px;
+  border-radius: 20px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
+  transition: transform 0.1s, opacity 0.2s;
 }
 
-/* 9. MEMBER SIDEBAR & TOGGLE */
+#sendBtn:active { transform: scale(0.95); }
+#sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 10. SIDEBARS & RESPONSIVE */
 #memberSidebar {
-    width: 280px;
+    width: 300px;
     background: #ffffff;
     border-left: 1px solid #eee;
     padding: 20px;
@@ -196,89 +270,60 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 15px;
+  padding: 8px;
+  border-radius: 12px;
+  transition: background 0.2s;
   cursor: pointer;
 }
+
+.member-row:hover { background: #f0f4ff; }
 
 #toggleMembers {
     background: #4a6cff !important;
     color: white !important;
     border: none !important;
-    padding: 8px 16px !important;
+    padding: 10px 18px !important;
     border-radius: 20px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
+    font-size: 13px;
     cursor: pointer;
-    display: none; /* Desktop hidden */
+    display: none;
 }
 
-/* 10. RESPONSIVE ENGINE */
-
-/* Desktop Only */
-@media (min-width: 851px) {
-  #memberSidebar {
-    display: block !important;
-    transform: none !important;
-    position: relative !important;
-  }
-}
-
-/* Tablet & Mobile */
+/* TABLET & MOBILE BREAKPOINTS */
 @media (max-width: 850px) {
   .navbar { padding: 0 20px; }
   .nav-links { display: none; }
   .hamburger { display: flex; }
-
-  #toggleMembers {
-    display: block !important;
-  }
+  #toggleMembers { display: block !important; }
 
   #memberSidebar {
     position: fixed;
     right: 0;
-    top: 70px; /* Sits below Navbar */
+    top: 70px;
     bottom: 0;
-    width: 260px;
-    z-index: 999;
-    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    width: 280px;
+    z-index: 9999;
+    box-shadow: -5px 0 20px rgba(0,0,0,0.1);
     transform: translateX(100%);
-    transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* JavaScript Toggle Class */
   #memberSidebar.active {
     transform: translateX(0) !important;
   }
 }
-/* --- MOBILE MENU THEME ALIGNMENT --- */
-.mobile-menu {
-    position: fixed;
-    top: 70px;
-    left: 0;
-    width: 240px;
-    /* Cap height and allow internal scroll if items grow */
-    height: auto; 
-    max-height: calc(100vh - 70px); 
-    background: #4a6cff;
-    padding: 10px 0;
-    display: none;
-    flex-direction: column;
-    z-index: 10001; /* Above everything */
-    box-shadow: 4px 0 12px rgba(0,0,0,0.15);
-    border-radius: 0 0 20px 0; /* Match bubbly theme */
-}
 
-/* --- OPTIMISTIC LOADING STATE --- */
-.msg-row-container.sending {
+/* OPTIMISTIC & PROGRESS UI */
+.msg-row.sending {
     opacity: 0.6;
-    filter: grayscale(0.5);
-    position: relative;
+    filter: grayscale(0.3);
 }
 
-/* --- PROGRESS BAR STYLES --- */
 .upload-progress-container {
     width: 100%;
     height: 4px;
-    background: rgba(255,255,255,0.3);
+    background: rgba(0,0,0,0.1);
     border-radius: 2px;
     margin-top: 8px;
     overflow: hidden;
@@ -286,7 +331,7 @@ body {
 
 .upload-progress-bar {
     height: 100%;
-    background: #fff;
+    background: #4a6cff;
     width: 0%;
     transition: width 0.3s ease;
 }
