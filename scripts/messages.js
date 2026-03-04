@@ -264,4 +264,4 @@ document.addEventListener("DOMContentLoaded", () => {
     setupFile("uploadImgBtn", "imgInput", "image");
 });
 
-function logout() { loc
+function logout() { localStorage.removeItem("contact_user"); window.location.href = "index.html"; }
