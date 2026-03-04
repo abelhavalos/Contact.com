@@ -1,210 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Messages – Contact.com</title>
-    
-    <link rel="stylesheet" href="styles/messages.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        /* CRITICAL LAYOUT & PERSISTENCE */
-        html, body {
-            height: 100%;
-            margin: 0;
-            overflow: hidden; 
-            display: flex;
-            flex-direction: column;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Messages – Contact.com</title>
+<link rel="stylesheet" href="styles/messages.css" />
+<style>
+#input-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+}
 
-        /* Fixed Navbar Height */
-        .navbar { 
-            height: 70px; 
-            background: #fff; 
-            display: flex; 
-            align-items: center; 
-            padding: 0 40px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            flex-shrink: 0;
-            z-index: 1100;
-        }
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: 0.2s;
+}
 
-        /* Fixed Header Height */
-        #header { 
-            height: 60px; 
-            background: #fff;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            flex-shrink: 0;
-            z-index: 1050;
-        }
+.icon-btn:hover {
+  opacity: 1;
+}
 
-        /* The Main Chat Workspace */
-        #chat-container {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-            position: relative;
-        }
+#messageInput {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+  .chat-loader {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  z-index: 9999;
+}
 
-        #chat {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #f9fafb;
-        }
+.chat-loader .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255,255,255,0.25);
+  border-top-color: #4da3ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  box-shadow: 0 0 12px #4da3ff;
+}
 
-        #messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-        }
+.chat-loader .loading-text {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #4da3ff;
+  text-shadow: 0 0 8px #4da3ff;
+}
 
-        /* Sidebar Styling */
-        #memberSidebar {
-            width: 300px;
-            background: #fff;
-            border-left: 1px solid #eee;
-            overflow-y: auto;
-            flex-shrink: 0;
-            transition: transform 0.3s ease;
-        }
-
-        /* Mobile Adjustments for Sidebar */
-        @media (max-width: 850px) {
-            .navbar { padding: 0 20px; }
-            #memberSidebar {
-                position: absolute;
-                right: 0;
-                top: 0;
-                bottom: 0;
-                transform: translateX(100%);
-                z-index: 2000;
-                box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-            }
-            #memberSidebar.active { transform: translateX(0); }
-        }
-
-        /* Loader */
-        .chat-loader {
-            position: fixed;
-            inset: 0;
-            background: rgba(255,255,255,0.9);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-        }
-        .spinner {
-            width: 40px; height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4a6cff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
 </head>
 
 <body>
 
-<nav class="navbar">
-    <div class="hamburger" onclick="toggleMenu(event)">
-        <span></span><span></span><span></span>
-    </div>
-    <div class="logo">Contact<span>.</span>com</div>
-    <div class="nav-links">
-        <a href="dashboard.html">Dashboard</a>
-        <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
-        <a href="contacts.html">Contacts</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()">Logout</a>
-    </div>
-</nav>
-
-<div class="mobile-menu" id="mobileMenu">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="communities.html">Communities</a>
-    <a href="events.html">Events</a>
-    <a href="contacts.html">Contacts</a>
-    <a href="profile.html">Profile</a>
-    <a href="#" onclick="logout()">Logout</a>
-</div>
+<nav class="navbar" id="navbar"></nav>
+<div class="mobile-menu" id="mobileMenu"></div>
 
 <div id="header">
-    <div id="headerTitle">Loading Conversation...</div>
-    <button id="toggleMembers" class="mobile-toggle" style="display:none;">Members</button>
+  <span id="headerTitle"></span>
+  <button id="toggleMembers" class="mobile-toggle">Members</button>
 </div>
-
 <div id="chatLoader" class="chat-loader">
-    <div class="spinner"></div>
-    <div style="margin-top: 15px; color: #4a6cff; font-weight: 700;">Connecting...</div>
+  <div class="spinner"></div>
+  <div class="loading-text">Loading conversation...</div>
+</div>
+<div id="chat-container">
+  <div id="chat">
+    <div id="messages">
+  <div id="messageList"></div>
 </div>
 
-<main id="chat-container">
-    <div id="chat">
-        <div id="messages">
-            <div id="messageList"></div>
-        </div>
+    <div id="input-area">
+  <button id="uploadDocBtn" class="icon-btn">📎</button>
+  <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="display:none">
 
-        <div id="input-area">
-            <button id="uploadDocBtn" class="icon-btn" title="Documents">📎</button>
-            <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="display:none">
+  <button id="uploadImgBtn" class="icon-btn">🖼️</button>
+  <input type="file" id="imgInput" accept="image/*" style="display:none">
 
-            <button id="uploadImgBtn" class="icon-btn" title="Images">🖼️</button>
-            <input type="file" id="imgInput" accept="image/*" style="display:none">
+  <input id="messageInput" placeholder="Type a message..." />
+  <button id="sendBtn">Send</button>
+</div>
+  </div>
 
-            <input id="messageInput" placeholder="Type a message..." autocomplete="off" disabled />
-            <button id="sendBtn" disabled>Send</button>
-        </div>
-    </div>
-
-    <aside id="memberSidebar"></aside>
-</main>
+  <div id="memberSidebar"></div>
+</div>
 
 <script src="scripts/messages.js"></script>
-
-<script>
-    // Navbar/Menu Toggle
-    function toggleMenu(e) {
-        if (e) e.stopPropagation();
-        const menu = document.getElementById("mobileMenu");
-        if (menu) menu.classList.toggle("show");
-    }
-
-    // Sidebar Logic
-    const toggleBtn = document.getElementById('toggleMembers');
-    const sidebar = document.getElementById('memberSidebar');
-
-    if (toggleBtn) {
-        toggleBtn.onclick = (e) => {
-            e.stopPropagation();
-            const isActive = sidebar.classList.toggle('active');
-            toggleBtn.innerText = isActive ? "Close" : "Members";
-        };
-    }
-
-    // Global Click Listener to close menus
-    document.addEventListener('click', (e) => {
-        const menu = document.getElementById("mobileMenu");
-        if (menu && menu.classList.contains("show") && !menu.contains(e.target) && !e.target.closest(".hamburger")) {
-            menu.classList.remove("show");
-        }
-    });
-
-    function logout() {
-        localStorage.removeItem("contact_user");
-        window.location.href = "index.html";
-    }
-</script>
-
 </body>
 </html>
