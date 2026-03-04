@@ -4,13 +4,15 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0
    POPUP SYSTEM
 ============================ */
 function showPopup(title, message) {
-    const mainPopup = document.getElementById("mainPopup");
+    const titleEl = document.getElementById("popupTitle");
+    const msgEl = document.getElementById("popupMessage");
     const backdrop = document.getElementById("popupBackdrop");
-    
-    document.getElementById("popupTitle").innerText = title;
-    document.getElementById("popupMessage").innerText = message;
+    const mainPopup = document.getElementById("mainPopup");
+
+    if (titleEl) titleEl.innerText = title;
+    if (msgEl) msgEl.innerText = message;
+
     document.getElementById("deleteConfirmPopup").style.display = "none";
-    
     if (mainPopup) mainPopup.style.display = "block";
     if (backdrop) backdrop.style.display = "flex";
 }
@@ -63,16 +65,17 @@ function loadNavbar() {
     if (mobileMenu) {
         mobileMenu.innerHTML = navLinksHTML;
         mobileMenu.querySelectorAll("a").forEach(link => {
-            link.addEventListener("click", () => mobileMenu.classList.remove("show"));
+            link.addEventListener("click", () => {
+                mobileMenu.classList.remove("show");
+            });
         });
     }
 }
 
-// Close menu when clicking outside
 document.addEventListener("click", (e) => {
     const menu = document.getElementById("mobileMenu");
     const hamburger = document.querySelector(".hamburger");
-    if (menu?.classList.contains("show") && !menu.contains(e.target) && !hamburger?.contains(e.target)) {
+    if (menu && menu.classList.contains("show") && !menu.contains(e.target) && !hamburger.contains(e.target)) {
         menu.classList.remove("show");
     }
 });
@@ -83,7 +86,7 @@ document.addEventListener("click", (e) => {
 function showLoader(text) {
     const loader = document.getElementById("profileLoader");
     if (!loader) return;
-    const textEl = loader.querySelector("p") || loader.querySelector(".loading-text");
+    const textEl = loader.querySelector("p"); 
     if (textEl) textEl.innerText = text;
     loader.style.display = "flex";
 }
@@ -106,15 +109,15 @@ async function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return (window.location.href = "login.html");
 
-    // CRITICAL FIX: The name was missing because it might be stored as 'name' or 'fullName'
-    const displayName = user.fullName || user.name || "";
+    hideLoader();
 
-    // Update Text Displays
-    setText("fullNameDisplay", displayName);
+    // FIXED: Added fallback for 'name' or 'fullName' to fix the initial login bug
+    const nameToDisplay = user.fullName || user.name || "";
+
+    setText("fullNameDisplay", nameToDisplay);
     setText("professionDisplay", user.profession || "Your profession");
 
-    // Update Form Inputs
-    setInput("fullName", displayName);
+    setInput("fullName", nameToDisplay);
     setInput("profession", user.profession);
     setInput("about", user.about);
     setInput("skills", user.skills);
@@ -142,22 +145,15 @@ function getVal(id) {
 }
 
 /* ============================
-   EDITING ACTIONS
+   EDITING LOGIC
 ============================ */
 function enableEditing() {
-    document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
-            .forEach(el => (el.disabled = false));
+    document
+        .querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
+        .forEach((el) => (el.disabled = false));
 
     document.getElementById("saveBtn").style.display = "block";
     document.getElementById("editBtn").style.display = "none";
-}
-
-function disableEditing() {
-    document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
-            .forEach(el => (el.disabled = true));
-
-    document.getElementById("saveBtn").style.display = "none";
-    document.getElementById("editBtn").style.display = "block";
 }
 
 /* ============================
@@ -165,7 +161,7 @@ function disableEditing() {
 ============================ */
 async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    if (!user) return;
+    if (!user) return (window.location.href = "login.html");
 
     const updatedUser = {
         ...user,
@@ -176,12 +172,9 @@ async function saveProfile() {
         workLife: getVal("workLife"),
     };
 
-    // Update LocalStorage immediately so UI reflects changes instantly
+    // Update Local Storage immediately for snappy UI
     localStorage.setItem("contact_user", JSON.stringify(updatedUser));
-    
-    // Refresh UI and lock inputs
     loadProfile();
-    disableEditing();
 
     showLoader("Saving changes...");
 
@@ -200,26 +193,35 @@ async function saveProfile() {
         if (result.success) {
             showLoader("Profile updated!");
             setTimeout(hideLoader, 1000);
+            
+            // Re-disable inputs
+            document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
+                    .forEach((el) => (el.disabled = true));
+            document.getElementById("saveBtn").style.display = "none";
+            document.getElementById("editBtn").style.display = "block";
         } else {
             hideLoader();
-            showPopup("Update Failed", result.message || "Could not sync with database.");
+            showPopup("Update Failed", result.message || "Failed to update profile.");
         }
     } catch (e) {
         hideLoader();
-        showPopup("Network Error", "Saved locally, but server connection failed.");
+        showPopup("Network Error", "Could not reach the server.");
     }
 }
 
 /* ============================
-   ACCOUNT MANAGEMENT
+   ACCOUNT ACTIONS
 ============================ */
 async function changePassword() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) return;
+
     const newPass = getVal("newPassword");
     const confirmPass = getVal("confirmPassword");
 
     if (!newPass || newPass !== confirmPass) {
-        return showPopup("Error", "Passwords do not match or field is empty.");
+        showPopup("Error", "Passwords do not match or are empty.");
+        return;
     }
 
     showLoader("Updating password...");
@@ -227,15 +229,15 @@ async function changePassword() {
         const res = await fetch(`${API_URL}?module=changePassword&email=${encodeURIComponent(user.email)}&newPassword=${encodeURIComponent(newPass)}`);
         const result = await res.json();
         if (result.success) {
-            showLoader("Password Updated!");
+            showLoader("Password updated!");
             setTimeout(hideLoader, 1000);
         } else {
             hideLoader();
-            showPopup("Error", result.message);
+            showPopup("Failed", result.message);
         }
     } catch (e) {
         hideLoader();
-        showPopup("Error", "Network error. Try again later.");
+        showPopup("Network Error", "Could not connect.");
     }
 }
 
@@ -253,9 +255,9 @@ async function confirmDeleteAccount() {
             hideLoader();
             showPopup("Error", result.message);
         }
-    } catch (e) {
+    } catch (err) {
         hideLoader();
-        showPopup("Error", "Network error.");
+        showPopup("Error", "Server unreachable.");
     }
 }
 
@@ -265,7 +267,7 @@ function logout() {
 }
 
 /* ============================
-   PROFILE PICTURE
+   PROFILE PICTURE HANDLING
 ============================ */
 function initProfilePictureHandler() {
     const preview = document.getElementById("profilePicPreview");
@@ -273,6 +275,7 @@ function initProfilePictureHandler() {
 
     if (!preview || !input) return;
 
+    // Optional: Allow clicking the image to trigger the file input
     preview.addEventListener("click", () => input.click());
 
     input.addEventListener("change", () => {
@@ -292,18 +295,19 @@ function initProfilePictureHandler() {
 function compressAndUpload(img) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
+
     const MAX_WIDTH = 300;
     const scale = MAX_WIDTH / img.width;
 
     canvas.width = MAX_WIDTH;
     canvas.height = img.height * scale;
+
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    let quality = 0.3;
+    let quality = 0.25;
     let base64 = canvas.toDataURL("image/jpeg", quality);
 
-    // Keep under 100KB for Google Apps Script stability
-    while (base64.length > 100000 && quality > 0.1) {
+    while (base64.length > 115000 && quality > 0.1) {
         quality -= 0.05;
         base64 = canvas.toDataURL("image/jpeg", quality);
     }
@@ -314,6 +318,8 @@ function compressAndUpload(img) {
 
 async function saveProfilePic(base64) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) return;
+
     showLoader("Updating picture...");
 
     try {
@@ -325,15 +331,19 @@ async function saveProfilePic(base64) {
                 profilePic: base64
             })
         });
+
         const data = await res.json();
         if (data.success) {
             user.profilePic = base64;
             localStorage.setItem("contact_user", JSON.stringify(user));
-            showLoader("Picture Updated!");
+            showLoader("Picture updated!");
             setTimeout(hideLoader, 1000);
+        } else {
+            hideLoader();
+            showPopup("Update Failed", data.message);
         }
     } catch (err) {
         hideLoader();
-        showPopup("Error", "Image upload failed.");
+        showPopup("Network Error", "Connection failed.");
     }
 }
