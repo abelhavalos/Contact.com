@@ -106,15 +106,14 @@ async function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return (window.location.href = "login.html");
 
-    // FIX: The "Missing Name" Bug
-    // We check for 'fullName' (profile key) OR 'name' (common login key)
+    // CRITICAL FIX: The name was missing because it might be stored as 'name' or 'fullName'
     const displayName = user.fullName || user.name || "";
 
-    // UI Displays
-    setText("fullNameDisplay", displayName || "Set your name");
+    // Update Text Displays
+    setText("fullNameDisplay", displayName);
     setText("professionDisplay", user.profession || "Your profession");
 
-    // Input Fields
+    // Update Form Inputs
     setInput("fullName", displayName);
     setInput("profession", user.profession);
     setInput("about", user.about);
@@ -143,7 +142,7 @@ function getVal(id) {
 }
 
 /* ============================
-   EDITING LOGIC
+   EDITING ACTIONS
 ============================ */
 function enableEditing() {
     document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
@@ -177,8 +176,10 @@ async function saveProfile() {
         workLife: getVal("workLife"),
     };
 
-    // Update LocalStorage immediately for snappy UI
+    // Update LocalStorage immediately so UI reflects changes instantly
     localStorage.setItem("contact_user", JSON.stringify(updatedUser));
+    
+    // Refresh UI and lock inputs
     loadProfile();
     disableEditing();
 
@@ -201,16 +202,16 @@ async function saveProfile() {
             setTimeout(hideLoader, 1000);
         } else {
             hideLoader();
-            showPopup("Update Failed", result.message || "Failed to sync with server.");
+            showPopup("Update Failed", result.message || "Could not sync with database.");
         }
     } catch (e) {
         hideLoader();
-        showPopup("Network Error", "Saved locally, but could not sync to server.");
+        showPopup("Network Error", "Saved locally, but server connection failed.");
     }
 }
 
 /* ============================
-   ACCOUNT ACTIONS
+   ACCOUNT MANAGEMENT
 ============================ */
 async function changePassword() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
@@ -218,7 +219,7 @@ async function changePassword() {
     const confirmPass = getVal("confirmPassword");
 
     if (!newPass || newPass !== confirmPass) {
-        return showPopup("Error", "Passwords do not match or are empty.");
+        return showPopup("Error", "Passwords do not match or field is empty.");
     }
 
     showLoader("Updating password...");
@@ -234,7 +235,7 @@ async function changePassword() {
         }
     } catch (e) {
         hideLoader();
-        showPopup("Error", "Server unreachable.");
+        showPopup("Error", "Network error. Try again later.");
     }
 }
 
@@ -254,7 +255,7 @@ async function confirmDeleteAccount() {
         }
     } catch (e) {
         hideLoader();
-        showPopup("Error", "Server unreachable.");
+        showPopup("Error", "Network error.");
     }
 }
 
@@ -264,7 +265,7 @@ function logout() {
 }
 
 /* ============================
-   PROFILE PICTURE HANDLING
+   PROFILE PICTURE
 ============================ */
 function initProfilePictureHandler() {
     const preview = document.getElementById("profilePicPreview");
@@ -272,8 +273,6 @@ function initProfilePictureHandler() {
 
     if (!preview || !input) return;
 
-    // Trigger file click when clicking the image
-    preview.style.cursor = "pointer";
     preview.addEventListener("click", () => input.click());
 
     input.addEventListener("change", () => {
@@ -303,7 +302,7 @@ function compressAndUpload(img) {
     let quality = 0.3;
     let base64 = canvas.toDataURL("image/jpeg", quality);
 
-    // Ensure it's under the Google Apps Script limit (~100kb is safe)
+    // Keep under 100KB for Google Apps Script stability
     while (base64.length > 100000 && quality > 0.1) {
         quality -= 0.05;
         base64 = canvas.toDataURL("image/jpeg", quality);
@@ -315,7 +314,7 @@ function compressAndUpload(img) {
 
 async function saveProfilePic(base64) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    showLoader("Uploading...");
+    showLoader("Updating picture...");
 
     try {
         const res = await fetch(API_URL, {
@@ -330,11 +329,11 @@ async function saveProfilePic(base64) {
         if (data.success) {
             user.profilePic = base64;
             localStorage.setItem("contact_user", JSON.stringify(user));
-            showLoader("Success!");
+            showLoader("Picture Updated!");
             setTimeout(hideLoader, 1000);
         }
     } catch (err) {
         hideLoader();
-        showPopup("Error", "Image too large or server error.");
+        showPopup("Error", "Image upload failed.");
     }
 }
