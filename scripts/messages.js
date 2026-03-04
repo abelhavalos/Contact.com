@@ -1,175 +1,459 @@
 /****************************************************
- * CONTACT.COM — PRODUCTION READY & FIX: FILE RECORDING
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS
+ * - Private Mode: Hides Sidebar/Toggle
+ * - Input Guard: Locks input until conversationId is ready
+ * - Responsive: Handles mobile drawer & desktop sidebar
  ****************************************************/
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* --- USER --- */
+/* USER */
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
 loggedInUser.fullName = loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
+loggedInUser.profilePic = loggedInUser.profilePic || loggedInUser.ProfilePic || null;
 
-/* --- STATE --- */
-let activeConversationId = new URLSearchParams(window.location.search).get("conversationId") || null;
+/* URL PARAMS */
+const url = new URL(window.location.href);
+const otherEmailParam = url.searchParams.get("otherEmail");
+const conversationIdParam = url.searchParams.get("conversationId");
+const communityId = url.searchParams.get("communityId");
+const mode = communityId ? "community" : "private";
+
+const paramEmail = url.searchParams.get("email");
+const paramTitle = url.searchParams.get("title");
+const finalOtherEmail = otherEmailParam || paramEmail;
+let chatTitle = paramTitle || "";
+
+/* STATE */
+let activeConversationId = conversationIdParam || null;
+let messages = [];
 let communityMembers = [];
 let otherUser = null;
-let lastMessageCount = 0;
+
+/* COLORS */
+const BUBBLE_PALETTE = [
+  { bg: "#4A6CFF", text: "#FFFFFF" },
+  { bg: "#6F8CFF", text: "#FFFFFF" },
+  { bg: "#8FA3FF", text: "#000000" },
+  { bg: "#AFC0FF", text: "#000000" },
+  { bg: "#D1DDFF", text: "#000000" }
+];
 
 /****************************************************
- * HELPERS & SPEED
+ * HELPERS
  ****************************************************/
-const getInitials = (name) => (name || "?").split(" ").filter(Boolean).map(p => p[0]).join("").toUpperCase().substring(0, 2);
-const scrollToBottom = () => { const a = document.getElementById("messages"); if(a) a.scrollTop = a.scrollHeight; };
+function getUserColor(email) {
+  if (!email) return BUBBLE_PALETTE[0];
+  let hash = 0;
+  for (let i = 0; i < email.length; i++) {
+    hash = (hash << 5) - hash + email.charCodeAt(i);
+    hash |= 0;
+  }
+  return BUBBLE_PALETTE[Math.abs(hash) % BUBBLE_PALETTE.length];
+}
 
-async function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
+function getInitials(name) {
+  if (!name) return "?";
+  return name.split(" ").filter(Boolean).map((p) => p[0]).join("").substring(0, 2).toUpperCase();
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
 }
 
 /****************************************************
- * SEND LOGIC (THE FIX)
+ * NAVBAR & SIDEBAR TOGGLE
  ****************************************************/
-async function sendMessage(filePayload = null) {
-    const input = document.getElementById("messageInput");
-    const text = (input?.value || "").trim();
-    
-    // Guard
-    if (!filePayload && (!text || !activeConversationId)) return;
+function loadNavbar() {
+  const nav = document.getElementById("navbar");
+  if (nav) {
+    nav.innerHTML = `
+      <div class="hamburger" onclick="toggleMenu(event)">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="logo">Contact<span>.</span>com</div>
+      <div class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="contacts.html">Contacts</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
+      </div>
+    `;
+  }
 
-    // 1. Prepare Payload
-    const payload = filePayload || {
-        module: "sendMessage",
-        type: "text",
-        text: text
-    };
-
-    // 2. Optimistic UI: Show it immediately
-    const optimistic = { 
-        senderEmail: loggedInUser.email, 
-        ...payload,
-        timestamp: new Date().toISOString() 
-    };
-    document.getElementById("messageList").appendChild(buildMessageRow(optimistic));
-    scrollToBottom();
-    if (input) input.value = "";
-
-    // 3. SERVER SYNC
-    try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            mode: "no-cors", // Essential for Google Script doPost
-            cache: "no-cache",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ...payload,
-                conversationId: activeConversationId,
-                senderEmail: loggedInUser.email
-            })
-        });
-        
-        // Brief delay then refresh to confirm record exists
-        setTimeout(() => loadMessagesOnce(true), 2000);
-    } catch (e) {
-        console.error("Transmission Error:", e);
-    }
+  const mobileMenu = document.getElementById("mobileMenu");
+  if (mobileMenu) {
+    mobileMenu.innerHTML = `
+      <a href="dashboard.html">Dashboard</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="contacts.html">Contacts</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    `;
+  }
 }
 
-/****************************************************
- * RENDERING (STAYING FAST)
- ****************************************************/
-function buildMessageRow(msg) {
-    const isMe = msg.senderEmail === loggedInUser.email;
-    const row = document.createElement("div");
-    row.style.cssText = `display:flex; margin-bottom:15px; gap:10px; align-items:flex-end; justify-content:${isMe ? "flex-end" : "flex-start"}`;
-
-    const bubble = document.createElement("div");
-    bubble.style.cssText = `max-width:75%; padding:10px 14px; border-radius:${isMe ? "15px 15px 2px 15px" : "15px 15px 15px 2px"}; font-size:14px; background:${isMe ? "#4A6CFF" : "#E5E7EB"}; color:${isMe ? "#fff" : "#1F2937"}`;
-
-    // Fix Content Rendering
-    if (msg.type === "image" || (msg.fileData && msg.type === "image")) {
-        bubble.innerHTML = `<img src="${msg.fileData}" style="max-width:100%; border-radius:8px; display:block;">`;
-    } else if (msg.type === "document") {
-        bubble.innerHTML = `<a href="${msg.fileData}" target="_blank" style="color:inherit; text-decoration:underline;">📄 ${msg.fileName || "Download Document"}</a>`;
-    } else {
-        bubble.textContent = msg.text || "";
-    }
-
-    if (isMe) row.appendChild(bubble);
-    else {
-        const avatar = document.createElement("div");
-        avatar.style.cssText = "width:30px; height:30px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;";
-        avatar.textContent = getInitials(msg.senderEmail);
-        row.append(avatar, bubble);
-    }
-
-    return row;
+function toggleMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById("mobileMenu");
+  if (menu) menu.classList.toggle("show");
 }
 
-async function loadMessagesOnce(isPolling = false) {
-    if (!activeConversationId) return;
-    try {
-        const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
-        const d = await r.json();
-        const list = d.messages || [];
-        if (list.length !== lastMessageCount) {
-            const container = document.getElementById("messageList");
-            const frag = document.createDocumentFragment();
-            list.forEach(m => frag.appendChild(buildMessageRow(m)));
-            container.innerHTML = "";
-            container.appendChild(frag);
-            lastMessageCount = list.length;
-            scrollToBottom();
-        }
-    } catch (e) { console.warn("Polling failed"); }
-}
+// Global click listener to close sidebars
+document.addEventListener("click", (e) => {
+  const mobileMenu = document.getElementById("mobileMenu");
+  if (mobileMenu && mobileMenu.classList.contains("show") && !mobileMenu.contains(e.target) && !e.target.closest(".hamburger")) {
+    mobileMenu.classList.remove("show");
+  }
 
-/****************************************************
- * CORE SETUP
- ****************************************************/
-document.addEventListener("DOMContentLoaded", async () => {
-    // 1. NAVBAR
-    const nav = document.getElementById("navbar");
-    if (nav) {
-        nav.innerHTML = `<div class="logo" style="cursor:pointer" onclick="window.location.href='dashboard.html'">Contact<span>.</span>com</div><div class="nav-links"><a href="dashboard.html">Home</a><a href="#" onclick="logout()">Logout</a></div>`;
+  const sidebar = document.getElementById("memberSidebar");
+  const toggleBtn = document.getElementById("toggleMembers");
+  if (sidebar && sidebar.classList.contains("active") && !sidebar.contains(e.target) && !e.target.closest("#toggleMembers")) {
+    sidebar.classList.remove("active");
+    if (toggleBtn) {
+        toggleBtn.classList.remove("active");
+        toggleBtn.innerText = "Members";
     }
-
-    // 2. PARALLEL START
-    const communityId = new URLSearchParams(window.location.search).get("communityId");
-    if (communityId) await loadCommunityMembers(communityId);
-    
-    // 3. CONVERSATION INIT
-    if (activeConversationId) {
-        await loadMessagesOnce();
-    } else {
-        // Start conversation logic here if missing ID
-    }
-
-    // 4. EVENT BINDINGS
-    document.getElementById("sendBtn").onclick = () => sendMessage();
-    document.getElementById("messageInput").onkeydown = e => { if(e.key === "Enter") sendMessage(); };
-
-    // File Handlers
-    document.getElementById("docInput").onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const b64 = await fileToBase64(file);
-            sendMessage({ module: "sendMessage", type: "document", fileName: file.name, fileData: b64 });
-        }
-    };
-
-    document.getElementById("imgInput").onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const b64 = await fileToBase64(file);
-            sendMessage({ module: "sendMessage", type: "image", fileName: file.name, fileData: b64 });
-        }
-    };
-
-    setInterval(() => loadMessagesOnce(true), 8000); // Background refresh
+  }
 });
 
-function logout() { localStorage.clear(); window.location.href = "login.html"; }
+function logout() {
+  localStorage.removeItem("contact_user");
+  window.location.href = "index.html";
+}
+
+/****************************************************
+ * HEADERS
+ ****************************************************/
+async function loadOtherUserProfile() {
+  const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`);
+  const d = await r.json();
+  otherUser = d?.user || {};
+
+  const fullName = otherUser.fullName || otherUser.FullName || finalOtherEmail;
+  const initials = getInitials(fullName);
+
+  const avatar = otherUser.profilePic || otherUser.ProfilePic
+      ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
+      : `<div class="chat-avatar-fallback">${initials}</div>`;
+
+  const header = document.getElementById("headerTitle");
+  if (!header) return;
+
+  header.innerHTML = chatTitle
+    ? `<div class="chat-header"><div class="chat-header-main">${chatTitle}</div></div>`
+    : `<div class="chat-header">${avatar}<div class="chat-header-main">${fullName}</div></div>`;
+}
+
+async function loadCommunityInfo() {
+  const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
+  const d = await r.json();
+  const name = d?.community?.name || "Community";
+
+  const header = document.getElementById("headerTitle");
+  if (!header) return;
+
+  header.innerHTML = `<div class="chat-header"><div class="chat-header-main">${name}</div></div>`;
+}
+
+/****************************************************
+ * COMMUNITY MEMBERS
+ ****************************************************/
+async function loadCommunityMembers() {
+  const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
+  const d = await r.json();
+
+  const emails = (d.members || []).map((m) => typeof m === "string" ? m : m.email);
+
+  const tasks = emails.map(async (email) => {
+    try {
+      const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`);
+      const d = await r.json();
+      const u = d?.user || {};
+      return {
+        email,
+        fullName: u.fullName || u.FullName || email,
+        profilePic: u.profilePic || u.ProfilePic || null
+      };
+    } catch {
+      return { email, fullName: email, profilePic: null };
+    }
+  });
+
+  communityMembers = await Promise.all(tasks);
+  renderCommunityMembersList(communityMembers);
+}
+
+function renderCommunityMembersList(list) {
+  const container = document.getElementById("memberSidebar");
+  if (!container) return;
+
+  container.innerHTML = "<h3>Members</h3>";
+  const fragment = document.createDocumentFragment();
+
+  list.forEach((m) => {
+    const initials = getInitials(m.fullName);
+    const avatar = m.profilePic
+      ? `<img class="chat-avatar" src="${m.profilePic}" />`
+      : `<div class="chat-avatar-fallback">${initials}</div>`;
+
+    const row = document.createElement("div");
+    row.className = "member";
+    row.style.cursor = "pointer";
+    row.style.marginBottom = "12px";
+    row.onclick = () => (window.location.href = `public-profile.html?email=${encodeURIComponent(m.email)}`);
+
+    row.innerHTML = `
+      <div class="member-row" style="display:flex; align-items:center; gap:10px;">
+        ${avatar}
+        <div class="member-name" style="color:#333; font-weight:500;">${m.fullName}</div>
+      </div>
+    `;
+    fragment.appendChild(row);
+  });
+
+  container.appendChild(fragment);
+}
+
+/****************************************************
+ * MESSAGES
+ ****************************************************/
+async function loadMessagesOnce() {
+  if (!activeConversationId) return;
+
+  // Unlock input area
+  const input = document.getElementById("messageInput");
+  const sendBtn = document.getElementById("sendBtn");
+  if (input) {
+      input.disabled = false;
+      input.placeholder = "Type a message...";
+  }
+  if (sendBtn) sendBtn.disabled = false;
+
+  showChatLoader();
+
+  const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
+  const data = await r.json();
+
+  messages = data.messages || [];
+  renderAllMessages(messages);
+  hideChatLoader();
+}
+
+function renderMessageContent(msg) {
+  if (msg.type === "image") return `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:10px;">`;
+  if (msg.type === "document") return `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="color:inherit; text-decoration:underline;">📄 ${msg.fileName}</a>`;
+  return msg.text || "";
+}
+
+function renderAllMessages(list) {
+  const container = document.getElementById("messageList");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const fragment = document.createDocumentFragment();
+  list.forEach((msg) => fragment.appendChild(buildMessageRow(msg)));
+
+  container.appendChild(fragment);
+  const msgArea = document.getElementById("messages");
+  if(msgArea) msgArea.scrollTop = msgArea.scrollHeight;
+}
+
+function buildMessageRow(msg) {
+  const isMe = msg.senderEmail === loggedInUser.email;
+  const contentHTML = renderMessageContent(msg);
+  const color = getUserColor(msg.senderEmail);
+
+  const row = document.createElement("div");
+  row.className = "msg-row";
+  row.style.display = "flex";
+  row.style.marginBottom = "15px";
+  row.style.gap = "8px";
+  row.style.alignItems = "flex-end";
+  row.style.justifyContent = isMe ? "flex-end" : "flex-start";
+
+  const initials = isMe ? getInitials(loggedInUser.fullName) : getInitials(msg.senderEmail);
+  let pic = isMe ? loggedInUser.profilePic : null;
+
+  if (!isMe) {
+      if (mode === "community") {
+          const s = communityMembers.find(m => m.email === msg.senderEmail);
+          if (s) pic = s.profilePic;
+      } else if (otherUser) {
+          pic = otherUser.profilePic || otherUser.ProfilePic;
+      }
+  }
+
+  const avatarHTML = pic 
+    ? `<img class="chat-avatar" src="${pic}" style="width:32px; height:32px; border-radius:50%;" />`
+    : `<div class="chat-avatar-fallback" style="width:32px; height:32px; border-radius:50%; font-size:12px; background:#eee; display:flex; align-items:center; justify-content:center;">${initials}</div>`;
+
+  const bubble = document.createElement("div");
+  bubble.style.maxWidth = "70%";
+  bubble.style.padding = "10px 14px";
+  bubble.style.borderRadius = isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
+  bubble.style.fontSize = "14px";
+  bubble.style.background = isMe ? color.bg : "#E5E7EB";
+  bubble.style.color = isMe ? color.text : "#1F2937";
+  bubble.innerHTML = contentHTML;
+
+  if (isMe) {
+    row.appendChild(bubble);
+    const avatarDiv = document.createElement("div");
+    avatarDiv.style.marginLeft = "5px";
+    avatarDiv.innerHTML = avatarHTML;
+    row.appendChild(avatarDiv);
+  } else {
+    const avatarDiv = document.createElement("div");
+    avatarDiv.style.marginRight = "5px";
+    avatarDiv.innerHTML = avatarHTML;
+    row.appendChild(avatarDiv);
+    row.appendChild(bubble);
+  }
+
+  return row;
+}
+
+function appendSingleMessage(msg) {
+  const container = document.getElementById("messageList");
+  if (!container) return;
+  container.appendChild(buildMessageRow(msg));
+  const msgArea = document.getElementById("messages");
+  if(msgArea) msgArea.scrollTop = msgArea.scrollHeight;
+}
+
+/****************************************************
+ * SEND LOGIC
+ ****************************************************/
+function sendMessage(payloadOverride = null) {
+  const input = document.getElementById("messageInput");
+  const text = (input?.value || "").trim();
+  if (!payloadOverride && (!text || !activeConversationId)) return;
+
+  const payload = payloadOverride || { module: "sendMessage", type: "text", text };
+  const optimisticMsg = {
+    id: "temp_" + Date.now(),
+    senderEmail: loggedInUser.email,
+    type: payload.type,
+    text: payload.text,
+    fileName: payload.fileName || null,
+    fileData: payload.fileData || null
+  };
+
+  appendSingleMessage(optimisticMsg);
+  if (input) input.value = "";
+
+  const body = JSON.stringify({
+    ...payload,
+    conversationId: activeConversationId,
+    senderEmail: loggedInUser.email
+  });
+
+  fetch(API_URL, { method: "POST", body })
+    .then(r => r.json())
+    .then(() => loadMessagesOnce())
+    .catch(console.error);
+}
+
+/****************************************************
+ * DOM READY
+ ****************************************************/
+document.addEventListener("DOMContentLoaded", async () => {
+  loadNavbar();
+  showChatLoader();
+
+  // Initially lock input
+  const input = document.getElementById("messageInput");
+  const sendBtn = document.getElementById("sendBtn");
+  if (input) {
+      input.disabled = true;
+      input.placeholder = "Connecting...";
+  }
+  if (sendBtn) sendBtn.disabled = true;
+
+  const toggleBtn = document.getElementById("toggleMembers");
+  const sidebar = document.getElementById("memberSidebar");
+
+  // Private vs Community UI Logic
+  if (mode === "private") {
+    if (toggleBtn) toggleBtn.style.display = "none";
+    if (sidebar) sidebar.style.display = "none";
+    await loadOtherUserProfile();
+  } else {
+    if (toggleBtn) {
+        toggleBtn.style.display = "block";
+        toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            const isActive = sidebar.classList.toggle("active");
+            toggleBtn.classList.toggle("active");
+            toggleBtn.innerText = isActive ? "Close" : "Members";
+        };
+    }
+    await loadCommunityInfo();
+    await loadCommunityMembers();
+  }
+
+  // Event Listeners
+  if (sendBtn) sendBtn.onclick = () => sendMessage();
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
+
+  // File Uploads
+  document.getElementById("uploadDocBtn").onclick = () => document.getElementById("docInput").click();
+  document.getElementById("uploadImgBtn").onclick = () => document.getElementById("imgInput").click();
+
+  document.getElementById("docInput").onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const base64 = await fileToBase64(file);
+    sendMessage({ type: "document", fileName: file.name, fileData: base64 });
+    e.target.value = "";
+  };
+
+  document.getElementById("imgInput").onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const base64 = await fileToBase64(file);
+    sendMessage({ type: "image", fileName: file.name, fileData: base64 });
+    e.target.value = "";
+  };
+
+  // Connection Logic
+  if (activeConversationId) {
+    loadMessagesOnce();
+  } else {
+    let fetchUrl = mode === "community" 
+        ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
+        : `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
+    
+    try {
+        const r = await fetch(fetchUrl);
+        const d = await r.json();
+        if (d.conversationId) {
+            activeConversationId = d.conversationId;
+            loadMessagesOnce();
+        }
+    } catch (err) {
+        console.error("Connection failed", err);
+        if (input) input.placeholder = "Connection failed...";
+    }
+  }
+});
+
+function showChatLoader() { document.getElementById("chatLoader").style.display = "flex"; }
+function hideChatLoader() { document.getElementById("chatLoader").style.display = "none"; }
