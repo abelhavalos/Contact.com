@@ -16,6 +16,7 @@
             color: #fff;
             min-height: 100vh;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         /* --- NAVBAR --- */
@@ -98,8 +99,8 @@
 
         /* --- PROFILE CONTENT --- */
         .hero { text-align: center; padding: 40px 20px 20px; }
-        .hero h1 { font-size: 2.2rem; font-weight: 800; }
-        .hero p { opacity: 0.9; }
+        .hero h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 5px; }
+        .hero p { opacity: 0.9; font-size: 1.1rem; }
 
         .section {
             background: #fff;
@@ -113,11 +114,11 @@
         }
 
         .section h2 {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 10px;
-            color: #666;
+            color: #888;
         }
 
         input, textarea {
@@ -125,9 +126,22 @@
             padding: 12px;
             border-radius: 10px;
             border: 1px solid #ddd;
-            background: #f9f9f9;
+            background: #fdfdfd;
             font-size: 1rem;
             margin-top: 5px;
+            color: #333;
+            transition: border 0.2s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        input:disabled, textarea:disabled {
+            background: #f5f5f5;
+            color: #777;
+            border: 1px solid #eee;
         }
 
         button {
@@ -140,14 +154,17 @@
             font-weight: 700;
             cursor: pointer;
             margin-top: 10px;
+            transition: opacity 0.2s;
         }
+        button:hover { opacity: 0.9; }
 
         .btn-delete { background: var(--danger-red); }
 
-        /* --- UTILITIES --- */
+        /* --- POPUPS --- */
         .popup-backdrop {
             position: fixed; inset: 0; background: rgba(0,0,0,0.7);
             display: none; align-items: center; justify-content: center; z-index: 2000;
+            padding: 20px;
         }
         .popup { background: #fff; padding: 30px; border-radius: 20px; max-width: 400px; text-align: center; color: #222; }
 
@@ -166,31 +183,31 @@
 <div class="mobile-menu" id="mobileMenu"></div>
 
 <div class="hero">
-    <h1 id="fullNameDisplay">Your Name</h1>
-    <p id="professionDisplay">Loading profession...</p>
+    <h1 id="fullNameDisplay">Profile Name</h1>
+    <p id="professionDisplay">Profession Title</p>
 </div>
 
 <div class="section" style="text-align:center;">
     <img id="profilePicPreview" src="default-avatar.png" 
-         style="width:120px; height:120px; border-radius:50%; object-fit:cover; border: 4px solid #f0f2f5;">
+         style="width:130px; height:130px; border-radius:50%; object-fit:cover; border: 4px solid #f0f2f5; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
     <input type="file" id="profilePicFileInput" accept="image/*" style="display:none;">
-    <p style="margin-top:10px; color:var(--primary-blue); font-weight:700; cursor:pointer;" 
+    <p style="margin-top:12px; color:var(--primary-blue); font-weight:700; cursor:pointer;" 
        onclick="document.getElementById('profilePicFileInput').click()">Change Photo</p>
 </div>
 
 <div class="section">
     <h2>Full Name</h2>
-    <input id="fullName" disabled>
+    <input id="fullName" disabled placeholder="Enter your name">
 </div>
 
 <div class="section">
     <h2>Profession</h2>
-    <input id="profession" disabled>
+    <input id="profession" disabled placeholder="e.g. Software Engineer">
 </div>
 
 <div class="section">
     <h2>About Me</h2>
-    <textarea id="about" rows="3" disabled></textarea>
+    <textarea id="about" rows="4" disabled placeholder="Tell us about yourself..."></textarea>
 </div>
 
 <div class="section" style="text-align:center;">
@@ -198,35 +215,37 @@
     <button id="saveBtn" onclick="saveProfile()" style="display:none; background:#222;">Save Changes</button>
 </div>
 
-<div class="section" style="border: 2px solid #ff4a4a33;">
-    <h2 style="color:var(--danger-red);">Danger Zone</h2>
+<div class="section" style="border: 1px solid rgba(255, 74, 74, 0.2);">
+    <h2 style="color:var(--danger-red);">Account Actions</h2>
     <button class="btn-delete" onclick="showDeleteConfirm()">Delete Account</button>
 </div>
 
 <div id="popupBackdrop" class="popup-backdrop">
     <div id="deleteConfirmPopup" class="popup">
         <h3>Delete Account?</h3>
-        <p style="margin: 15px 0;">This cannot be undone. All data will be lost.</p>
-        <button class="btn-delete" onclick="confirmDeleteAccount()">Yes, Delete</button>
-        <button style="background:#9ca3af;" onclick="hideDeleteConfirm()">Cancel</button>
+        <p style="margin: 15px 0;">This action is permanent and cannot be undone.</p>
+        <button class="btn-delete" onclick="confirmDeleteAccount()">Yes, Delete Forever</button>
+        <button style="background:#9ca3af; margin-top: 10px;" onclick="hideDeleteConfirm()">Cancel</button>
     </div>
 </div>
 
 <script>
-    function toggleMenu() {
-        document.getElementById("mobileMenu").classList.toggle("show");
-    }
+    // --- APP STATE & DATA ---
+    let userData = JSON.parse(localStorage.getItem("contact_user"));
 
-    function loadNavbar() {
-        const user = JSON.parse(localStorage.getItem("contact_user"));
-        
-        // Dynamic Links including Events
+    // --- NAVBAR & INITIALIZATION ---
+    function initializePage() {
+        if (!userData) {
+            window.location.href = "login.html";
+            return;
+        }
+
         const navHTML = `
             <a href="dashboard.html">Dashboard</a>
             <a href="communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="contacts.html">Contacts</a>
-            <a href="profile.html" style="color:var(--primary-blue)">Profile</a>
+            <a href="profile.html" style="font-weight:800; border-bottom: 2px solid var(--primary-blue);">Profile</a>
             <a href="#" onclick="logout()" style="color:var(--danger-red) !important">Logout</a>
         `;
 
@@ -236,6 +255,51 @@
             <div class="nav-links">${navHTML}</div>
         `;
         document.getElementById("mobileMenu").innerHTML = navHTML;
+
+        // Load Field Data
+        document.getElementById("fullNameDisplay").textContent = userData.name || "New User";
+        document.getElementById("professionDisplay").textContent = userData.profession || "Set your profession";
+        document.getElementById("fullName").value = userData.name || "";
+        document.getElementById("profession").value = userData.profession || "";
+        document.getElementById("about").value = userData.about || "";
+        if (userData.profilePic) document.getElementById("profilePicPreview").src = userData.profilePic;
+    }
+
+    // --- FUNCTIONS ---
+    function toggleMenu() {
+        document.getElementById("mobileMenu").classList.toggle("show");
+    }
+
+    function enableEditing() {
+        document.getElementById("fullName").disabled = false;
+        document.getElementById("profession").disabled = false;
+        document.getElementById("about").disabled = false;
+        document.getElementById("editBtn").style.display = "none";
+        document.getElementById("saveBtn").style.display = "block";
+        document.getElementById("fullName").focus();
+    }
+
+    function saveProfile() {
+        // Update local object
+        userData.name = document.getElementById("fullName").value;
+        userData.profession = document.getElementById("profession").value;
+        userData.about = document.getElementById("about").value;
+
+        // Save to LocalStorage
+        localStorage.setItem("contact_user", JSON.stringify(userData));
+
+        // Update UI
+        document.getElementById("fullNameDisplay").textContent = userData.name;
+        document.getElementById("professionDisplay").textContent = userData.profession;
+        
+        // Lock fields
+        document.getElementById("fullName").disabled = true;
+        document.getElementById("profession").disabled = true;
+        document.getElementById("about").disabled = true;
+        document.getElementById("editBtn").style.display = "block";
+        document.getElementById("saveBtn").style.display = "none";
+        
+        alert("Profile saved successfully!");
     }
 
     function logout() {
@@ -243,19 +307,44 @@
         window.location.href = "index.html";
     }
 
-    // Close mobile menu when clicking outside
+    function showDeleteConfirm() {
+        document.getElementById("popupBackdrop").style.display = "flex";
+    }
+
+    function hideDeleteConfirm() {
+        document.getElementById("popupBackdrop").style.display = "none";
+    }
+
+    function confirmDeleteAccount() {
+        localStorage.removeItem("contact_user");
+        window.location.href = "index.html";
+    }
+
+    // --- LISTENERS ---
+    document.addEventListener("DOMContentLoaded", initializePage);
+
     document.addEventListener("click", (e) => {
         const menu = document.getElementById("mobileMenu");
         const burger = document.querySelector(".hamburger");
-        if (menu.classList.contains("show") && !menu.contains(e.target) && !burger.contains(e.target)) {
+        if (menu && menu.classList.contains("show") && !menu.contains(e.target) && !burger.contains(e.target)) {
             menu.classList.remove("show");
         }
     });
 
-    document.addEventListener("DOMContentLoaded", loadNavbar);
+    // Handle Image Preview
+    document.getElementById("profilePicFileInput").onchange = function(evt) {
+        const [file] = this.files;
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById("profilePicPreview").src = e.target.result;
+                userData.profilePic = e.target.result;
+                localStorage.setItem("contact_user", JSON.stringify(userData));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 </script>
-
-<script src="scripts/profile.js"></script>
 
 </body>
 </html>
