@@ -1,728 +1,243 @@
 /****************************************************
- * CONTACT.COM — FAST MESSAGES.JS (PRIVATE + COMMUNITY)
+ * CONTACT.COM — ULTRA-FAST OPTIMIZED MESSAGES.JS
  ****************************************************/
 
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* USER */
-let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
-if (!loggedInUser) window.location.href = "login.html";
-loggedInUser.fullName =
-  loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
-loggedInUser.profilePic =
-  loggedInUser.profilePic || loggedInUser.ProfilePic || null;
-
-/* URL PARAMS */
+/* --- USER & PARAMS --- */
+const loggedInUser = JSON.parse(localStorage.getItem("contact_user")) || (window.location.href = "login.html");
 const url = new URL(window.location.href);
-
-// Original params
-const otherEmailParam = url.searchParams.get("otherEmail");
-const conversationIdParam = url.searchParams.get("conversationId");
 const communityId = url.searchParams.get("communityId");
 const mode = communityId ? "community" : "private";
+const finalOtherEmail = url.searchParams.get("otherEmail") || url.searchParams.get("email");
+let chatTitle = url.searchParams.get("title") || "";
 
-// Event → private chat params
-const paramEmail = url.searchParams.get("email");
-const paramName = url.searchParams.get("name");
-const paramTitle = url.searchParams.get("title");
-
-// Normalize private chat target
-const finalOtherEmail = otherEmailParam || paramEmail;
-
-// Store event title for header
-let chatTitle = paramTitle || "";
-
-let activeConversationId = conversationIdParam || null;
+/* --- STATE --- */
+let activeConversationId = url.searchParams.get("conversationId") || null;
 let messages = [];
 let otherUser = null;
 let communityMembers = [];
+let lastFetchedCount = 0;
+let pollingInterval = null;
 
 const BUBBLE_PALETTE = [
   { bg: "#4A6CFF", text: "#FFFFFF" },
   { bg: "#6F8CFF", text: "#FFFFFF" },
   { bg: "#8FA3FF", text: "#000000" },
-  { bg: "#AFC0FF", text: "#000000" },
-  { bg: "#D1DDFF", text: "#000000" }
+  { bg: "#AFC0FF", text: "#000000" }
 ];
 
-let pollingInterval = null;
+/****************************************************
+ * STYLES (Dynamic Injection for Responsive Media)
+ ****************************************************/
+const fastStyle = document.createElement("style");
+fastStyle.innerHTML = `
+  .chat-image { 
+    max-width: 100%; 
+    border-radius: 12px; 
+    cursor: zoom-in; 
+    transition: transform 0.2s;
+    display: block;
+    background: #f0f4ff;
+    min-height: 100px;
+    object-fit: cover;
+  }
+  .chat-image:hover { opacity: 0.9; }
+  .msg-bubble { 
+    position: relative; 
+    word-wrap: break-word; 
+    line-height: 1.4;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  .new-msg { animation: fadeIn 0.3s ease-out forwards; }
+`;
+document.head.appendChild(fastStyle);
 
 /****************************************************
  * HELPERS
  ****************************************************/
+const getInitials = (n) => (n || "?").split(" ").filter(Boolean).map(p => p[0]).join("").substring(0, 2).toUpperCase();
+const fileToBase64 = (f) => new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f); });
+
 function getUserColor(email) {
-  if (!email) return BUBBLE_PALETTE[0];
   let hash = 0;
-  for (let i = 0; i < email.length; i++) {
-    hash = (hash << 5) - hash + email.charCodeAt(i);
-    hash |= 0;
-  }
+  for (let i = 0; i < (email || "").length; i++) hash = (hash << 5) - hash + email.charCodeAt(i);
   return BUBBLE_PALETTE[Math.abs(hash) % BUBBLE_PALETTE.length];
 }
 
-function getInitials(name) {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((p) => p[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(file);
-  });
-}
-
 /****************************************************
- * NAVBAR
- ****************************************************/
-function loadNavbar() {
-  const nav = document.getElementById("navbar");
-  if (nav) {
-    nav.innerHTML = `
-      <div class="hamburger" onclick="toggleMenu()">
-        <span></span><span></span><span></span>
-      </div>
-      <div class="logo">Contact<span>.</span>com</div>
-      <div class="nav-links">
-        <a href="dashboard.html">Dashboard</a>
-        <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
-        <a href="contacts.html">Contacts</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()">Logout</a>
-      </div>
-    `;
-  }
-
-  const mobileMenu = document.getElementById("mobileMenu");
-  if (mobileMenu) {
-    mobileMenu.innerHTML = `
-      <a href="dashboard.html">Dashboard</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="contacts.html">Contacts</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" onclick="logout()">Logout</a>
-    `;
-  }
-}
-
-function toggleMenu() {
-  const menu = document.getElementById("mobileMenu");
-  if (menu) menu.classList.toggle("show");
-}
-
-function logout() {
-  localStorage.removeItem("contact_user");
-  window.location.href = "index.html";
-}
-
-/****************************************************
- * CACHE
- ****************************************************/
-function cacheMessages() {
-  if (!activeConversationId) return;
-  localStorage.setItem(
-    "cached_messages_" + activeConversationId,
-    JSON.stringify(messages)
-  );
-}
-
-function loadCachedMessages() {
-  const raw = localStorage.getItem("cached_messages_" + activeConversationId);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-function cacheMembers(list) {
-  if (!communityId) return;
-  localStorage.setItem(
-    "cached_members_" + communityId,
-    JSON.stringify(list)
-  );
-}
-
-function loadCachedMembers() {
-  const raw = localStorage.getItem("cached_members_" + communityId);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-/****************************************************
- * PRIVATE CHAT HEADER — FIXED FOR EVENT TITLE
+ * DATA FETCHING (PARALLEL)
  ****************************************************/
 async function loadOtherUserProfile() {
-  const r = await fetch(
-    `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`
-  );
+  const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`);
   const d = await r.json();
   otherUser = d?.user || {};
+  updateHeader();
+}
 
-  const otherFullName =
-    otherUser.fullName || otherUser.FullName || finalOtherEmail;
-  const otherInitials = getInitials(otherFullName);
-
-  const otherAvatarHTML =
-    otherUser.profilePic || otherUser.ProfilePic
-      ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
-      : `<div class="chat-avatar-fallback">${otherInitials}</div>`;
-
-  if (chatTitle) {
-    document.getElementById("headerTitle").innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span>${chatTitle}</span>
-      </div>
-    `;
-  } else {
-    document.getElementById("headerTitle").innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;">
-        ${otherAvatarHTML}
-        <span>${otherFullName}</span>
-      </div>
-    `;
-  }
+function updateHeader() {
+  const header = document.getElementById("headerTitle");
+  if (!header) return;
+  const name = otherUser?.fullName || otherUser?.FullName || finalOtherEmail;
+  const pic = otherUser?.profilePic || otherUser?.ProfilePic;
+  const avatar = pic ? `<img class="chat-avatar" src="${pic}" />` : `<div class="chat-avatar-fallback">${getInitials(name)}</div>`;
+  
+  header.innerHTML = `<div style="display:flex;align-items:center;gap:12px;">${chatTitle ? `<span>${chatTitle}</span>` : `${avatar}<span>${name}</span>`}</div>`;
 }
 
 /****************************************************
- * COMMUNITY HEADER
+ * CORE MESSAGE ENGINE
  ****************************************************/
-async function loadCommunityInfo() {
-  const r = await fetch(
-    `${API_URL}?module=getCommunityById&communityId=${communityId}`
-  );
-  const d = await r.json();
-  const name = d?.community?.name || "Community";
-
-  document.getElementById("headerTitle").innerHTML = `
-    <div style="display:flex;align-items:center;">
-      <span>${name}</span>
-    </div>
-  `;
-}
-
-function renderCommunityMembersSkeletons(count = 8) {
-  const container = document.getElementById("memberSidebar");
-  if (!container) return;
-
-  container.innerHTML = "<h3>Members</h3>";
-
-  for (let i = 0; i < count; i++) {
-    container.innerHTML += `
-      <div class="member" style="margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-
-          <!-- Skeleton avatar (44×44 px, blue‑tinted) -->
-          <div style="
-            width:44px;
-            height:44px;
-            border-radius:50%;
-            background:#dbe4ff;
-            animation:pulse 1.4s ease-in-out infinite;
-          "></div>
-
-          <!-- Skeleton name bar (60% width, blue‑tinted) -->
-          <div style="
-            width:60%;
-            height:14px;
-            border-radius:6px;
-            background:#e6ecff;
-            animation:pulse 1.4s ease-in-out infinite;
-          "></div>
-
-        </div>
-      </div>
-    `;
-  }
-}
-
-// Pulse animation for skeletons
-const skeletonStyle = document.createElement("style");
-skeletonStyle.innerHTML = `
-@keyframes pulse {
-  0% { opacity: 0.55; }
-  50% { opacity: 1; }
-  100% { opacity: 0.55; }
-}
-`;
-document.head.appendChild(skeletonStyle);
-
-/****************************************************
- * COMMUNITY MEMBERS
- ****************************************************/
-async function primeCommunityMembers() {
-  const cached = loadCachedMembers();
-
-  if (cached.length) {
-    communityMembers = cached;
-    renderCommunityMembersList(cached);
-  } else {
-    renderCommunityMembersSkeletons(8);
-  }
-
-  await loadCommunityMembers();
-}
-
-async function loadCommunityMembers() {
-  const r = await fetch(
-    `${API_URL}?module=getCommunityMembers&communityId=${communityId}`
-  );
-  const d = await r.json();
-
-  const emails = (d.members || []).map((m) =>
-    typeof m === "string" ? m : m.email
-  );
-
-  renderCommunityMembersSkeletons(emails.length || 8);
-  hydrateMemberProfiles(emails);
-}
-
-async function hydrateMemberProfiles(emails) {
-  const fullProfiles = [];
-
-  for (const email of emails) {
-    try {
-      const r = await fetch(
-        `${API_URL}?module=getUserByEmail&email=${encodeURIComponent(email)}`
-      );
-      const d = await r.json();
-      const u = d?.user || {};
-
-      fullProfiles.push({
-        email,
-        fullName: u.fullName || u.FullName || email,
-        profilePic: u.profilePic || u.ProfilePic || null
-      });
-    } catch {
-      fullProfiles.push({ email, fullName: email, profilePic: null });
-    }
-  }
-
-  communityMembers = fullProfiles;
-  cacheMembers(fullProfiles);
-  renderCommunityMembersList(fullProfiles);
-}
-
-function renderCommunityMembersList(list) {
-  const container = document.getElementById("memberSidebar");
-  if (!container) return;
-
-  container.innerHTML = "<h3>Members</h3>";
-
-  list.forEach((m) => {
-    const initials = getInitials(m.fullName);
-
-    const avatarHTML = m.profilePic
-      ? `<img class="chat-avatar" src="${m.profilePic}" />`
-      : `<div class="chat-avatar-fallback">${initials}</div>`;
-
-    container.innerHTML += `
-      <div class="member" style="margin-bottom:16px; cursor:pointer;"
-           onclick="window.location.href='public-profile.html?email=${encodeURIComponent(
-             m.email
-           )}'">
-        <div style="display:flex;align-items:center;gap:10px;">
-          ${avatarHTML}
-          <div style="font-weight:600;">${m.fullName}</div>
-        </div>
-      </div>
-    `;
-  });
-}
-
-/****************************************************
- * CONVERSATION SETUP — FIXED FOR EVENT CHAT
- ****************************************************/
-function startConversation() {
-  fetch(
-    `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`
-  )
-    .then((r) => r.json())
-    .then((d) => {
-      activeConversationId = d.conversationId;
-      primeMessages();
-      startPolling();
-    });
-}
-
-async function startCommunityConversation() {
-  const r = await fetch(
-    `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
-  );
-  const d = await r.json();
-  activeConversationId = d.conversationId;
-
-  await primeCommunityMembers();
-  primeMessages();
-  startPolling();
-}
-
-/****************************************************
- * MESSAGES — CACHE-FIRST + POLLING
- ****************************************************/
-function primeMessages() {
-  const cached = loadCachedMessages();
-  if (cached.length) {
-    messages = cached;
-    renderMessages(messages);
-  }
-}
-
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
-  loadMessages();
+  loadMessages(); // Initial load
+  // Adaptive polling: slower when tab is hidden
   pollingInterval = setInterval(() => {
-    if (activeConversationId) {
-      loadMessages();
-    }
-  }, 200);
+    if (document.hidden) return; 
+    if (activeConversationId) loadMessages();
+  }, 1500);
 }
 
 async function loadMessages() {
-  const r = await fetch(
-    `${API_URL}?module=getMessages&conversationId=${activeConversationId}`
-  );
-  const data = await r.json();
+  try {
+    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
+    const data = await r.json();
+    const backendMessages = (data.messages || []).slice(-15);
 
-  let backendMessages = data.messages || [];
-
-  // Only take the last 10 messages
-  backendMessages = backendMessages.slice(-10);
-
-  const optimistic = messages.filter((m) => m.optimistic);
-
-  messages = [...backendMessages, ...optimistic];
-
-  renderMessages(messages);
-}
-
-/****************************************************
- * RENDERING
- ****************************************************/
-function renderMessageContent(msg) {
-  if (msg.type === "image") {
-    return `<img src="${msg.fileData}" class="chat-image">`;
-  }
-
-  if (msg.type === "document") {
-    return `
-      <a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">
-        📄 ${msg.fileName}
-      </a>
-    `;
-  }
-
-  // Default: text message
-  return msg.text || "";
+    // Only re-render if something changed
+    if (JSON.stringify(backendMessages) !== JSON.stringify(messages.filter(m => !m.optimistic))) {
+      const optimistic = messages.filter(m => m.optimistic);
+      messages = [...backendMessages, ...optimistic];
+      renderMessages(messages);
+    }
+  } catch (e) { console.error("Poll Error:", e); }
 }
 
 function renderMessages(list) {
-  if (mode === "community") {
-    renderCommunityMessages(list);
-  } else {
-    renderPrivateMessages(list);
-  }
-}
-
-function renderPrivateMessages(list) {
   const container = document.getElementById("messages");
   if (!container) return;
-  container.innerHTML = "";
 
-  const fullName =
-    otherUser?.fullName || otherUser?.FullName || finalOtherEmail;
-  const initials = getInitials(fullName);
-
-  const avatarHTML =
-    otherUser?.profilePic || otherUser?.ProfilePic
-      ? `<img class="chat-avatar" src="${otherUser.profilePic || otherUser.ProfilePic}" />`
-      : `<div class="chat-avatar-fallback">${initials}</div>`;
-
+  const fragment = document.createDocumentFragment();
+  
   list.forEach((msg) => {
     const isMe = msg.senderEmail === loggedInUser.email;
-
-    const contentHTML = renderMessageContent(msg);
-
-    if (isMe) {
-      const color = getUserColor(loggedInUser.email);
-      const myInitials = getInitials(loggedInUser.fullName);
-
-      const myAvatarHTML = loggedInUser.profilePic
-        ? `<img class="chat-avatar" src="${loggedInUser.profilePic}" />`
-        : `<div class="chat-avatar-fallback">${myInitials}</div>`;
-
-      container.innerHTML += `
-        <div style="display:flex;justify-content:flex-end;align-items:flex-start;margin-bottom:18px;gap:10px;">
-          <div style="max-width:60%;">
-            <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${contentHTML}
-            </div>
-          </div>
-          <div style="width:70px;text-align:center;">
-            ${myAvatarHTML}
-            <div style="font-size:12px;color:#666;margin-top:4px;">${loggedInUser.fullName}</div>
-          </div>
-        </div>
-      `;
-    } else {
-      const color = getUserColor(finalOtherEmail);
-
-      container.innerHTML += `
-        <div style="display:flex;align-items:flex-start;margin-bottom:18px;gap:10px;">
-          <div style="width:70px;text-align:center;">
-            ${avatarHTML}
-            <div style="font-size:12px;color:#666;margin-top:4px;">${fullName}</div>
-          </div>
-          <div style="max-width:60%;">
-            <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${contentHTML}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-  });
-
-  container.scrollTop = container.scrollHeight;
-}
-
-function renderCommunityMessages(list) {
-  const container = document.getElementById("messages");
-  if (!container) return;
-  container.innerHTML = "";
-
-  list.forEach((msg) => {
-    const isMe = msg.senderEmail === loggedInUser.email;
-
-    const sender = communityMembers.find(
-      (m) => m.email === msg.senderEmail
-    );
-
-    const fullName = isMe
-      ? loggedInUser.fullName
-      : sender?.fullName || msg.senderEmail;
-
     const color = getUserColor(msg.senderEmail);
-    const initials = getInitials(fullName);
+    const senderName = isMe ? loggedInUser.fullName : (communityMembers.find(m => m.email === msg.senderEmail)?.fullName || msg.senderEmail);
+    const pic = isMe ? loggedInUser.profilePic : communityMembers.find(m => m.email === msg.senderEmail)?.profilePic || otherUser?.profilePic;
 
-    const avatarHTML = sender?.profilePic
-      ? `<img class="chat-avatar" src="${sender.profilePic}" />`
-      : `<div class="chat-avatar-fallback">${initials}</div>`;
+    const row = document.createElement("div");
+    row.className = "new-msg";
+    row.style.cssText = `display:flex; justify-content:${isMe ? 'flex-end' : 'flex-start'}; align-items:flex-start; margin-bottom:18px; gap:10px;`;
 
-    const contentHTML = renderMessageContent(msg);
-
-    if (isMe) {
-      container.innerHTML += `
-        <div style="display:flex;justify-content:flex-end;align-items:flex-start;margin-bottom:18px;gap:10px;">
-          <div style="max-width:60%;">
-            <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${contentHTML}
-            </div>
-          </div>
-          <div style="width:70px;text-align:center;">
-            ${avatarHTML}
-            <div style="font-size:12px;color:#666;margin-top:4px;">${fullName}</div>
-          </div>
-        </div>
-      `;
+    const avatarHTML = pic ? `<img class="chat-avatar" src="${pic}" />` : `<div class="chat-avatar-fallback">${getInitials(senderName)}</div>`;
+    
+    let content = "";
+    if (msg.type === "image") {
+      content = `<img src="${msg.fileData}" class="chat-image" onclick="window.open(this.src)" loading="lazy">`;
+    } else if (msg.type === "document") {
+      content = `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">📄 ${msg.fileName}</a>`;
     } else {
-      container.innerHTML += `
-        <div style="display:flex;align-items:flex-start;margin-bottom:18px;gap:10px;">
-          <div style="width:70px;text-align:center;">
-            ${avatarHTML}
-            <div style="font-size:12px;color:#666;margin-top:4px;">${fullName}</div>
-          </div>
-          <div style="max-width:60%;">
-            <div style="background:${color.bg};color:${color.text};padding:10px 14px;border-radius:14px;">
-              ${contentHTML}
-            </div>
-          </div>
-        </div>
-      `;
+      content = `<div>${msg.text || ""}</div>`;
     }
+
+    const bubbleHTML = `
+      ${!isMe ? `<div style="width:50px;text-align:center;">${avatarHTML}<div style="font-size:10px;color:#999;margin-top:4px;">${senderName.split(' ')[0]}</div></div>` : ''}
+      <div class="msg-bubble" style="max-width:70%; background:${isMe ? color.bg : '#f1f1f1'}; color:${isMe ? color.text : '#333'}; padding:12px; border-radius:16px; border-bottom-${isMe ? 'right' : 'left'}-radius:2px;">
+        ${content}
+      </div>
+      ${isMe ? `<div style="width:50px;text-align:center;">${avatarHTML}<div style="font-size:10px;color:#999;margin-top:4px;">Me</div></div>` : ''}
+    `;
+    
+    row.innerHTML = bubbleHTML;
+    fragment.appendChild(row);
   });
 
+  container.innerHTML = "";
+  container.appendChild(fragment);
   container.scrollTop = container.scrollHeight;
 }
 
-function sendMessage(payloadOverride = null) {
+/****************************************************
+ * SEND ENGINE
+ ****************************************************/
+async function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
+  if (!payloadOverride && (!text || !activeConversationId)) return;
 
-  const isTextMessage = !payloadOverride;
-
-  if (isTextMessage && (!text || !activeConversationId)) return;
-
-  const payload = payloadOverride || {
-    module: "sendMessage",
-    type: "text",
-    text: text
-  };
-
+  const payload = payloadOverride || { module: "sendMessage", type: "text", text: text };
+  
+  // OPTIMISTIC UI: Add to local array immediately
   const optimisticMsg = {
-    id: "temp_" + Date.now(),
     senderEmail: loggedInUser.email,
     type: payload.type,
-    text: payload.type === "text" ? payload.text : `[${payload.type} uploaded]`,
-    fileName: payload.fileName || null,
+    text: payload.text,
     fileData: payload.fileData || null,
-    optimistic: true,
-    timestamp: Date.now()
+    fileName: payload.fileName || null,
+    optimistic: true
   };
 
   messages.push(optimisticMsg);
   renderMessages(messages);
+  if (input) input.value = "";
 
-  // ⭐ TEXT MESSAGES → GET (safe)
-  if (payload.type === "text") {
-    const url =
-      `${API_URL}?module=sendMessage`
-      + `&conversationId=${encodeURIComponent(activeConversationId)}`
-      + `&senderEmail=${encodeURIComponent(loggedInUser.email)}`
-      + `&type=text`
-      + `&text=${encodeURIComponent(payload.text)}`;
-
-    fetch(url, { method: "GET" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) {
-          messages = messages.filter((m) => !m.optimistic);
-          loadMessages();
-        }
-      })
-      .catch((err) => console.error("Send failed", err));
-
-    if (input) input.value = "";
-    return;
-  }
-
-  // ⭐ FILE MESSAGES → POST (NO query params, EXACTLY like profile.js)
-  const body = JSON.stringify({
-  module: "sendMessage",
-  conversationId: activeConversationId,
-  senderEmail: loggedInUser.email,
-  type: payload.type,
-  fileName: payload.fileName,
-  fileData: payload.fileData
-});
-
-fetch(API_URL, {
-  method: "POST",
-  body: body   // ⭐ no headers → same behavior as profile.js
-})
-  .then((r) => r.json())
-  .then((data) => {
-    if (data.success) {
-      messages = messages.filter((m) => !m.optimistic);
-      loadMessages();
+  try {
+    let response;
+    if (payload.type === "text") {
+      const qs = `&conversationId=${encodeURIComponent(activeConversationId)}&senderEmail=${encodeURIComponent(loggedInUser.email)}&type=text&text=${encodeURIComponent(payload.text)}`;
+      response = await fetch(`${API_URL}?module=sendMessage${qs}`, { method: "GET" });
+    } else {
+      response = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email })
+      });
     }
-  })
-  .catch((err) => console.error("Send failed", err));
+    const result = await response.json();
+    if (result.success) loadMessages();
+  } catch (e) { console.error("Send failed:", e); }
 }
 
 /****************************************************
- * DOM READY
+ * INITIALIZATION
  ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
-  loadNavbar();
+  // 1. Setup Navbar
+  const nav = document.getElementById("navbar");
+  if (nav) nav.innerHTML = `<div class="logo">Contact<span>.</span>com</div><div class="nav-links"><a href="dashboard.html">Home</a><a href="#" onclick="logout()">Logout</a></div>`;
 
-  if (mode === "private") {
-    const toggle = document.getElementById("toggleMembers");
-    const sidebar = document.getElementById("memberSidebar");
-    if (toggle) toggle.style.display = "none";
-    if (sidebar) sidebar.style.display = "none";
-    await loadOtherUserProfile();
-  }
-
-  if (mode === "community") {
-    await loadCommunityInfo();
-    await primeCommunityMembers();
-  }
-
-  const sendBtn = document.getElementById("sendBtn");
-  if (sendBtn) sendBtn.onclick = () => sendMessage();
-
-  const messageInput = document.getElementById("messageInput");
-  if (messageInput) {
-    messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
+  // 2. Load Profiles & Conversation in Parallel
+  const tasks = [mode === "private" ? loadOtherUserProfile() : loadCommunityInfo()];
+  
+  if (!activeConversationId) {
+    const startUrl = mode === "community" 
+      ? `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
+      : `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
+    
+    const connTask = fetch(startUrl).then(r => r.json()).then(d => {
+      activeConversationId = d.conversationId;
+      startPolling();
     });
-  }
-
-  const toggleMembersBtn = document.getElementById("toggleMembers");
-  if (toggleMembersBtn) {
-    toggleMembersBtn.onclick = () => {
-      document.getElementById("memberSidebar").classList.toggle("show");
-    };
-  }
-
-  const uploadDocBtn = document.getElementById("uploadDocBtn");
-  const uploadImgBtn = document.getElementById("uploadImgBtn");
-  const docInput = document.getElementById("docInput");
-  const imgInput = document.getElementById("imgInput");
-
-  if (uploadDocBtn && docInput) {
-    uploadDocBtn.onclick = () => docInput.click();
-
-    docInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const base64 = await fileToBase64(file);
-
-      sendMessage({
-        type: "document",
-        fileName: file.name,
-        fileData: base64
-      });
-
-      e.target.value = "";
-    });
-  }
-
-  if (uploadImgBtn && imgInput) {
-    uploadImgBtn.onclick = () => imgInput.click();
-
-    imgInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const base64 = await fileToBase64(file);
-
-      sendMessage({
-        type: "image",
-        fileName: file.name,
-        fileData: base64
-      });
-
-      e.target.value = "";
-    });
-  }
-
-  if (activeConversationId) {
-    primeMessages();
+    tasks.push(connTask);
+  } else {
     startPolling();
-  } else if (mode === "community") {
-    await startCommunityConversation();
-  } else if (finalOtherEmail) {
-    startConversation();
   }
+
+  await Promise.all(tasks);
+
+  // 3. Bind Inputs
+  document.getElementById("sendBtn").onclick = () => sendMessage();
+  document.getElementById("messageInput").onkeydown = (e) => (e.key === "Enter" && !e.shiftKey) && (e.preventDefault(), sendMessage());
+  
+  // Responsive Media Binding
+  const bindFile = (btnId, inputId, type) => {
+    document.getElementById(btnId).onclick = () => document.getElementById(inputId).click();
+    document.getElementById(inputId).onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) sendMessage({ type, fileName: file.name, fileData: await fileToBase64(file), module: "sendMessage" });
+    };
+  };
+  bindFile("uploadDocBtn", "docInput", "document");
+  bindFile("uploadImgBtn", "imgInput", "image");
 });
+
+function logout() { localStorage.clear(); window.location.href = "index.html"; }
