@@ -17,7 +17,7 @@
             overflow-x: hidden;
         }
 
-        /* NAVBAR */
+        /* NAVBAR - The Top Bar */
         .navbar {
             width: 100%;
             height: 70px;
@@ -37,7 +37,6 @@
             gap: 5px;
             cursor: pointer;
             margin-right: 15px;
-            z-index: 1100; /* Stays above menu */
         }
         .hamburger span {
             width: 24px;
@@ -55,8 +54,8 @@
         }
         .logo span { color: #4a6cff; }
 
-        .nav-links { display: none; } /* Hidden on mobile */
-
+        /* DESKTOP LINKS (Hidden on mobile) */
+        .nav-links { display: none; } 
         .nav-links a {
             text-decoration: none;
             color: #333;
@@ -75,12 +74,12 @@
             font-weight: 700;
         }
 
-        /* MOBILE MENU (Slide-out Drawer) */
+        /* MOBILE MENU (The Drawer) */
         .mobile-menu {
             position: fixed;
             top: 0;
             left: -280px; 
-            width: 260px; /* Fixed width, does not extend full screen */
+            width: 260px; 
             height: 100vh;
             background: #4a6cff;
             display: flex;
@@ -93,40 +92,36 @@
         
         .mobile-menu.show { left: 0; }
 
-        .mobile-menu a, .mobile-menu button {
+        .mobile-menu a {
             padding: 18px 25px;
             color: #ffffff !important;
             text-decoration: none;
             font-weight: 600;
-            border: none;
-            background: transparent;
-            text-align: left;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             font-size: 1rem;
             width: 100%;
         }
 
-        /* HERO SECTION */
-        .hero { text-align: center; margin-top: 40px; padding: 0 20px; }
-        .hero h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; }
+        /* HERO & CONTENT */
+        .hero { text-align: center; margin-top: 60px; padding: 0 20px; }
+        .hero h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; }
         .hero p { font-size: 1.1rem; max-width: 700px; margin: 0 auto; opacity: 0.9; line-height: 1.6; }
 
-        /* FEATURES */
         .features {
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 30px;
+            margin-top: 40px;
             padding: 20px;
-            gap: 20px;
+            gap: 25px;
         }
 
         .card {
             width: 100%;
-            max-width: 320px;
+            max-width: 300px;
             background: #ffffff;
             color: #222;
-            padding: 20px;
+            padding: 25px;
             border-radius: 24px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             text-align: center;
@@ -134,7 +129,7 @@
 
         .feature-img {
             width: 100%;
-            height: 160px;
+            height: 150px;
             object-fit: cover;
             border-radius: 16px;
             margin-bottom: 15px;
@@ -143,10 +138,9 @@
         .card h3 { color: #4a6cff; margin-bottom: 10px; font-weight: 800; }
         .card p { font-size: 0.95rem; color: #555; line-height: 1.5; }
 
-        /* CTA SECTION */
         .cta { text-align: center; margin-top: 40px; padding-bottom: 80px; }
         .cta a {
-            padding: 16px 32px;
+            padding: 18px 36px;
             background: #ffffff;
             color: #4a6cff;
             border-radius: 16px;
@@ -157,14 +151,12 @@
             transition: transform 0.2s;
             display: inline-block;
         }
-        .cta a:active { transform: scale(0.95); }
 
-        /* DESKTOP QUERIES */
         @media (min-width: 768px) {
             .navbar { padding: 0 40px; }
             .hamburger { display: none; }
             .nav-links { display: flex; align-items: center; }
-            .hero h1 { font-size: 3.2rem; }
+            .hero h1 { font-size: 3.5rem; }
         }
     </style>
 </head>
@@ -177,7 +169,7 @@
 <section class="hero">
     <h1>What Is Contact.com?</h1>
     <p>
-        Contact.com is a modern social platform built for real human connection.  
+        A modern social platform built for real human connection.  
         No noise, no clutter — just meaningful interactions with the people and communities that matter most.
     </p>
 </section>
@@ -186,21 +178,18 @@
     <div class="card">
         <img src="images/Communities.jpeg" alt="Communities" class="feature-img" />
         <h3>Real Connections</h3>
-        <p>Meet people who share your interests, values, and passions — not just random algorithmic matches.</p>
+        <p>Meet people who share your interests, values, and passions — not just random matches.</p>
     </div>
-
     <div class="card">
         <img src="images/Events.jpeg" alt="Events" class="feature-img" />
-        <h3>Communities That Matter</h3>
-        <p>Join groups built around creativity, wellness, tech, hobbies, and more.</p>
+        <h3>Communities</h3>
+        <p>Join groups built around creativity, wellness, tech, and hobbies.</p>
     </div>
-
     <div class="card">
         <img src="images/contacts.jpeg" alt="Contacts" class="feature-img" />
-        <h3>Events You’ll Love</h3>
-        <p>Discover local meetups, workshops, and experiences that bring people together.</p>
+        <h3>Local Events</h3>
+        <p>Discover local meetups and workshops that bring people together.</p>
     </div>
-
     <div class="card">
         <img src="images/Profile.jpeg" alt="Profile" class="feature-img" />
         <h3>Privacy First</h3>
@@ -213,17 +202,15 @@
 </section>
 
 <script>
-// Toggle Mobile Menu
 function toggleMenu(e) {
     if (e) e.stopPropagation();
     document.getElementById("mobileMenu").classList.toggle("show");
 }
 
-// Close menu if clicking anywhere outside the drawer
 document.addEventListener("click", (e) => {
     const menu = document.getElementById("mobileMenu");
     const burger = document.querySelector(".hamburger");
-    if (menu.classList.contains("show") && !menu.contains(e.target) && !burger.contains(e.target)) {
+    if (menu && menu.classList.contains("show") && !menu.contains(e.target) && !burger.contains(e.target)) {
         menu.classList.remove("show");
     }
 });
@@ -231,7 +218,6 @@ document.addEventListener("click", (e) => {
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
-    // Desktop & Mobile inner content
     const loggedInLinks = `
         <a href="dashboard.html">Dashboard</a>
         <a href="communities.html">Communities</a>
@@ -257,7 +243,7 @@ function loadNavbar() {
         <a href="signup.html" style="background: rgba(255,255,255,0.1)">Sign Up</a>
     `;
 
-    // Construct Navbar
+    // Navbar Container
     document.getElementById("navbar").innerHTML = `
         <div class="hamburger" onclick="toggleMenu(event)">
             <span></span><span></span><span></span>
@@ -266,7 +252,7 @@ function loadNavbar() {
         <div class="nav-links">${user ? loggedInLinks : publicLinks}</div>
     `;
 
-    // Construct Mobile Drawer
+    // Mobile Drawer Container
     document.getElementById("mobileMenu").innerHTML = user ? loggedInLinks : mobilePublicLinks;
 }
 
