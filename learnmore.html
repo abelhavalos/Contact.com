@@ -27,12 +27,12 @@
             top: 0;
             z-index: 1000;
             display: flex;
-            justify-content: center; /* Centers the inner container */
+            justify-content: center;
         }
 
         .nav-container {
             width: 100%;
-            max-width: 1200px; /* Limits how wide the logo/links spread */
+            max-width: 1200px; 
             height: 100%;
             display: flex;
             align-items: center;
@@ -62,7 +62,7 @@
         }
         .logo span { color: #4a6cff; }
 
-        .nav-links { display: none; } /* Hidden on mobile */
+        .nav-links { display: none; } 
 
         .nav-links a {
             text-decoration: none;
@@ -83,13 +83,13 @@
             margin-left: 20px;
         }
 
-        /* MOBILE MENU (Compact Dropdown) */
+        /* MOBILE MENU (Not too wide) */
         .mobile-menu {
             position: fixed;
             top: 70px; 
             left: 0;
-            width: 100%;
-            max-width: 300px; /* Not too wide */
+            width: 85%; /* Responsive width */
+            max-width: 280px; /* Constraints the width */
             background: #4a6cff;
             display: none;
             flex-direction: column;
@@ -112,12 +112,11 @@
             font-size: 1rem;
         }
 
-        /* HERO SECTION */
+        /* HERO & CONTENT */
         .hero { text-align: center; padding: 80px 20px 40px; }
         .hero h1 { font-size: 3rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; line-height: 1.1; }
         .hero p { font-size: 1.2rem; max-width: 700px; margin: 0 auto; opacity: 0.9; line-height: 1.6; }
 
-        /* FEATURES */
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -147,7 +146,6 @@
         .card h3 { color: #4a6cff; margin-bottom: 10px; font-weight: 800; }
         .card p { font-size: 0.95rem; color: #555; line-height: 1.5; }
 
-        /* CTA SECTION */
         .cta { text-align: center; padding: 40px 20px 80px; }
         .cta a {
             padding: 16px 32px;
@@ -160,11 +158,9 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
 
-        /* DESKTOP QUERIES */
         @media (min-width: 768px) {
             .hamburger { display: none; }
             .nav-links { display: flex; align-items: center; }
-            .hero h1 { font-size: 3.5rem; }
         }
     </style>
 </head>
@@ -172,8 +168,7 @@
 <body>
 
 <nav class="navbar">
-    <div class="nav-container" id="navContainer">
-        </div>
+    <div class="nav-container" id="navContainer"></div>
 </nav>
 
 <div class="mobile-menu" id="mobileMenu"></div>
@@ -190,25 +185,22 @@
     <div class="card">
         <img src="images/Communities.jpeg" alt="Communities" class="feature-img" />
         <h3>Real Connections</h3>
-        <p>Meet people who share your interests, values, and passions — not just random algorithmic matches.</p>
+        <p>Meet people who share your interests, values, and passions.</p>
     </div>
-
     <div class="card">
         <img src="images/Events.jpeg" alt="Events" class="feature-img" />
-        <h3>Communities That Matter</h3>
-        <p>Join groups built around creativity, wellness, tech, hobbies, and more.</p>
+        <h3>Communities</h3>
+        <p>Join groups built around creativity, wellness, tech, and hobbies.</p>
     </div>
-
     <div class="card">
         <img src="images/contacts.jpeg" alt="Contacts" class="feature-img" />
         <h3>Events You’ll Love</h3>
-        <p>Discover local meetups, workshops, and experiences that bring people together.</p>
+        <p>Discover local meetups and experiences that bring people together.</p>
     </div>
-
     <div class="card">
         <img src="images/Profile.jpeg" alt="Profile" class="feature-img" />
         <h3>Privacy First</h3>
-        <p>Your data stays yours. No ads, no tracking, no manipulation — ever.</p>
+        <p>Your data stays yours. No ads, no tracking, no manipulation.</p>
     </div>
 </section>
 
@@ -221,7 +213,6 @@ function toggleMenu() {
     document.getElementById("mobileMenu").classList.toggle("show");
 }
 
-// Close menu if clicking anywhere outside
 document.addEventListener("click", (e) => {
     const menu = document.getElementById("mobileMenu");
     const burger = document.querySelector(".hamburger");
@@ -233,6 +224,7 @@ document.addEventListener("click", (e) => {
 function loadNavbar() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
 
+    // INCLUDES EVENTS NOW
     const loggedInLinks = `
         <a href="dashboard.html">Dashboard</a>
         <a href="communities.html">Communities</a>
@@ -245,11 +237,11 @@ function loadNavbar() {
     const publicLinks = `
         <a href="index.html">Home</a>
         <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
         <a href="login.html">Login</a>
         <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     `;
 
-    // Construct Navbar Inner
     document.getElementById("navContainer").innerHTML = `
         <div class="hamburger" onclick="toggleMenu()">
             <span></span><span></span><span></span>
@@ -258,7 +250,6 @@ function loadNavbar() {
         <div class="nav-links">${user ? loggedInLinks : publicLinks}</div>
     `;
 
-    // Construct Mobile Drawer
     document.getElementById("mobileMenu").innerHTML = user ? loggedInLinks : publicLinks;
 }
 
