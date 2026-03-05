@@ -7,23 +7,17 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-    /* RESET */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Inter", sans-serif;
-}
+        /* RESET */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
 
-/* GLOBAL */
-body {
-    background: #f2f4ff;
-    color: #222;
-    min-height: 100vh;
-    overflow-x: hidden; /* Prevents side-scrolling when menu is hidden */
-}
+        body {
+            background: #f2f4ff;
+            color: #222;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
- /* --- FIXED NAVBAR --- */
+        /* --- FIXED NAVBAR --- */
         .navbar {
             width: 100%;
             height: 70px;
@@ -39,7 +33,6 @@ body {
         .nav-container {
             width: 100%;
             max-width: 1200px;
-            height: 100%;
             display: flex;
             align-items: center;
             padding: 0 20px;
@@ -52,9 +45,9 @@ body {
             cursor: pointer;
             margin-right: 15px;
         }
+
         .hamburger span {
-            width: 24px;
-            height: 3px;
+            width: 24px; height: 3px;
             background: #4a6cff;
             border-radius: 3px;
         }
@@ -63,151 +56,107 @@ body {
             font-size: 1.6rem;
             font-weight: 800;
             color: #222;
-            letter-spacing: -1px;
-            flex: 1;
+            text-decoration: none;
         }
         .logo span { color: #4a6cff; }
-
-        .nav-links { display: none; }
 
         /* --- MOBILE MENU --- */
         .mobile-menu {
             position: fixed;
-            top: 70px;
-            left: 0;
-            width: 100%;
-            max-width: 280px;
-            background: #4a6cff;
-            display: none;
+            top: 0;
+            left: -100%;
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            display: flex;
             flex-direction: column;
-            z-index: 999;
-            box-shadow: 4px 4px 15px rgba(0,0,0,0.2);
-            border-bottom-right-radius: 15px;
-        }
-        .mobile-menu.show { display: flex; }
-        .mobile-menu a {
-            padding: 18px 25px;
-            color: #ffffff !important;
-            text-decoration: none;
-            font-weight: 600;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-top: 80px;
+            z-index: 1100;
+            transition: 0.3s ease;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
         }
 
-        /* PROFILE CARD */
-        .profile-card {
-            background: #ffffff;
+        .mobile-menu.show { left: 0; }
+
+        .mobile-menu a {
+            padding: 18px 25px;
             color: #222;
-            width: 92%;
-            max-width: 600px;
-            margin: 30px auto;
-            padding: 35px 25px;
-            border-radius: 28px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .menu-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            z-index: 1050;
+        }
+        .menu-overlay.show { display: block; }
+
+        /* HERO & CONTENT */
+        .hero {
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #4a6cff, #6f8cff);
+            color: #fff;
             text-align: center;
         }
 
-/* HERO SECTION */
-.hero {
-    width: 100%;
-    padding: 50px 20px;
-    background: linear-gradient(135deg, #4a6cff, #6f8cff);
-    color: #fff;
-    text-align: center;
-}
+        .hero h1 { font-size: 2.4rem; font-weight: 800; }
 
-.hero h1 { font-size: 2.4rem; font-weight: 800; margin-bottom: 5px; }
-.hero p { font-size: 1rem; opacity: 0.9; font-weight: 500; }
+        .section {
+            width: 90%;
+            max-width: 600px;
+            background: #fff;
+            margin: 20px auto;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
 
-/* PROFILE PIC BOX */
-.profile-pic-container {
-    background: white;
-    width: 90%;
-    max-width: 600px;
-    margin: -40px auto 20px; /* Overlaps hero slightly */
-    padding: 30px;
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
+        .section h2 { color: #4a6cff; font-size: 0.9rem; margin-bottom: 15px; text-transform: uppercase; }
 
-.profile-pic {
-    width: 130px;
-    height: 130px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid #4a6cff;
-    cursor: pointer;
-    transition: 0.3s;
-}
+        input, textarea {
+            width: 100%; padding: 12px; border-radius: 8px;
+            border: 1px solid #dde; background: #fdfdff; font-size: 1rem;
+        }
 
-/* CONTENT SECTIONS */
-.section {
-    width: 90%;
-    max-width: 600px;
-    background: #fff;
-    margin: 20px auto;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-}
+        button {
+            padding: 12px 25px; background: #4a6cff; color: #fff;
+            border: none; border-radius: 8px; cursor: pointer; font-weight: 700;
+        }
 
-.section h2 {
-    color: #4a6cff;
-    font-size: 1.1rem;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
+        .profile-loader {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 3000;
+        }
 
-input, textarea {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #dde;
-    background: #fdfdff;
-    font-size: 1rem;
-    color: #333;
-}
-
-/* DANGER ZONE */
-.danger-zone {
-    border: 1px solid #ffcccc;
-}
-.danger-zone h2 { color: #d9534f; }
-
-/* BUTTONS */
-button {
-    padding: 12px 25px;
-    background: #4a6cff;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 700;
-    transition: 0.2s;
-}
-
-button:hover { background: #3553d9; transform: translateY(-1px); }
-
-/* RESPONSIVE */
-@media (min-width: 850px) {
-    .hamburger { display: none; } /* Hide burger on desktop */
-    .nav-links { display: flex; } /* Show horizontal links */
-    .mobile-menu { display: none; } /* Kill sidebar on desktop */
-}
-
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #fff;
+            border-top-color: #4a6cff; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-
 <body>
+
 <div id="profileLoader" class="profile-loader">
   <div class="spinner"></div>
-  <div class="loading-text" style="color: white; margin-top: 15px; font-weight: 600;">Updating...</div>
+  <div class="loading-text" style="color: white; margin-top: 15px;">Updating...</div>
 </div>
 
 <div id="menuOverlay" class="menu-overlay" onclick="toggleMenu()"></div>
 
-<nav class="navbar" id="navbar"></nav>
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+        <a href="dashboard.html" class="logo">Contact<span>.</span>com</a>
+    </div>
+</nav>
+
 <div class="mobile-menu" id="mobileMenu"></div>
 
 <div class="hero">
@@ -215,82 +164,15 @@ button:hover { background: #3553d9; transform: translateY(-1px); }
     <p id="professionDisplay">Please wait</p>
 </div>
 
-<div class="section" style="text-align:center;">
-    <div style="position: relative; display: inline-block;">
-        <img id="profilePicPreview" 
-             src="https://via.placeholder.com/120?text=User" 
-             style="width:130px; height:130px; border-radius:50%; object-fit:cover; cursor:pointer; border: 4px solid #4a6cff;" />
-    </div>
+<div class="section" style="text-align:center; margin-top: -40px;">
+    <img id="profilePicPreview" src="https://via.placeholder.com/130" class="profile-pic" style="width:130px; height:130px; border-radius:50%; object-fit:cover; border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); cursor:pointer;" onclick="document.getElementById('profilePicFileInput').click()" />
     <input type="file" id="profilePicFileInput" accept="image/*" style="display:none;" />
-    <p style="margin-top:12px; color:#4a6cff; font-weight:700; font-size: 0.9rem; cursor: pointer;" onclick="document.getElementById('profilePicFileInput').click()">
-        CHANGE PROFILE PHOTO
-    </p>
+    <p style="margin-top:10px; color:#4a6cff; font-weight:700; font-size: 0.8rem; cursor: pointer;">TAP PHOTO TO CHANGE</p>
 </div>
 
 <div class="section">
     <h2>Full Name</h2>
     <input id="fullName" disabled />
 </div>
-
-<div class="section">
-    <h2>Profession</h2>
-    <input id="profession" disabled />
-</div>
-
-<div class="section">
-    <h2>About Me</h2>
-    <textarea id="about" rows="4" disabled></textarea>
-</div>
-
-<div class="section">
-    <h2>Skills</h2>
-    <input id="skills" disabled placeholder="e.g. Design, Coding, Management" />
-</div>
-
-<div class="section">
-    <h2>Work & Life</h2>
-    <textarea id="workLife" rows="4" disabled></textarea>
-</div>
-
-<div class="section" style="text-align:center; background: transparent; box-shadow: none;">
-    <button id="editBtn" onclick="enableEditing()" style="width: 100%; font-size: 1.1rem;">Edit Profile</button>
-    <button id="saveBtn" onclick="saveProfile()" style="display:none; width: 100%; font-size: 1.1rem; background: #28a745;">Save Changes</button>
-</div>
-
-<div class="section">
-    <h2>Update Email</h2>
-    <input id="newEmail" type="email" placeholder="New Email Address" />
-    <button onclick="changeEmail()">Update Email</button>
-</div>
-
-<div class="section">
-    <h2>Update Password</h2>
-    <input id="newPassword" type="password" placeholder="New Password" />
-    <input id="confirmPassword" type="password" placeholder="Confirm Password" style="margin-top:10px;" />
-    <button onclick="changePassword()">Update Password</button>
-</div>
-
-<div class="section" style="border: 2px solid #ff4d4d;">
-    <h2 style="color:#d9534f;">Danger Zone</h2>
-    <p style="font-size: 0.9rem; color: #666;">Deleting your account is permanent.</p>
-    <button style="background:#d9534f; width: 100%;" onclick="showDeleteConfirm()">Delete Account</button>
-</div>
-
-<div id="popupBackdrop" class="popup-backdrop">
-    <div id="deleteConfirmPopup" class="popup" style="display:none;">
-        <h3 style="margin-bottom:10px;">Are you sure?</h3>
-        <p style="margin-bottom:20px; color: #666;">All your data will be wiped from our servers.</p>
-        <button onclick="confirmDeleteAccount()" style="background:#d9534f;">Yes, Delete</button>
-        <button onclick="hideDeleteConfirm()" style="background:#ccc; color: #333;">Cancel</button>
-    </div>
-
-    <div id="mainPopup" class="popup" style="display:none;">
-        <h3 id="popupTitle"></h3>
-        <p id="popupMessage" style="margin: 15px 0; color: #666;"></p>
-        <button onclick="hidePopup()" style="width: 100%;">Got it</button>
-    </div>
-</div>
-
-<script src="scripts/profile.js"></script>
 </body>
 </html>
