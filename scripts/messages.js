@@ -421,25 +421,66 @@ function sendMessage(payloadOverride = null) {
 }
 
 /****************************************************
- * DOM READY
+ * DOM READY — OPTIMIZED FOR CONCURRENCY
  ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
-  showChatLoader(); // ⭐ show loader as soon as page loads
+  showChatLoader();
 
+  // 1. Setup Event Listeners immediately (No waiting)
+  setupEventListeners();
+
+  // 2. Prepare dynamic tasks (Profile, Community info, etc.)
+  const backgroundTasks = [];
+  
   if (mode === "private") {
     const toggle = document.getElementById("toggleMembers");
     const sidebar = document.getElementById("memberSidebar");
     if (toggle) toggle.style.display = "none";
     if (sidebar) sidebar.style.display = "none";
-    await loadOtherUserProfile();
+    backgroundTasks.push(loadOtherUserProfile());
+  } else if (mode === "community") {
+    backgroundTasks.push(loadCommunityInfo());
+    backgroundTasks.push(loadCommunityMembers());
   }
 
-  if (mode === "community") {
-    await loadCommunityInfo();
-    await loadCommunityMembers();
-  }
+  // 3. Get Conversation ID (Parallel to background tasks)
+  const getConversationTask = (async () => {
+    if (activeConversationId) return activeConversationId;
 
+    let fetchUrl = "";
+    if (mode === "community") {
+      fetchUrl = `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`;
+    } else if (finalOtherEmail) {
+      fetchUrl = `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`;
+    }
+
+    if (!fetchUrl) return null;
+
+    const r = await fetch(fetchUrl);
+    const d = await r.json();
+    return d.conversationId;
+  })();
+
+  // 4. Wait for EVERYTHING to happen at once
+  // We wait for both the background UI info AND the conversation ID
+  const [convId] = await Promise.all([
+    getConversationTask,
+    ...backgroundTasks
+  ]);
+
+  // 5. Load Messages if we have an ID
+  if (convId) {
+    activeConversationId = convId;
+    await loadMessagesOnce();
+  } else {
+    hideChatLoader();
+  }
+});
+
+/** * Isolated listener setup to keep DOMContentLoaded clean 
+ */
+function setupEventListeners() {
   const sendBtn = document.getElementById("sendBtn");
   if (sendBtn) sendBtn.onclick = () => sendMessage();
 
@@ -461,58 +502,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
   }
 
-  const uploadDocBtn = document.getElementById("uploadDocBtn");
-  const uploadImgBtn = document.getElementById("uploadImgBtn");
-  const docInput = document.getElementById("docInput");
-  const imgInput = document.getElementById("imgInput");
+  // File Upload Handlers
+  const handlers = [
+    { btn: "uploadDocBtn", input: "docInput", type: "document" },
+    { btn: "uploadImgBtn", input: "imgInput", type: "image" }
+  ];
 
-  if (uploadDocBtn && docInput) {
-    uploadDocBtn.onclick = () => docInput.click();
-    docInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const base64 = await fileToBase64(file);
-      sendMessage({ type: "document", fileName: file.name, fileData: base64 });
-      e.target.value = "";
-    });
-  }
-
-  if (uploadImgBtn && imgInput) {
-    uploadImgBtn.onclick = () => imgInput.click();
-    imgInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const base64 = await fileToBase64(file);
-      sendMessage({ type: "image", fileName: file.name, fileData: base64 });
-      e.target.value = "";
-    });
-  }
-
-  if (activeConversationId) {
-    loadMessagesOnce();
-  } else if (mode === "community") {
-    const r = await fetch(
-      `${API_URL}?module=startCommunityConversation&communityId=${communityId}&userEmail=${loggedInUser.email}`
-    );
-    const d = await r.json();
-    activeConversationId = d.conversationId;
-    loadMessagesOnce();
-  } else if (finalOtherEmail) {
-    const r = await fetch(
-      `${API_URL}?module=startConversation&userEmail=${loggedInUser.email}&otherEmail=${finalOtherEmail}`
-    );
-    const d = await r.json();
-    activeConversationId = d.conversationId;
-    loadMessagesOnce();
-  }
-});
-
-function showChatLoader() {
-  const el = document.getElementById("chatLoader");
-  if (el) el.style.display = "flex";
-}
-
-function hideChatLoader() {
-  const el = document.getElementById("chatLoader");
-  if (el) el.style.display = "none";
+  handlers.forEach(({ btn, input, type }) => {
+    const btnEl = document.getElementById(btn);
+    const inputEl = document.getElementById(input);
+    if (btnEl && inputEl) {
+      btnEl.onclick = () => inputEl.click();
+      inputEl.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const base64 = await fileToBase64(file);
+        sendMessage({ type, fileName: file.name, fileData: base64 });
+        e.target.value = "";
+      };
+    }
+  });
 }
