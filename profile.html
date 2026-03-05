@@ -98,10 +98,23 @@
     <input id="profession" placeholder="Profession" style="margin-top:10px;" disabled />
     <textarea id="about" rows="4" placeholder="About Me" style="margin-top:10px;" disabled></textarea>
     
-    <div style="text-align:center;">
-        <button id="editBtn" onclick="enableEditing()">Edit Profile</button>
-        <button id="saveBtn" onclick="saveProfile()" style="display:none; background:#28a745;">Save Changes</button>
+ <div class="section" style="text-align:center;">
+    <button id="editBtn" onclick="enableEditing()">Edit Profile</button>
+    <button id="saveBtn" onclick="saveProfile()" style="display:none; background:#28a745;">Save Changes</button>
+</div>
+
+<div id="popupBackdrop" class="popup-backdrop">
+    <div id="deleteConfirmPopup" class="popup" style="display:none;">
+        <div class="popup-title">Delete Account</div>
+        <div class="popup-message">Are you sure? This is permanent.</div>
+        <button style="background:#d9534f;" onclick="confirmDeleteAccount()">Yes, Delete</button>
+        <button style="background:#ccc; color:#222;" onclick="hideDeleteConfirm()">Cancel</button>
     </div>
+    
+    <div id="mainPopup" class="popup" style="display:none;">
+        <div id="popupTitle" class="popup-title"></div> <div id="popupMessage" class="popup-message"></div> <button onclick="hidePopup()">OK</button>
+    </div>
+</div>
 </div>
 
 <div class="section">
