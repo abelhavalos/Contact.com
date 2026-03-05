@@ -1,8 +1,5 @@
 /****************************************************
  * CONTACT.COM — ULTRA FAST MESSAGES.JS
- * - Corrected Function Scoping
- * - Parallel Loading
- * - Fixed Member & Navbar rendering
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -36,7 +33,7 @@ const BUBBLE_PALETTE = [
 ];
 
 /****************************************************
- * 2. UI & HELPER FUNCTIONS (Hoisted)
+ * 2. HELPERS (At the top to avoid ReferenceErrors)
  ****************************************************/
 function showChatLoader() {
   const el = document.getElementById("chatLoader");
@@ -62,6 +59,18 @@ function getUserColor(email) {
   return BUBBLE_PALETTE[Math.abs(hash) % BUBBLE_PALETTE.length];
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+/****************************************************
+ * 3. UI COMPONENTS
+ ****************************************************/
 function loadNavbar() {
   const nav = document.getElementById("navbar");
   const mobileMenu = document.getElementById("mobileMenu");
@@ -100,9 +109,8 @@ function logout() {
 }
 
 /****************************************************
- * 3. DATA FETCHING & RENDERING
+ * 4. DATA FETCHING & RENDERING
  ****************************************************/
-
 async function loadOtherUserProfile() {
   if (!finalOtherEmail) return;
   const r = await fetch(`${API_URL}?module=getUserByEmail&email=${encodeURIComponent(finalOtherEmail)}`);
@@ -215,30 +223,41 @@ function buildMessageRow(msg) {
   const bubble = document.createElement("div");
   bubble.style.cssText = `max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : "#F3F4F6"}; color:${isMe ? color.text : "#111827"};`;
   
-  if (msg.type === "image") bubble.innerHTML = `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:8px;">`;
-  else if (msg.type === "document") bubble.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc">📄 ${msg.fileName}</a>`;
-  else bubble.textContent = msg.text || "";
-
-  const avatarWrapper = `<div style="width:36px; display:flex; justify-content:center;">${avatarHTML}</div>`;
-  if (isMe) {
-    row.innerHTML = bubble.outerHTML + avatarWrapper;
+  if (msg.type === "image") {
+    bubble.innerHTML = `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:8px; display:block;">`;
+  } else if (msg.type === "document") {
+    bubble.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="color:inherit; text-decoration:none;">📄 ${msg.fileName}</a>`;
   } else {
-    row.innerHTML = avatarWrapper + bubble.outerHTML;
+    bubble.textContent = msg.text || "";
+  }
+
+  const avatarWrapper = document.createElement("div");
+  avatarWrapper.style.cssText = "width:36px; display:flex; justify-content:center;";
+  avatarWrapper.innerHTML = avatarHTML;
+
+  if (isMe) {
+    row.appendChild(bubble);
+    row.appendChild(avatarWrapper);
+  } else {
+    row.appendChild(avatarWrapper);
+    row.appendChild(bubble);
   }
   return row;
 }
 
 /****************************************************
- * 4. SEND LOGIC
+ * 5. SEND LOGIC
  ****************************************************/
 function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
+  
+  // If not a file/payload, and text is empty, stop.
   if (!payloadOverride && (!text || !activeConversationId)) return;
 
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
-  // Optimistic UI
+  // Optimistic UI Append
   const container = document.getElementById("messages");
   if (container) {
     const optMsg = { senderEmail: loggedInUser.email, ...payload };
@@ -247,49 +266,76 @@ function sendMessage(payloadOverride = null) {
   }
 
   if (!payloadOverride) {
+    // Standard Text Send
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`)
       .then(() => loadMessagesOnce());
   } else {
-    fetch(API_URL, { method: "POST", body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) })
-      .then(() => loadMessagesOnce());
+    // Image or Document Send (POST)
+    fetch(API_URL, { 
+      method: "POST", 
+      body: JSON.stringify({ 
+        ...payload, 
+        conversationId: activeConversationId, 
+        senderEmail: loggedInUser.email 
+      }) 
+    })
+    .then(() => loadMessagesOnce());
   }
 }
 
 /****************************************************
- * 5. INIT
+ * 6. INIT & EVENT LISTENERS
  ****************************************************/
 function setupEventListeners() {
   document.getElementById("sendBtn")?.addEventListener("click", () => sendMessage());
+  
   document.getElementById("messageInput")?.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    if (e.key === "Enter" && !e.shiftKey) { 
+      e.preventDefault(); 
+      sendMessage(); 
+    }
   });
+
   document.getElementById("toggleMembers")?.addEventListener("click", () => {
     document.getElementById("memberSidebar")?.classList.toggle("show");
   });
 
-  const fileToBase64 = (file) => new Promise(r => {
-    const reader = new FileReader();
-    reader.onload = () => r(reader.result);
-    reader.readAsDataURL(file);
-  });
+  // RESTORED: Image & Document Upload Logic
+  const uploadConfigs = [
+    { btnId: "uploadDocBtn", inputId: "docInput", type: "document" },
+    { btnId: "uploadImgBtn", inputId: "imgInput", type: "image" }
+  ];
 
-  [['Doc', 'document'], ['Img', 'image']].forEach(([suffix, type]) => {
-    const btn = document.getElementById(`upload${suffix}Btn`);
-    const inp = document.getElementById(`${suffix.toLowerCase()}Input`);
+  uploadConfigs.forEach(cfg => {
+    const btn = document.getElementById(cfg.btnId);
+    const inp = document.getElementById(cfg.inputId);
+    
     if (btn && inp) {
       btn.onclick = () => inp.click();
       inp.onchange = async (e) => {
-        if (!e.target.files[0]) return;
-        const b64 = await fileToBase64(e.target.files[0]);
-        sendMessage({ type, fileName: e.target.files[0].name, fileData: b64 });
-        e.target.value = "";
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+          const b64 = await fileToBase64(file);
+          sendMessage({ 
+            module: "sendMessage",
+            type: cfg.type, 
+            fileName: file.name, 
+            fileData: b64 
+          });
+        } catch (err) {
+          console.error("File processing failed", err);
+        }
+        e.target.value = ""; // Clear input for next use
       };
     }
   });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Define structure first
   loadNavbar();
   showChatLoader();
   setupEventListeners();
@@ -313,9 +359,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     return d.conversationId;
   })();
 
-  const [id] = await Promise.all([getConvId, ...backgroundTasks]);
-  activeConversationId = id;
-
-  if (activeConversationId) await loadMessagesOnce();
-  else hideChatLoader();
+  try {
+    const [id] = await Promise.all([getConvId, ...backgroundTasks]);
+    activeConversationId = id;
+    if (activeConversationId) {
+      await loadMessagesOnce();
+    } else {
+      hideChatLoader();
+    }
+  } catch (err) {
+    console.error("Init failed", err);
+    hideChatLoader();
+  }
 });
