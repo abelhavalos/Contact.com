@@ -112,7 +112,7 @@ body {
 }
 .mobile-menu.show { display: flex; }
 
-@media (max-width: 700px) {
+@media (max-width: 850px) {
   .hamburger { display: flex; }
   .nav-links { display: none; }
   .navbar { padding: 20px; }
