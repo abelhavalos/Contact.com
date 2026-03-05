@@ -8,7 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Inter", sans-serif; }
         body { background: linear-gradient(135deg, #4a6cff, #6f8cff); color: #fff; min-height: 100vh; }
 
-        /* NAVBAR - Matches Messages exactly */
+        /* NAVBAR - Matches Messages UI exactly */
         .navbar {
             width: 100%; padding: 15px 40px; display: flex; align-items: center;
             background: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -95,7 +95,6 @@
     <h2>Update Password</h2>
     <form id="passwordForm" onsubmit="event.preventDefault(); changePassword();">
         <input type="text" id="username_hidden" name="username" style="display:none;" autocomplete="username">
-        
         <input id="newPassword" type="password" placeholder="New password" autocomplete="new-password" required />
         <input id="confirmPassword" type="password" placeholder="Confirm new password" style="margin-top:10px;" autocomplete="new-password" required />
         <button type="submit">Update Password</button>
