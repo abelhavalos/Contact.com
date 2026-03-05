@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initProfilePictureHandler();
 });
 
-/* 2. NAVBAR (Synced with Messages) */
+/* 2. NAVBAR (Synchronized with Messages.js) */
 function loadNavbar() {
     const navHTML = `
         <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
@@ -37,12 +37,12 @@ function logout() {
     window.location.href = "index.html";
 }
 
-/* 3. PROFILE DATA */
+/* 3. PROFILE DATA HANDLING */
 async function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return (window.location.href = "login.html");
 
-    // Populate hidden field for Password Manager
+    // Populate hidden field for Browser Password Managers
     if(document.getElementById("username_hidden")) {
         document.getElementById("username_hidden").value = user.email;
     }
@@ -90,15 +90,15 @@ async function saveProfile() {
         const data = await res.json();
         if (data.success) {
             localStorage.setItem("contact_user", JSON.stringify(updated));
-            location.reload();
+            location.reload(); // Re-locks the fields
         } else {
-            showPopup("Error", "Save failed");
+            showPopup("Error", data.message || "Save failed");
         }
-    } catch (e) { showPopup("Error", "Network error"); }
+    } catch (e) { showPopup("Error", "Network connection failed"); }
     finally { hideLoader(); }
 }
 
-/* 4. PICTURE HANDLER (Base64) */
+/* 4. PERMANENT PICTURE UPLOAD (Base64) */
 function initProfilePictureHandler() {
     const input = document.getElementById("profilePicFileInput");
     const preview = document.getElementById("profilePicPreview");
@@ -112,15 +112,15 @@ function initProfilePictureHandler() {
         reader.onloadend = async () => {
             const base64 = reader.result;
             preview.src = base64;
-            uploadPhoto(base64);
+            uploadPhotoToServer(base64);
         };
         reader.readAsDataURL(file);
     };
 }
 
-async function uploadPhoto(base64) {
+async function uploadPhotoToServer(base64) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
-    showLoader("Uploading...");
+    showLoader("Uploading Photo...");
     try {
         const res = await fetch(API_URL, {
             method: "POST",
@@ -130,19 +130,20 @@ async function uploadPhoto(base64) {
         if (data.success) {
             user.profilePic = base64;
             localStorage.setItem("contact_user", JSON.stringify(user));
-            showLoader("Done!");
+            showLoader("Success!");
             setTimeout(hideLoader, 800);
         }
     } catch (e) { hideLoader(); showPopup("Error", "Upload failed"); }
 }
 
-/* 5. HELPERS */
+/* 5. UI HELPERS */
 function showLoader(txt) { 
     const l = document.getElementById("profileLoader");
     l.querySelector(".loading-text").innerText = txt;
     l.style.display = "flex"; 
 }
 function hideLoader() { document.getElementById("profileLoader").style.display = "none"; }
+
 function showPopup(t, m) {
     document.getElementById("popupTitle").innerText = t;
     document.getElementById("popupMessage").innerText = m;
@@ -150,6 +151,7 @@ function showPopup(t, m) {
     document.getElementById("mainPopup").style.display = "block";
 }
 function hidePopup() { document.getElementById("popupBackdrop").style.display = "none"; }
+
 function showDeleteConfirm() {
     document.getElementById("popupBackdrop").style.display = "flex";
     document.getElementById("deleteConfirmPopup").style.display = "block";
