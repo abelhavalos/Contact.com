@@ -1,6 +1,6 @@
 /****************************************************
  * CONTACT.COM — PRODUCTION READY MESSAGES.JS
- * OPTIMIZED FOR ULTRA-FAST RENDERING & SYNC
+ * OPTIMIZED FOR ULTRA-FAST RENDERING & REAL-TIME SYNC
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -9,7 +9,6 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
 
-// Normalize user object
 loggedInUser.fullName = loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
 loggedInUser.profilePic = loggedInUser.profilePic || loggedInUser.ProfilePic || null;
 
@@ -23,6 +22,7 @@ let activeConversationId = url.searchParams.get("conversationId") || null;
 let renderedMessageIds = new Set();
 let communityMembers = [];
 let otherUser = null;
+let isFetching = false; // Prevents overlapping requests
 
 const BUBBLE_PALETTE = [
   { bg: "#4A6CFF", text: "#FFFFFF" },
@@ -33,7 +33,7 @@ const BUBBLE_PALETTE = [
 ];
 
 /****************************************************
- * 2. CORE HELPERS
+ * 2. HELPERS
  ****************************************************/
 const showChatLoader = () => { const el = document.getElementById("chatLoader"); if (el) el.style.display = "flex"; };
 const hideChatLoader = () => { const el = document.getElementById("chatLoader"); if (el) el.style.display = "none"; };
@@ -60,13 +60,9 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
 });
 
 /****************************************************
- * 3. FAST RENDERING ENGINE
+ * 3. FAST RENDERING & SYNC ENGINE
  ****************************************************/
 
-/**
- * Generates raw HTML strings instead of DOM nodes.
- * Strings are significantly faster to process in large batches.
- */
 function getMessageHTML(msg) {
   const isMe = msg.senderEmail === loggedInUser.email;
   const color = getUserColor(msg.senderEmail);
@@ -94,26 +90,28 @@ function getMessageHTML(msg) {
   } else if (msg.type === "document") {
     content = `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="color:inherit; text-decoration:none;">📄 ${msg.fileName}</a>`;
   } else {
-    // Basic sanitization
     content = (msg.text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
   const bubbleStyle = `max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : "#F3F4F6"}; color:${isMe ? color.text : "#111827"}; overflow-wrap: break-word;`;
   const rowStyle = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
 
-  const avatarPart = `<div style="width:36px; flex-shrink:0; display:flex; justify-content:center;">${avatar}</div>`;
-  const bubblePart = `<div style="${bubbleStyle}">${content}</div>`;
-
   return `
     <div class="msg-row" data-id="${msg.id}" style="${rowStyle}">
-      ${isMe ? bubblePart + avatarPart : avatarPart + bubblePart}
+      ${isMe ? `<div style="${bubbleStyle}">${content}</div><div style="width:36px; flex-shrink:0; display:flex; justify-content:center;">${avatar}</div>` : 
+               `<div style="width:36px; flex-shrink:0; display:flex; justify-content:center;">${avatar}</div><div style="${bubbleStyle}">${content}</div>`}
     </div>`;
 }
 
-async function loadMessagesOnce(showSpinner = true) {
-  if (!activeConversationId) return;
+/**
+ * CORE SYNC FUNCTION
+ * This is called repeatedly to check for new messages.
+ */
+async function syncMessages(showSpinner = false) {
+  if (!activeConversationId || isFetching) return;
   if (showSpinner) showChatLoader();
-
+  
+  isFetching = true;
   try {
     const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
     const data = await r.json();
@@ -121,6 +119,7 @@ async function loadMessagesOnce(showSpinner = true) {
     const container = document.getElementById("messages");
     if (!container) return;
 
+    // Filter for messages we haven't rendered yet
     const newMessages = serverMessages.filter(msg => !renderedMessageIds.has(msg.id));
 
     if (newMessages.length > 0) {
@@ -130,13 +129,13 @@ async function loadMessagesOnce(showSpinner = true) {
         renderedMessageIds.add(msg.id);
       });
 
-      // Use insertAdjacentHTML to avoid re-parsing the entire DOM tree
       container.insertAdjacentHTML('beforeend', htmlBuffer);
       container.scrollTop = container.scrollHeight;
     }
   } catch (err) {
     console.error("Sync failed", err);
   } finally {
+    isFetching = false;
     hideChatLoader();
   }
 }
@@ -154,9 +153,7 @@ async function loadOtherUserProfile() {
   
   const header = document.getElementById("headerTitle");
   if (header) {
-    const avatarHTML = pic 
-      ? `<img class="chat-avatar" src="${pic}" />` 
-      : `<div class="chat-avatar-fallback">${getInitials(name)}</div>`;
+    const avatarHTML = pic ? `<img class="chat-avatar" src="${pic}" />` : `<div class="chat-avatar-fallback">${getInitials(name)}</div>`;
     header.innerHTML = `<div class="chat-header">${avatarHTML}<div class="chat-header-main">${chatTitle || name}</div></div>`;
   }
 }
@@ -194,9 +191,7 @@ function renderCommunityMembersList(list) {
   if (!container) return;
   let html = "<h3>Members</h3>";
   list.forEach(m => {
-    const avatar = m.profilePic 
-      ? `<img class="chat-avatar" src="${m.profilePic}" />` 
-      : `<div class="chat-avatar-fallback">${getInitials(m.fullName)}</div>`;
+    const avatar = m.profilePic ? `<img class="chat-avatar" src="${m.profilePic}" />` : `<div class="chat-avatar-fallback">${getInitials(m.fullName)}</div>`;
     html += `<div class="member" onclick="window.location.href='public-profile.html?email=${encodeURIComponent(m.email)}'">
                <div class="member-row" style="display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:12px;">
                  ${avatar}<div class="member-name">${m.fullName}</div>
@@ -217,7 +212,7 @@ function sendMessage(payloadOverride = null) {
   const tempId = "temp_" + Date.now();
   const payload = payloadOverride || { type: "text", text };
   
-  // Optimistic UI Update
+  // Optimistic UI Update (Immediate)
   const container = document.getElementById("messages");
   if (container) {
     const optMsg = { id: tempId, senderEmail: loggedInUser.email, ...payload };
@@ -229,17 +224,17 @@ function sendMessage(payloadOverride = null) {
   if (!payloadOverride) {
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`)
-      .then(() => loadMessagesOnce(false));
+      .then(() => syncMessages(false)); // Instant sync after send
   } else {
     fetch(API_URL, { 
       method: "POST", 
       body: JSON.stringify({ ...payload, module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
-    }).then(() => loadMessagesOnce(false));
+    }).then(() => syncMessages(false));
   }
 }
 
 /****************************************************
- * 6. INIT & LIFECYCLE
+ * 6. INIT & POLL LOOP
  ****************************************************/
 function setupEventListeners() {
   document.getElementById("sendBtn")?.addEventListener("click", () => sendMessage());
@@ -250,7 +245,6 @@ function setupEventListeners() {
     document.getElementById("memberSidebar")?.classList.toggle("show");
   });
 
-  // Unified Upload Logic
   const configs = [{b: "uploadDocBtn", i: "docInput", t: "document"}, {b: "uploadImgBtn", i: "imgInput", t: "image"}];
   configs.forEach(cfg => {
     const btn = document.getElementById(cfg.b), inp = document.getElementById(cfg.i);
@@ -267,21 +261,7 @@ function setupEventListeners() {
   });
 }
 
-function loadNavbar() {
-  const nav = document.getElementById("navbar");
-  const menuItems = `
-    <a href="dashboard.html">Dashboard</a><a href="communities.html">Communities</a>
-    <a href="events.html">Events</a><a href="contacts.html">Contacts</a>
-    <a href="profile.html">Profile</a><a href="#" onclick="localStorage.removeItem('contact_user'); location.href='index.html'">Logout</a>`;
-  
-  if (nav) nav.innerHTML = `<div class="hamburger" onclick="document.getElementById('mobileMenu').classList.toggle('show')"><span></span><span></span><span></span></div>
-                            <div class="logo">Contact<span>.</span>com</div><div class="nav-links">${menuItems}</div>`;
-  const mob = document.getElementById("mobileMenu");
-  if (mob) mob.innerHTML = menuItems;
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
-  loadNavbar();
   showChatLoader();
   setupEventListeners();
 
@@ -303,10 +283,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     
     await Promise.all(backgroundTasks);
-    await loadMessagesOnce();
-    
-    // Auto-polling for new messages (Every 5 seconds)
-    setInterval(() => loadMessagesOnce(false), 5000);
+    await syncMessages(true); // Initial load
+
+    // START REAL-TIME POLLING LOOP
+    // Checks the server every 3 seconds for new messages from other users
+    setInterval(() => syncMessages(false), 3000);
 
   } catch (err) {
     console.error("Init failed", err);
