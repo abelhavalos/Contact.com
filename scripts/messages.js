@@ -268,37 +268,43 @@ function buildMessageRow(msg) {
   }
   return row;
 }
-/****************************************************
- * 5. SEND LOGIC
- ****************************************************/
 function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
   
   if (!payloadOverride && (!text || !activeConversationId)) return;
 
+  const tempId = "temp_" + Date.now();
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
+  // 1. OPTIMISTIC RENDER (Instant)
   const container = document.getElementById("messages");
   if (container) {
-    const optMsg = { senderEmail: loggedInUser.email, ...payload };
+    const optMsg = { id: tempId, senderEmail: loggedInUser.email, ...payload };
     container.appendChild(buildMessageRow(optMsg));
     container.scrollTop = container.scrollHeight;
+    
+    // 2. LOCK THE ID (Prevents background sync from doubling this message)
+    renderedMessageIds.add(tempId); 
   }
 
+  // 3. NETWORK SEND
   if (!payloadOverride) {
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`)
-      .then(() => loadMessagesOnce(false)); // 🔥 PASS FALSE HERE
+      .then(() => loadMessagesOnce(false)); // Silent sync
   } else {
     fetch(API_URL, { 
       method: "POST", 
-      body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
+      body: JSON.stringify({ 
+        ...payload, 
+        conversationId: activeConversationId, 
+        senderEmail: loggedInUser.email 
+      }) 
     })
-    .then(() => loadMessagesOnce(false)); // 🔥 PASS FALSE HERE
+    .then(() => loadMessagesOnce(false)); // Silent sync
   }
 }
-
 /****************************************************
  * 6. INIT & EVENT LISTENERS
  ****************************************************/
