@@ -1,6 +1,6 @@
 /****************************************************
- * CONTACT.COM — PRODUCTION READY MESSAGES.JS
- * OPTIMIZED FOR ULTRA-FAST RENDERING & REAL-TIME SYNC
+ * CONTACT.COM — FULL PRODUCTION MESSAGES.JS
+ * NAVBAR RESTORED + ULTRA FAST RENDERING
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -22,7 +22,7 @@ let activeConversationId = url.searchParams.get("conversationId") || null;
 let renderedMessageIds = new Set();
 let communityMembers = [];
 let otherUser = null;
-let isFetching = false; // Prevents overlapping requests
+let isFetching = false;
 
 const BUBBLE_PALETTE = [
   { bg: "#4A6CFF", text: "#FFFFFF" },
@@ -33,7 +33,7 @@ const BUBBLE_PALETTE = [
 ];
 
 /****************************************************
- * 2. HELPERS
+ * 2. HELPERS & UI COMPONENTS
  ****************************************************/
 const showChatLoader = () => { const el = document.getElementById("chatLoader"); if (el) el.style.display = "flex"; };
 const hideChatLoader = () => { const el = document.getElementById("chatLoader"); if (el) el.style.display = "none"; };
@@ -50,6 +50,38 @@ function getUserColor(email) {
     hash |= 0;
   }
   return BUBBLE_PALETTE[Math.abs(hash) % BUBBLE_PALETTE.length];
+}
+
+function toggleMenu() {
+  const menu = document.getElementById("mobileMenu");
+  if (menu) menu.classList.toggle("show");
+}
+
+function loadNavbar() {
+  const nav = document.getElementById("navbar");
+  const mobileMenu = document.getElementById("mobileMenu");
+  const navHTML = `
+    <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="logo">Contact<span>.</span>com</div>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="contacts.html">Contacts</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" onclick="localStorage.removeItem('contact_user'); window.location.href='index.html'">Logout</a>
+    </div>`;
+  
+  if (nav) nav.innerHTML = navHTML;
+  if (mobileMenu) {
+    mobileMenu.innerHTML = `
+      <a href="dashboard.html">Dashboard</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="contacts.html">Contacts</a>
+      <a href="profile.html">Profile</a>
+      <a href="#" onclick="localStorage.removeItem('contact_user'); window.location.href='index.html'">Logout</a>`;
+  }
 }
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -95,18 +127,15 @@ function getMessageHTML(msg) {
 
   const bubbleStyle = `max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : "#F3F4F6"}; color:${isMe ? color.text : "#111827"}; overflow-wrap: break-word;`;
   const rowStyle = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
+  const avatarPart = `<div style="width:36px; flex-shrink:0; display:flex; justify-content:center;">${avatar}</div>`;
+  const bubblePart = `<div style="${bubbleStyle}">${content}</div>`;
 
   return `
     <div class="msg-row" data-id="${msg.id}" style="${rowStyle}">
-      ${isMe ? `<div style="${bubbleStyle}">${content}</div><div style="width:36px; flex-shrink:0; display:flex; justify-content:center;">${avatar}</div>` : 
-               `<div style="width:36px; flex-shrink:0; display:flex; justify-content:center;">${avatar}</div><div style="${bubbleStyle}">${content}</div>`}
+      ${isMe ? bubblePart + avatarPart : avatarPart + bubblePart}
     </div>`;
 }
 
-/**
- * CORE SYNC FUNCTION
- * This is called repeatedly to check for new messages.
- */
 async function syncMessages(showSpinner = false) {
   if (!activeConversationId || isFetching) return;
   if (showSpinner) showChatLoader();
@@ -119,7 +148,6 @@ async function syncMessages(showSpinner = false) {
     const container = document.getElementById("messages");
     if (!container) return;
 
-    // Filter for messages we haven't rendered yet
     const newMessages = serverMessages.filter(msg => !renderedMessageIds.has(msg.id));
 
     if (newMessages.length > 0) {
@@ -202,7 +230,7 @@ function renderCommunityMembersList(list) {
 }
 
 /****************************************************
- * 5. ACTIONS
+ * 5. ACTIONS & EVENTS
  ****************************************************/
 function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
@@ -212,7 +240,6 @@ function sendMessage(payloadOverride = null) {
   const tempId = "temp_" + Date.now();
   const payload = payloadOverride || { type: "text", text };
   
-  // Optimistic UI Update (Immediate)
   const container = document.getElementById("messages");
   if (container) {
     const optMsg = { id: tempId, senderEmail: loggedInUser.email, ...payload };
@@ -224,7 +251,7 @@ function sendMessage(payloadOverride = null) {
   if (!payloadOverride) {
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`)
-      .then(() => syncMessages(false)); // Instant sync after send
+      .then(() => syncMessages(false));
   } else {
     fetch(API_URL, { 
       method: "POST", 
@@ -233,9 +260,6 @@ function sendMessage(payloadOverride = null) {
   }
 }
 
-/****************************************************
- * 6. INIT & POLL LOOP
- ****************************************************/
 function setupEventListeners() {
   document.getElementById("sendBtn")?.addEventListener("click", () => sendMessage());
   document.getElementById("messageInput")?.addEventListener("keydown", e => {
@@ -261,7 +285,11 @@ function setupEventListeners() {
   });
 }
 
+/****************************************************
+ * 6. INITIALIZATION
+ ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
+  loadNavbar(); // Restored Navbar & Logo
   showChatLoader();
   setupEventListeners();
 
@@ -283,10 +311,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     
     await Promise.all(backgroundTasks);
-    await syncMessages(true); // Initial load
+    await syncMessages(true);
 
-    // START REAL-TIME POLLING LOOP
-    // Checks the server every 3 seconds for new messages from other users
+    // Sync loop: 3 seconds
     setInterval(() => syncMessages(false), 3000);
 
   } catch (err) {
