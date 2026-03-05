@@ -215,35 +215,41 @@ function initProfilePictureHandler() {
   });
 }
 
-async function saveProfilePic(base64) {
+async function saveProfilePic(base64Data) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) return;
 
-  showLoader("Updating picture…");
+  showLoader("Uploading to Google Sheets...");
 
   try {
-    const res = await fetch(API_URL, {
+    const response = await fetch(API_URL, {
       method: "POST",
+      // Remove mode: "no-cors" if you have it, as we need to see the result
       body: JSON.stringify({
         module: "updateProfilePicURL",
         email: user.email,
-        profilePic: base64
+        profilePic: base64Data
       })
     });
 
-    const data = await res.json();
+    const data = await response.json();
 
     if (data.success) {
-      user.profilePic = base64;
+      // Update local storage so it displays immediately without refresh
+      user.profilePic = base64Data;
       localStorage.setItem("contact_user", JSON.stringify(user));
-      showLoader("Picture updated!");
-      setTimeout(hideLoader, 600);
+      
+      showLoader("Picture saved!");
+      setTimeout(hideLoader, 1000);
     } else {
-      hideLoader();
-      showPopup("Update Failed", data.message || "Could not update picture.");
+      throw new Error(data.message);
     }
   } catch (err) {
+    console.error("Upload error:", err);
+    // Even if server fails, we update locally so the user sees their change
+    user.profilePic = base64Data;
+    localStorage.setItem("contact_user", JSON.stringify(user));
     hideLoader();
-    showPopup("Network Error", "Could not reach the server.");
+    showPopup("Sync Issue", "Saved locally, but server was busy. It might not persist after logout.");
   }
 }
