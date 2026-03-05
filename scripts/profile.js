@@ -1,33 +1,16 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* ============================
-   INIT & AUTH
-============================ */
+/* 1. INITIALIZE */
 document.addEventListener("DOMContentLoaded", () => {
-  const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
-  
-  loadNavbar();
-  loadProfile();
-  initProfilePictureHandler();
+    loadNavbar();
+    loadProfile();
+    initProfilePictureHandler();
 });
 
-/* ============================
-   NAVBAR (Synchronized)
-============================ */
-function toggleMenu() {
-  const menu = document.getElementById("mobileMenu");
-  if (menu) menu.classList.toggle("show");
-}
-
+/* 2. NAVBAR (Synced with Messages) */
 function loadNavbar() {
-  const nav = `
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span><span></span><span></span>
-        </div>
+    const navHTML = `
+        <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
         <div class="logo">Contact<span>.</span>com</div>
         <div class="nav-links">
             <a href="dashboard.html">Dashboard</a>
@@ -36,203 +19,139 @@ function loadNavbar() {
             <a href="contacts.html">Contacts</a>
             <a href="profile.html">Profile</a>
             <a href="#" onclick="logout()">Logout</a>
-        </div>
-    `;
-  document.getElementById("navbar").innerHTML = nav;
-
-  document.getElementById("mobileMenu").innerHTML = `
+        </div>`;
+    document.getElementById("navbar").innerHTML = navHTML;
+    document.getElementById("mobileMenu").innerHTML = `
         <a href="dashboard.html">Dashboard</a>
         <a href="communities.html">Communities</a>
         <a href="events.html">Events</a>
         <a href="contacts.html">Contacts</a>
         <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()">Logout</a>
-    `;
+        <a href="#" onclick="logout()">Logout</a>`;
 }
+
+function toggleMenu() { document.getElementById("mobileMenu").classList.toggle("show"); }
 
 function logout() {
-  localStorage.removeItem("contact_user");
-  window.location.href = "index.html";
+    localStorage.removeItem("contact_user");
+    window.location.href = "index.html";
 }
 
-/* ============================
-   LOAD PROFILE
-============================ */
+/* 3. PROFILE DATA */
 async function loadProfile() {
-  const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) return;
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    if (!user) return (window.location.href = "login.html");
 
-  hideLoader();
+    // Populate hidden field for Password Manager
+    if(document.getElementById("username_hidden")) {
+        document.getElementById("username_hidden").value = user.email;
+    }
 
-  setText("fullNameDisplay", user.fullName || user.FullName);
-  setText("professionDisplay", user.profession || "Your profession");
+    document.getElementById("fullNameDisplay").innerText = user.fullName || user.FullName || "New User";
+    document.getElementById("professionDisplay").innerText = user.profession || "Set your profession";
 
-  setInput("fullName", user.fullName || user.FullName);
-  setInput("profession", user.profession);
-  setInput("about", user.about);
-  setInput("skills", user.skills);
-  setInput("workLife", user.workLife);
+    document.getElementById("fullName").value = user.fullName || user.FullName || "";
+    document.getElementById("profession").value = user.profession || "";
+    document.getElementById("about").value = user.about || "";
+    document.getElementById("skills").value = user.skills || "";
+    document.getElementById("workLife").value = user.workLife || "";
 
-  if (user.profilePic || user.ProfilePic) {
-    const pic = document.getElementById("profilePicPreview");
-    if (pic) pic.src = user.profilePic || user.ProfilePic;
-  }
+    if (user.profilePic || user.ProfilePic) {
+        document.getElementById("profilePicPreview").src = user.profilePic || user.ProfilePic;
+    }
 }
 
-/* ============================
-   SAVE PROFILE
-============================ */
 function enableEditing() {
-  document
-    .querySelectorAll("#fullName, #profession, #about, #skills, #workLife")
-    .forEach((el) => (el.disabled = false));
-
-  document.getElementById("saveBtn").style.display = "inline-block";
-  document.getElementById("editBtn").style.display = "none";
+    document.querySelectorAll("#fullName, #profession, #about, #skills, #workLife").forEach(el => el.disabled = false);
+    document.getElementById("saveBtn").style.display = "block";
+    document.getElementById("editBtn").style.display = "none";
 }
 
 async function saveProfile() {
-  const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) return;
-
-  const updatedFields = {
-    fullName: getVal("fullName"),
-    profession: getVal("profession"),
-    about: getVal("about"),
-    skills: getVal("skills"),
-    workLife: getVal("workLife"),
-  };
-
-  const updatedUser = { ...user, ...updatedFields };
-  localStorage.setItem("contact_user", JSON.stringify(updatedUser));
-  loadProfile();
-
-  showLoader("Saving changes...");
-
-  const url = `${API_URL}?module=saveProfile` +
-    `&email=${encodeURIComponent(user.email)}` +
-    `&fullName=${encodeURIComponent(updatedFields.fullName)}` +
-    `&profession=${encodeURIComponent(updatedFields.profession)}` +
-    `&about=${encodeURIComponent(updatedFields.about)}` +
-    `&skills=${encodeURIComponent(updatedFields.skills)}` +
-    `&workLife=${encodeURIComponent(updatedFields.workLife)}`;
-
-  try {
-    const res = await fetch(url);
-    const result = await res.json();
-
-    if (result.success) {
-      showLoader("Profile updated!");
-      setTimeout(() => {
-        hideLoader();
-        location.reload(); // Lock inputs again
-      }, 800);
-    } else {
-      hideLoader();
-      showPopup("Update Failed", result.message || "Failed to update profile.");
-    }
-  } catch (e) {
-    hideLoader();
-    showPopup("Network Error", "Could not reach the server.");
-  }
-}
-
-/* ============================
-   PICTURE HANDLING (Base64 Fix)
-============================ */
-function initProfilePictureHandler() {
-  const preview = document.getElementById("profilePicPreview");
-  const input = document.getElementById("profilePicFileInput");
-
-  if (!preview || !input) return;
-
-  preview.addEventListener("click", () => input.click());
-
-  input.addEventListener("change", async () => {
-    const file = input.files[0];
-    if (!file) return;
-
-    // Convert to Base64 so it can be stored in the database
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64String = reader.result;
-      preview.src = base64String;
-      await uploadProfilePic(base64String);
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const updated = {
+        ...user,
+        fullName: document.getElementById("fullName").value,
+        profession: document.getElementById("profession").value,
+        about: document.getElementById("about").value,
+        skills: document.getElementById("skills").value,
+        workLife: document.getElementById("workLife").value
     };
-    reader.readAsDataURL(file);
-  });
-}
 
-async function uploadProfilePic(base64Data) {
-  const user = JSON.parse(localStorage.getItem("contact_user"));
-  showLoader("Uploading photo...");
-
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        module: "updateProfilePic",
+    showLoader("Saving...");
+    const params = new URLSearchParams({
+        module: "saveProfile",
         email: user.email,
-        profilePic: base64Data
-      })
+        ...updated
     });
-    const data = await res.json();
 
-    if (data.success) {
-      user.profilePic = base64Data;
-      localStorage.setItem("contact_user", JSON.stringify(user));
-      showLoader("Photo updated!");
-      setTimeout(hideLoader, 800);
-    } else {
-      hideLoader();
-      showPopup("Upload Failed", "Server could not save image.");
-    }
-  } catch (err) {
-    hideLoader();
-    showPopup("Error", "Network error during upload.");
-  }
+    try {
+        const res = await fetch(`${API_URL}?${params.toString()}`);
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem("contact_user", JSON.stringify(updated));
+            location.reload();
+        } else {
+            showPopup("Error", "Save failed");
+        }
+    } catch (e) { showPopup("Error", "Network error"); }
+    finally { hideLoader(); }
 }
 
-/* ============================
-   HELPERS & POPUPS
-============================ */
-function showLoader(text) {
-  const loader = document.getElementById("profileLoader");
-  if (loader) {
-    loader.querySelector(".loading-text").innerText = text;
-    loader.style.display = "flex";
-  }
+/* 4. PICTURE HANDLER (Base64) */
+function initProfilePictureHandler() {
+    const input = document.getElementById("profilePicFileInput");
+    const preview = document.getElementById("profilePicPreview");
+
+    preview.onclick = () => input.click();
+    input.onchange = () => {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64 = reader.result;
+            preview.src = base64;
+            uploadPhoto(base64);
+        };
+        reader.readAsDataURL(file);
+    };
 }
 
-function hideLoader() {
-  const loader = document.getElementById("profileLoader");
-  if (loader) loader.style.display = "none";
+async function uploadPhoto(base64) {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    showLoader("Uploading...");
+    try {
+        const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ module: "updateProfilePic", email: user.email, profilePic: base64 })
+        });
+        const data = await res.json();
+        if (data.success) {
+            user.profilePic = base64;
+            localStorage.setItem("contact_user", JSON.stringify(user));
+            showLoader("Done!");
+            setTimeout(hideLoader, 800);
+        }
+    } catch (e) { hideLoader(); showPopup("Error", "Upload failed"); }
 }
 
-function showPopup(title, message) {
-  document.getElementById("popupTitle").innerText = title;
-  document.getElementById("popupMessage").innerText = message;
-  document.getElementById("deleteConfirmPopup").style.display = "none";
-  document.getElementById("mainPopup").style.display = "block";
-  document.getElementById("popupBackdrop").style.display = "flex";
+/* 5. HELPERS */
+function showLoader(txt) { 
+    const l = document.getElementById("profileLoader");
+    l.querySelector(".loading-text").innerText = txt;
+    l.style.display = "flex"; 
 }
-
-function hidePopup() {
-  document.getElementById("popupBackdrop").style.display = "none";
+function hideLoader() { document.getElementById("profileLoader").style.display = "none"; }
+function showPopup(t, m) {
+    document.getElementById("popupTitle").innerText = t;
+    document.getElementById("popupMessage").innerText = m;
+    document.getElementById("popupBackdrop").style.display = "flex";
+    document.getElementById("mainPopup").style.display = "block";
 }
-
+function hidePopup() { document.getElementById("popupBackdrop").style.display = "none"; }
 function showDeleteConfirm() {
-  document.getElementById("mainPopup").style.display = "none";
-  document.getElementById("deleteConfirmPopup").style.display = "block";
-  document.getElementById("popupBackdrop").style.display = "flex";
+    document.getElementById("popupBackdrop").style.display = "flex";
+    document.getElementById("deleteConfirmPopup").style.display = "block";
 }
-
-function hideDeleteConfirm() {
-  document.getElementById("popupBackdrop").style.display = "none";
-}
-
-function setText(id, val) { const el = document.getElementById(id); if (el) el.innerText = val || ""; }
-function setInput(id, val) { const el = document.getElementById(id); if (el) el.value = val || ""; }
-function getVal(id) { const el = document.getElementById(id); return el ? el.value : ""; }
-
-// Include your existing changeEmail, changePassword, and confirmDeleteAccount below...
+function hideDeleteConfirm() { document.getElementById("popupBackdrop").style.display = "none"; }
