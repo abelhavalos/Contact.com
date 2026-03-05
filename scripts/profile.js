@@ -1,16 +1,21 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* 1. INITIALIZE */
+/* 1. INITIALIZATION */
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
     loadProfile();
     initProfilePictureHandler();
 });
 
-/* 2. NAVBAR (Synchronized with Messages.js) */
+/* 2. NAVBAR (Matches Messages exactly) */
 function loadNavbar() {
+    const nav = document.getElementById("navbar");
+    const mobileMenu = document.getElementById("mobileMenu");
+    
     const navHTML = `
-        <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
         <div class="logo">Contact<span>.</span>com</div>
         <div class="nav-links">
             <a href="dashboard.html">Dashboard</a>
@@ -20,36 +25,43 @@ function loadNavbar() {
             <a href="profile.html">Profile</a>
             <a href="#" onclick="logout()">Logout</a>
         </div>`;
-    document.getElementById("navbar").innerHTML = navHTML;
-    document.getElementById("mobileMenu").innerHTML = `
-        <a href="dashboard.html">Dashboard</a>
-        <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
-        <a href="contacts.html">Contacts</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()">Logout</a>`;
+    
+    if (nav) nav.innerHTML = navHTML;
+    if (mobileMenu) {
+        mobileMenu.innerHTML = `
+            <a href="dashboard.html">Dashboard</a>
+            <a href="communities.html">Communities</a>
+            <a href="events.html">Events</a>
+            <a href="contacts.html">Contacts</a>
+            <a href="profile.html">Profile</a>
+            <a href="#" onclick="logout()">Logout</a>`;
+    }
 }
 
-function toggleMenu() { document.getElementById("mobileMenu").classList.toggle("show"); }
+function toggleMenu() {
+    const menu = document.getElementById("mobileMenu");
+    if (menu) menu.classList.toggle("show");
+}
 
 function logout() {
     localStorage.removeItem("contact_user");
     window.location.href = "index.html";
 }
 
-/* 3. PROFILE DATA HANDLING */
+/* 3. PROFILE LOGIC */
 async function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return (window.location.href = "login.html");
 
-    // Populate hidden field for Browser Password Managers
-    if(document.getElementById("username_hidden")) {
-        document.getElementById("username_hidden").value = user.email;
-    }
+    // Clear console warning by associating email with password forms
+    const hiddenUser = document.getElementById("username_hidden");
+    if (hiddenUser) hiddenUser.value = user.email;
 
-    document.getElementById("fullNameDisplay").innerText = user.fullName || user.FullName || "New User";
-    document.getElementById("professionDisplay").innerText = user.profession || "Set your profession";
+    // Set Text Displays
+    document.getElementById("fullNameDisplay").innerText = user.fullName || user.FullName || "User";
+    document.getElementById("professionDisplay").innerText = user.profession || "Profession";
 
+    // Set Input Values
     document.getElementById("fullName").value = user.fullName || user.FullName || "";
     document.getElementById("profession").value = user.profession || "";
     document.getElementById("about").value = user.about || "";
@@ -78,27 +90,26 @@ async function saveProfile() {
         workLife: document.getElementById("workLife").value
     };
 
-    showLoader("Saving...");
-    const params = new URLSearchParams({
-        module: "saveProfile",
-        email: user.email,
-        ...updated
-    });
+    showLoader("Saving Changes...");
+    const query = new URLSearchParams({ module: "saveProfile", email: user.email, ...updated });
 
     try {
-        const res = await fetch(`${API_URL}?${params.toString()}`);
+        const res = await fetch(`${API_URL}?${query.toString()}`);
         const data = await res.json();
         if (data.success) {
             localStorage.setItem("contact_user", JSON.stringify(updated));
-            location.reload(); // Re-locks the fields
+            location.reload();
         } else {
-            showPopup("Error", data.message || "Save failed");
+            showPopup("Error", "Save failed. Please try again.");
         }
-    } catch (e) { showPopup("Error", "Network connection failed"); }
-    finally { hideLoader(); }
+    } catch (e) {
+        showPopup("Connection Error", "Could not reach server.");
+    } finally {
+        hideLoader();
+    }
 }
 
-/* 4. PERMANENT PICTURE UPLOAD (Base64) */
+/* 4. PICTURE HANDLING */
 function initProfilePictureHandler() {
     const input = document.getElementById("profilePicFileInput");
     const preview = document.getElementById("profilePicPreview");
@@ -112,13 +123,13 @@ function initProfilePictureHandler() {
         reader.onloadend = async () => {
             const base64 = reader.result;
             preview.src = base64;
-            uploadPhotoToServer(base64);
+            uploadProfilePic(base64);
         };
         reader.readAsDataURL(file);
     };
 }
 
-async function uploadPhotoToServer(base64) {
+async function uploadProfilePic(base64) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     showLoader("Uploading Photo...");
     try {
@@ -133,14 +144,17 @@ async function uploadPhotoToServer(base64) {
             showLoader("Success!");
             setTimeout(hideLoader, 800);
         }
-    } catch (e) { hideLoader(); showPopup("Error", "Upload failed"); }
+    } catch (e) {
+        hideLoader();
+        showPopup("Upload Error", "Failed to save image.");
+    }
 }
 
 /* 5. UI HELPERS */
-function showLoader(txt) { 
-    const l = document.getElementById("profileLoader");
-    l.querySelector(".loading-text").innerText = txt;
-    l.style.display = "flex"; 
+function showLoader(txt) {
+    const loader = document.getElementById("profileLoader");
+    loader.querySelector(".loading-text").innerText = txt;
+    loader.style.display = "flex";
 }
 function hideLoader() { document.getElementById("profileLoader").style.display = "none"; }
 
