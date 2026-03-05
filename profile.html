@@ -14,73 +14,83 @@
             min-height: 100vh;
         }
 
-        /* NAVBAR */
+        /* --- FIXED NAVBAR --- */
         .navbar {
             width: 100%;
-            padding: 20px 40px;
-            display: flex;
-            align-items: center;
+            height: 70px;
             background: #ffffff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+        }
+
+        .nav-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
         }
 
         .hamburger {
-            display: none;
+            display: flex;
             flex-direction: column;
             gap: 5px;
             cursor: pointer;
-            margin-right: 20px;
+            margin-right: 15px;
         }
+
         .hamburger span {
-            width: 28px;
-            height: 3px;
-            background: #222;
+            width: 24px; height: 3px;
+            background: #4a6cff;
             border-radius: 3px;
         }
 
         .logo {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.6rem;
+            font-weight: 800;
             color: #222;
+            text-decoration: none;
         }
         .logo span { color: #4a6cff; }
 
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-left: auto;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-        }
-
-        /* MOBILE MENU */
+        /* --- MOBILE MENU --- */
         .mobile-menu {
-            display: none;
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            display: flex;
             flex-direction: column;
-            background: #4a6cff;
-            padding: 10px 0;
+            padding-top: 80px;
+            z-index: 1100;
+            transition: 0.3s ease;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
         }
+
+        .mobile-menu.show { left: 0; }
+
         .mobile-menu a {
-            padding: 12px 18px;
-            color: white;
+            padding: 18px 25px;
+            color: #222;
             text-decoration: none;
-            border-top: 1px solid rgba(255,255,255,0.2);
-        }
-        .mobile-menu.show { display: flex; }
-
-        @media (max-width: 700px) {
-            .hamburger { display: flex; }
-            .nav-links { display: none; }
+            font-weight: 600;
+            border-bottom: 1px solid #f0f0f0;
         }
 
+        .menu-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            z-index: 1050;
+        }
+        .menu-overlay.show { display: block; }
         /* PROFILE PAGE */
         .hero {
             text-align: center;
