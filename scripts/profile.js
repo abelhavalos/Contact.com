@@ -1,90 +1,122 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-// 1. RUN ON LOAD
 document.addEventListener("DOMContentLoaded", () => {
     loadNavbar();
     loadProfile();
 });
 
-// 2. NAVBAR & SIDEBAR LOGIC
+// NAVBAR & SIDEBAR
 function loadNavbar() {
     const nav = document.getElementById("navbar");
     const mob = document.getElementById("mobileMenu");
     
-    // Desktop & Logo
-    if(nav) {
-        nav.innerHTML = `
-            <div class="hamburger" onclick="toggleMenu()">
-                <span></span><span></span><span></span>
-            </div>
-            <div class="logo">Contact<span>.</span>com</div>
-            <div class="nav-links">
-                <a href="dashboard.html">Dashboard</a>
-                <a href="communities.html">Communities</a>
-                <a href="events.html">Events</a>
-                <a href="profile.html">Profile</a>
-                <button onclick="logout()" style="background:#4A6CFF; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:700; cursor:pointer;">Logout</button>
-            </div>`;
-    }
-    
-    // The Short Sidebar
-    if(mob) {
-        mob.innerHTML = `
+    const navContent = `
+        <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+        <div class="logo">Contact<span>.</span>com</div>
+        <div class="nav-links">
             <a href="dashboard.html">Dashboard</a>
             <a href="communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="profile.html">Profile</a>
-            <a href="#" onclick="logout()" style="border-bottom:none;">Logout</a>`;
-    }
+            <button onclick="logout()" style="background:#4A6CFF; color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:700; cursor:pointer;">Logout</button>
+        </div>`;
+    
+    if(nav) nav.innerHTML = navContent;
+    if(mob) mob.innerHTML = `
+        <a href="dashboard.html">Dashboard</a>
+        <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()" style="border-bottom:none;">Logout</a>`;
 }
 
-function toggleMenu() {
-    const menu = document.getElementById("mobileMenu");
-    if(menu) menu.classList.toggle("show");
-}
+function toggleMenu() { document.getElementById("mobileMenu").classList.toggle("show"); }
 
-// 3. DATA LOADING
+// LOAD PROFILE DATA
 async function loadProfile() {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     if (!user) return window.location.href = "login.html";
 
-    // Set hidden field value to stop the Chrome Password error
     const hiddenUser = document.getElementById("username_hidden");
-    if(hiddenUser) {
-        hiddenUser.value = user.email || "";
-    }
+    if(hiddenUser) hiddenUser.value = user.email;
 
-    // Update Header
-    document.getElementById("fullNameDisplay").innerText = user.fullName || "User Name";
-    document.getElementById("professionDisplay").innerText = user.profession || "Profession";
+    const userProfession = user.profession || user.Profession || "";
+    const userFullName = user.fullName || user.FullName || "User Name";
+
+    document.getElementById("fullNameDisplay").innerText = userFullName;
+    document.getElementById("professionDisplay").innerText = userProfession;
     
-    // Update Inputs
-    document.getElementById("fullName").value = user.fullName || "";
-    document.getElementById("profession").value = user.profession || "";
+    document.getElementById("fullName").value = userFullName;
+    document.getElementById("profession").value = userProfession;
     document.getElementById("about").value = user.about || "";
     
-    // Profile Picture
-    if (user.profilePic) {
-        document.getElementById("profilePicPreview").src = user.profilePic;
-    }
+    if (user.profilePic) document.getElementById("profilePicPreview").src = user.profilePic;
 }
 
-// 4. CORE ACTIONS
-function enableEditing() {
-    document.querySelectorAll("input, textarea").forEach(el => {
-        // Don't enable the hidden field or password fields automatically
-        if(el.type !== "password" && el.id !== "username_hidden") {
-            el.disabled = false;
+// 1. UPDATE EMAIL FUNCTION
+async function changeEmail() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const newEmail = document.getElementById("newEmail").value;
+
+    if(!newEmail) return;
+    showLoader("Updating Email...");
+
+    try {
+        const res = await fetch(`${API_URL}?module=changeEmail&oldEmail=${user.email}&newEmail=${newEmail}`);
+        const data = await res.json();
+        if(data.success) {
+            user.email = newEmail;
+            localStorage.setItem("contact_user", JSON.stringify(user));
+            showPopup("Success", "Email updated successfully!");
+        } else {
+            showPopup("Error", data.message || "Failed to update email.");
         }
+    } catch (e) { showPopup("Error", "Network error."); }
+    finally { hideLoader(); }
+}
+
+// 2. UPDATE PASSWORD FUNCTION
+async function changePassword() {
+    const user = JSON.parse(localStorage.getItem("contact_user"));
+    const newPass = document.getElementById("newPassword").value;
+    const confirmPass = document.getElementById("confirmPassword").value;
+
+    if (newPass !== confirmPass) {
+        showPopup("Error", "Passwords do not match!");
+        return;
+    }
+
+    showLoader("Updating Password...");
+    try {
+        const res = await fetch(`${API_URL}?module=changePassword&email=${user.email}&newPassword=${encodeURIComponent(newPass)}`);
+        const data = await res.json();
+        if(data.success) {
+            showPopup("Success", "Password updated successfully!");
+            document.getElementById("passwordForm").reset();
+        } else {
+            showPopup("Error", data.message || "Failed to update password.");
+        }
+    } catch (e) { showPopup("Error", "Network error."); }
+    finally { hideLoader(); }
+}
+
+// UI HELPERS
+function enableEditing() {
+    document.querySelectorAll(".section input, .section textarea").forEach(el => {
+        if(el.type !== "password" && el.id !== "username_hidden") el.disabled = false;
     });
     document.getElementById("saveBtn").style.display = "inline-block";
     document.getElementById("editBtn").style.display = "none";
 }
 
-function logout() {
-    localStorage.removeItem("contact_user");
-    window.location.href = "index.html";
-}
+function logout() { localStorage.removeItem("contact_user"); window.location.href = "index.html"; }
+function showLoader() { document.getElementById("profileLoader").style.display = "flex"; }
+function hideLoader() { document.getElementById("profileLoader").style.display = "none"; }
 
-// Note: Add your existing saveProfile(), changePassword(), and changeEmail() 
-// functions below this line, they will work perfectly with this structure.
+function showPopup(title, msg) {
+    document.getElementById("popupTitle").innerText = title;
+    document.getElementById("popupMessage").innerText = msg;
+    document.getElementById("popupBackdrop").style.display = "flex";
+    document.getElementById("mainPopup").style.display = "block";
+}
+function hidePopup() { document.getElementById("popupBackdrop").style.display = "none"; }
