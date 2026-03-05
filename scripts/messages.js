@@ -178,22 +178,43 @@ function renderCommunityMembersList(list) {
   container.appendChild(fragment);
 }
 
-async function loadMessagesOnce() {
+/* Track IDs to prevent flickering and duplicates */
+let renderedMessageIds = new Set();
+
+async function loadMessagesOnce(showSpinner = true) {
   if (!activeConversationId) return;
-  showChatLoader();
-  const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
-  const data = await r.json();
-  messages = data.messages || [];
   
-  const container = document.getElementById("messages");
-  if (container) {
-    container.innerHTML = "";
-    const fragment = document.createDocumentFragment();
-    messages.forEach(msg => fragment.appendChild(buildMessageRow(msg)));
-    container.appendChild(fragment);
-    container.scrollTop = container.scrollHeight;
+  if (showSpinner) showChatLoader();
+
+  try {
+    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
+    const data = await r.json();
+    const serverMessages = data.messages || [];
+    
+    const container = document.getElementById("messages");
+    if (!container) return;
+
+    // 1. Identify messages that are NOT already on the screen
+    const newMessages = serverMessages.filter(msg => !renderedMessageIds.has(msg.id));
+
+    if (newMessages.length > 0) {
+      const fragment = document.createDocumentFragment();
+      
+      newMessages.forEach(msg => {
+        // Only append if it's not a temp message already shown
+        fragment.appendChild(buildMessageRow(msg));
+        renderedMessageIds.add(msg.id);
+      });
+
+      container.appendChild(fragment);
+      container.scrollTop = container.scrollHeight;
+    }
+
+  } catch (err) {
+    console.error("Sync failed", err);
+  } finally {
+    hideChatLoader();
   }
-  hideChatLoader();
 }
 
 function buildMessageRow(msg) {
@@ -201,6 +222,9 @@ function buildMessageRow(msg) {
   const color = getUserColor(msg.senderEmail);
   const row = document.createElement("div");
   row.className = "msg-row";
+  // Add an attribute so we can find this row later if needed
+  row.setAttribute('data-id', msg.id); 
+  
   row.style.cssText = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
 
   let pic = null, name = msg.senderEmail;
@@ -244,7 +268,6 @@ function buildMessageRow(msg) {
   }
   return row;
 }
-
 /****************************************************
  * 5. SEND LOGIC
  ****************************************************/
