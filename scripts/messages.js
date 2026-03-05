@@ -252,12 +252,10 @@ function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
   
-  // If not a file/payload, and text is empty, stop.
   if (!payloadOverride && (!text || !activeConversationId)) return;
 
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
-  // Optimistic UI Append
   const container = document.getElementById("messages");
   if (container) {
     const optMsg = { senderEmail: loggedInUser.email, ...payload };
@@ -266,21 +264,15 @@ function sendMessage(payloadOverride = null) {
   }
 
   if (!payloadOverride) {
-    // Standard Text Send
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`)
-      .then(() => loadMessagesOnce(false));
+      .then(() => loadMessagesOnce(false)); // 🔥 PASS FALSE HERE
   } else {
-    // Image or Document Send (POST)
     fetch(API_URL, { 
       method: "POST", 
-      body: JSON.stringify({ 
-        ...payload, 
-        conversationId: activeConversationId, 
-        senderEmail: loggedInUser.email 
-      }) 
+      body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
     })
-    .then(() => loadMessagesOnce(false));
+    .then(() => loadMessagesOnce(false)); // 🔥 PASS FALSE HERE
   }
 }
 
