@@ -215,36 +215,32 @@ function initProfilePictureHandler() {
   });
 }
 
-async function saveProfilePic(base64Data) {
+async function saveProfilePic(localUrl) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) return;
 
-  showLoader("Uploading to server...");
+  if (!user) return;
+  showLoader("Updating picture…");
+
+  const url =
+    `${API_URL}?module=updateProfilePicURL` +
+    `&email=${encodeURIComponent(user.email)}` +
+    `&profilePic=${encodeURIComponent(localUrl)}`;
 
   try {
-    // We remove 'no-cors' to ensure we get a real response. 
-    // Ensure your Google Apps Script has a doPost(e) function.
-    const response = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        module: "uploadProfilePic",
-        email: user.email,
-        imageData: base64Data
-      })
-    });
+    const res = await fetch(url);
+    const data = await res.json();
 
-    // Even if we can't read the JSON due to CORS, if the status is 200, it likely saved.
-    user.profilePic = base64Data;
-    localStorage.setItem("contact_user", JSON.stringify(user));
-    
-    showLoader("Picture saved permanently!");
-    setTimeout(hideLoader, 1500);
+    if (data.success) {
+      user.profilePic = localUrl;
+      localStorage.setItem("contact_user", JSON.stringify(user));
+      showLoader("Picture updated!");
+      setTimeout(hideLoader, 600);
+    } else {
+      hideLoader();
+      showPopup("Update Failed", data.message || "Could not update picture.");
+    }
   } catch (err) {
-    console.error("Upload error:", err);
-    // Fallback: update local storage anyway so it looks fixed to the user
-    user.profilePic = base64Data;
-    localStorage.setItem("contact_user", JSON.stringify(user));
     hideLoader();
-    showPopup("Note", "Image updated locally. If it disappears on refresh, check server logs.");
+    showPopup("Network Error", "Could not reach the server.");
   }
 }
