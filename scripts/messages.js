@@ -269,7 +269,7 @@ function sendMessage(payloadOverride = null) {
     // Standard Text Send
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`)
-      .then(() => loadMessagesOnce());
+      .then(() => loadMessagesOnce(false));
   } else {
     // Image or Document Send (POST)
     fetch(API_URL, { 
@@ -280,7 +280,7 @@ function sendMessage(payloadOverride = null) {
         senderEmail: loggedInUser.email 
       }) 
     })
-    .then(() => loadMessagesOnce());
+    .then(() => loadMessagesOnce(false));
   }
 }
 
