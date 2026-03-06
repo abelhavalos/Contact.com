@@ -1,5 +1,5 @@
 /****************************************************
- * CONTACT.COM — ULTRA FAST MESSAGES.JS
+ * CONTACT.COM — ULTRA FAST MESSAGES.JS (FORCE-SYNC)
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -185,35 +185,33 @@ async function loadMessagesOnce(showSpinner = true) {
   if (showSpinner) showChatLoader();
 
   try {
-    // FIX: Added redirect logic to bypass CORS blocks on Google Apps Script
-    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`, {
-      method: 'GET',
-      mode: 'cors',
-      redirect: 'follow'
-    });
-    
+    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
     const data = await r.json();
     const serverMessages = data.messages || [];
     const container = document.getElementById("messages");
     if (!container) return;
 
-    // Only process messages we don't have yet
-    const newMessages = serverMessages.filter(msg => !renderedMessageIds.has(msg.id));
+    let addedCount = 0;
+    const fragment = document.createDocumentFragment();
 
-    if (newMessages.length > 0) {
-      const fragment = document.createDocumentFragment();
-      newMessages.forEach(msg => {
+    serverMessages.forEach(msg => {
+      // Fallback ID if server doesn't provide one
+      const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
+      
+      if (!renderedMessageIds.has(uniqueKey)) {
         fragment.appendChild(buildMessageRow(msg));
-        renderedMessageIds.add(msg.id);
-      });
+        renderedMessageIds.add(uniqueKey);
+        addedCount++;
+      }
+    });
+
+    if (addedCount > 0) {
+      console.log(`Sync complete: Added ${addedCount} new messages.`);
       container.appendChild(fragment);
-      // Small timeout to ensure the DOM has updated before scrolling
-      requestAnimationFrame(() => {
-        container.scrollTop = container.scrollHeight;
-      });
+      container.scrollTop = container.scrollHeight;
     }
   } catch (err) {
-    console.error("Fetch failure:", err);
+    console.warn("Polling Sync silent failure (likely network):", err);
   } finally {
     if (showSpinner) hideChatLoader();
   }
@@ -224,7 +222,6 @@ function buildMessageRow(msg) {
   const color = getUserColor(msg.senderEmail);
   const row = document.createElement("div");
   row.className = "msg-row";
-  row.setAttribute('data-id', msg.id); 
   row.style.cssText = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
 
   let pic = null, name = msg.senderEmail;
@@ -274,28 +271,27 @@ function sendMessage(payloadOverride = null) {
   const text = (input?.value || "").trim();
   if (!payloadOverride && (!text || !activeConversationId)) return;
 
-  const tempId = "temp_" + Date.now();
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
+  // Optimistic render
   const container = document.getElementById("messages");
   if (container) {
-    const optMsg = { id: tempId, senderEmail: loggedInUser.email, ...payload };
+    const optMsg = { senderEmail: loggedInUser.email, ...payload, timestamp: Date.now() };
     container.appendChild(buildMessageRow(optMsg));
     container.scrollTop = container.scrollHeight;
-    renderedMessageIds.add(tempId); 
   }
 
   if (!payloadOverride) {
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`, { mode: 'no-cors' })
-      .then(() => setTimeout(() => loadMessagesOnce(false), 500)); 
+      .then(() => setTimeout(() => loadMessagesOnce(false), 800)); 
   } else {
     fetch(API_URL, { 
       method: "POST", 
       mode: 'no-cors',
       body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
     })
-    .then(() => setTimeout(() => loadMessagesOnce(false), 500));
+    .then(() => setTimeout(() => loadMessagesOnce(false), 800));
   }
 }
 
@@ -304,12 +300,11 @@ function sendMessage(payloadOverride = null) {
  ****************************************************/
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
-  // 5 seconds is safer for Google Apps Script quotas and browser performance
   pollingInterval = setInterval(() => {
     if (activeConversationId) {
        loadMessagesOnce(false);
     }
-  }, 5000); 
+  }, 4000); 
 }
 
 /****************************************************
@@ -374,6 +369,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await Promise.all(backgroundTasks);
 
     if (activeConversationId) {
+      console.log("Chat active on ID:", activeConversationId);
       await loadMessagesOnce(true);
       startPolling(); 
     } else {
