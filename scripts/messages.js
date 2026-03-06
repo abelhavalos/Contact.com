@@ -20,10 +20,10 @@ const finalOtherEmail = otherEmailParam || url.searchParams.get("email");
 let chatTitle = url.searchParams.get("title") || "";
 
 let activeConversationId = conversationIdParam || null;
-let messages = [];
 let communityMembers = [];
 let otherUser = null;
 let pollingInterval = null; 
+let renderedMessageIds = new Set();
 
 const BUBBLE_PALETTE = [
   { bg: "#4A6CFF", text: "#FFFFFF" },
@@ -180,19 +180,24 @@ function renderCommunityMembersList(list) {
   container.appendChild(fragment);
 }
 
-let renderedMessageIds = new Set();
-
 async function loadMessagesOnce(showSpinner = true) {
   if (!activeConversationId) return;
   if (showSpinner) showChatLoader();
 
   try {
-    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
+    // FIX: Added redirect logic to bypass CORS blocks on Google Apps Script
+    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`, {
+      method: 'GET',
+      mode: 'cors',
+      redirect: 'follow'
+    });
+    
     const data = await r.json();
     const serverMessages = data.messages || [];
     const container = document.getElementById("messages");
     if (!container) return;
 
+    // Only process messages we don't have yet
     const newMessages = serverMessages.filter(msg => !renderedMessageIds.has(msg.id));
 
     if (newMessages.length > 0) {
@@ -202,10 +207,13 @@ async function loadMessagesOnce(showSpinner = true) {
         renderedMessageIds.add(msg.id);
       });
       container.appendChild(fragment);
-      container.scrollTop = container.scrollHeight;
+      // Small timeout to ensure the DOM has updated before scrolling
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
     }
   } catch (err) {
-    console.error("Sync failed", err);
+    console.error("Fetch failure:", err);
   } finally {
     if (showSpinner) hideChatLoader();
   }
@@ -279,14 +287,15 @@ function sendMessage(payloadOverride = null) {
 
   if (!payloadOverride) {
     input.value = "";
-    fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`)
-      .then(() => loadMessagesOnce(false)); 
+    fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`, { mode: 'no-cors' })
+      .then(() => setTimeout(() => loadMessagesOnce(false), 500)); 
   } else {
     fetch(API_URL, { 
       method: "POST", 
+      mode: 'no-cors',
       body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
     })
-    .then(() => loadMessagesOnce(false));
+    .then(() => setTimeout(() => loadMessagesOnce(false), 500));
   }
 }
 
@@ -294,12 +303,13 @@ function sendMessage(payloadOverride = null) {
  * 5. POLLING LOGIC
  ****************************************************/
 function startPolling() {
-  if (pollingInterval) return; // Already polling
+  if (pollingInterval) clearInterval(pollingInterval);
+  // 5 seconds is safer for Google Apps Script quotas and browser performance
   pollingInterval = setInterval(() => {
     if (activeConversationId) {
        loadMessagesOnce(false);
     }
-  }, 5000); // Polling every 1 seconds for better responsiveness
+  }, 5000); 
 }
 
 /****************************************************
@@ -352,18 +362,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     backgroundTasks.push(loadCommunityMembers());
   }
 
-  const getConvId = (async () => {
-    if (activeConversationId) return activeConversationId;
-    const mod = mode === "community" ? "startCommunityConversation" : "startConversation";
-    const p = mode === "community" ? `&communityId=${communityId}` : `&otherEmail=${finalOtherEmail}`;
-    const r = await fetch(`${API_URL}?module=${mod}&userEmail=${loggedInUser.email}${p}`);
-    const d = await r.json();
-    return d.conversationId;
-  })();
-
   try {
-    const [id] = await Promise.all([getConvId, ...backgroundTasks]);
-    activeConversationId = id;
+    if (!activeConversationId) {
+      const mod = mode === "community" ? "startCommunityConversation" : "startConversation";
+      const p = mode === "community" ? `&communityId=${communityId}` : `&otherEmail=${finalOtherEmail}`;
+      const r = await fetch(`${API_URL}?module=${mod}&userEmail=${loggedInUser.email}${p}`);
+      const d = await r.json();
+      activeConversationId = d.conversationId;
+    }
+
+    await Promise.all(backgroundTasks);
+
     if (activeConversationId) {
       await loadMessagesOnce(true);
       startPolling(); 
