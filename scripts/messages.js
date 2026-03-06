@@ -23,7 +23,7 @@ let activeConversationId = conversationIdParam || null;
 let messages = [];
 let communityMembers = [];
 let otherUser = null;
-let pollingInterval = null; // Track polling state
+let pollingInterval = null; 
 
 const BUBBLE_PALETTE = [
   { bg: "#4A6CFF", text: "#FFFFFF" },
@@ -34,7 +34,7 @@ const BUBBLE_PALETTE = [
 ];
 
 /****************************************************
- * 2. HELPERS (At the top to avoid ReferenceErrors)
+ * 2. HELPERS
  ****************************************************/
 function showChatLoader() {
   const el = document.getElementById("chatLoader");
@@ -180,37 +180,30 @@ function renderCommunityMembersList(list) {
   container.appendChild(fragment);
 }
 
-/* Track IDs to prevent flickering and duplicates */
 let renderedMessageIds = new Set();
 
 async function loadMessagesOnce(showSpinner = true) {
   if (!activeConversationId) return;
-  
   if (showSpinner) showChatLoader();
 
   try {
     const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
     const data = await r.json();
     const serverMessages = data.messages || [];
-    
     const container = document.getElementById("messages");
     if (!container) return;
 
-    // 1. Identify messages that are NOT already on the screen
     const newMessages = serverMessages.filter(msg => !renderedMessageIds.has(msg.id));
 
     if (newMessages.length > 0) {
       const fragment = document.createDocumentFragment();
-      
       newMessages.forEach(msg => {
         fragment.appendChild(buildMessageRow(msg));
         renderedMessageIds.add(msg.id);
       });
-
       container.appendChild(fragment);
       container.scrollTop = container.scrollHeight;
     }
-
   } catch (err) {
     console.error("Sync failed", err);
   } finally {
@@ -224,7 +217,6 @@ function buildMessageRow(msg) {
   const row = document.createElement("div");
   row.className = "msg-row";
   row.setAttribute('data-id', msg.id); 
-  
   row.style.cssText = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
 
   let pic = null, name = msg.senderEmail;
@@ -272,7 +264,6 @@ function buildMessageRow(msg) {
 function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
-  
   if (!payloadOverride && (!text || !activeConversationId)) return;
 
   const tempId = "temp_" + Date.now();
@@ -293,11 +284,7 @@ function sendMessage(payloadOverride = null) {
   } else {
     fetch(API_URL, { 
       method: "POST", 
-      body: JSON.stringify({ 
-        ...payload, 
-        conversationId: activeConversationId, 
-        senderEmail: loggedInUser.email 
-      }) 
+      body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
     })
     .then(() => loadMessagesOnce(false));
   }
@@ -307,11 +294,12 @@ function sendMessage(payloadOverride = null) {
  * 5. POLLING LOGIC
  ****************************************************/
 function startPolling() {
-  if (pollingInterval) clearInterval(pollingInterval);
-  // Poll every 5 seconds
+  if (pollingInterval) return; // Already polling
   pollingInterval = setInterval(() => {
-    loadMessagesOnce(false);
-  }, 2000);
+    if (activeConversationId) {
+       loadMessagesOnce(false);
+    }
+  }, 1000); // Polling every 1 seconds for better responsiveness
 }
 
 /****************************************************
@@ -319,14 +307,9 @@ function startPolling() {
  ****************************************************/
 function setupEventListeners() {
   document.getElementById("sendBtn")?.addEventListener("click", () => sendMessage());
-  
   document.getElementById("messageInput")?.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) { 
-      e.preventDefault(); 
-      sendMessage(); 
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
-
   document.getElementById("toggleMembers")?.addEventListener("click", () => {
     document.getElementById("memberSidebar")?.classList.toggle("show");
   });
@@ -339,24 +322,15 @@ function setupEventListeners() {
   uploadConfigs.forEach(cfg => {
     const btn = document.getElementById(cfg.btnId);
     const inp = document.getElementById(cfg.inputId);
-    
     if (btn && inp) {
       btn.onclick = () => inp.click();
       inp.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
         try {
           const b64 = await fileToBase64(file);
-          sendMessage({ 
-            module: "sendMessage",
-            type: cfg.type, 
-            fileName: file.name, 
-            fileData: b64 
-          });
-        } catch (err) {
-          console.error("File processing failed", err);
-        }
+          sendMessage({ module: "sendMessage", type: cfg.type, fileName: file.name, fileData: b64 });
+        } catch (err) { console.error("File processing failed", err); }
         e.target.value = ""; 
       };
     }
@@ -391,8 +365,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const [id] = await Promise.all([getConvId, ...backgroundTasks]);
     activeConversationId = id;
     if (activeConversationId) {
-      await loadMessagesOnce();
-      startPolling(); // Begin background updates
+      await loadMessagesOnce(true);
+      startPolling(); 
     } else {
       hideChatLoader();
     }
