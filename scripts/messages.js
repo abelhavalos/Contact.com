@@ -1,88 +1,76 @@
 /****************************************************
- * CONTACT.COM — STABLE & ULTRA-FAST MESSAGES.JS
+ * CONTACT.COM — FINAL FAIL-SAFE MESSAGES.JS
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
-/* 1. STATE & PARAMS */
-let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
-if (!loggedInUser) window.location.href = "login.html";
-
-loggedInUser.fullName = loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
-loggedInUser.profilePic = loggedInUser.profilePic || loggedInUser.ProfilePic || null;
-
-const url = new URL(window.location.href);
-const communityId = url.searchParams.get("communityId");
+/* 1. STATE */
+let loggedInUser = JSON.parse(localStorage.getItem("contact_user")) || {};
+const urlParams = new URLSearchParams(window.location.search);
+const communityId = urlParams.get("communityId");
 const mode = communityId ? "community" : "private";
-const finalOtherEmail = url.searchParams.get("otherEmail") || url.searchParams.get("email");
-let chatTitle = url.searchParams.get("title") || "";
+const finalOtherEmail = urlParams.get("otherEmail") || urlParams.get("email");
 
-let activeConversationId = url.searchParams.get("conversationId") || null;
+let activeConversationId = urlParams.get("conversationId") || null;
 let renderedMessageIds = new Set();
-let communityMembers = [];
-let otherUser = null;
 let isFetching = false;
 
 const BUBBLE_PALETTE = [
   { bg: "#4A6CFF", text: "#FFFFFF" }, { bg: "#6F8CFF", text: "#FFFFFF" },
-  { bg: "#8FA3FF", text: "#000000" }, { bg: "#AFC0FF", text: "#000000" },
-  { bg: "#D1DDFF", text: "#000000" }
+  { bg: "#8FA3FF", text: "#000000" }, { bg: "#AFC0FF", text: "#000000" }
 ];
 
 /****************************************************
- * 2. CORE UI (NAVBAR & LOADERS)
+ * 2. UI INITIALIZERS
  ****************************************************/
-window.toggleMenu = () => {
-  const menu = document.getElementById("mobileMenu");
-  if (menu) menu.classList.toggle("show");
-};
+function safeSetHTML(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
 
 function loadNavbar() {
-  const nav = document.getElementById("navbar");
-  if (!nav) return;
-
   const navHTML = `
-    <div class="hamburger" onclick="window.toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="hamburger" onclick="document.getElementById('mobileMenu').classList.toggle('show')">
+      <span></span><span></span><span></span>
+    </div>
     <div class="logo">Contact<span>.</span>com</div>
     <div class="nav-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
       <a href="contacts.html">Contacts</a>
       <a href="profile.html">Profile</a>
       <a href="#" onclick="localStorage.removeItem('contact_user'); location.href='index.html'">Logout</a>
     </div>`;
-  
-  nav.innerHTML = navHTML;
-  const mob = document.getElementById("mobileMenu");
-  if (mob) mob.innerHTML = navHTML.split('nav-links">')[1].split('</div>')[0];
+  safeSetHTML("navbar", navHTML);
+  safeSetHTML("mobileMenu", navHTML);
 }
 
-const getInitials = (n) => n ? n.split(" ").filter(Boolean).map(p => p[0]).join("").substring(0, 2).toUpperCase() : "?";
-const getUserColor = (e) => {
-  let h = 0; for (let i = 0; i < (e || "").length; i++) h = (h << 5) - h + e.charCodeAt(i);
-  return BUBBLE_PALETTE[Math.abs(h) % BUBBLE_PALETTE.length];
-};
+const getInitials = (n) => n ? n.split(/[ @]/).filter(Boolean).map(p => p[0]).join("").substring(0, 2).toUpperCase() : "?";
 
 /****************************************************
- * 3. FAST RENDERING ENGINE
+ * 3. CORE RENDERING (SPEED OPTIMIZED)
  ****************************************************/
 function getMessageHTML(msg) {
   const isMe = msg.senderEmail === loggedInUser.email;
-  const color = getUserColor(msg.senderEmail);
-  const avatar = `<div class="chat-avatar-fallback">${getInitials(msg.senderEmail)}</div>`;
+  const colorIndex = Math.abs(msg.senderEmail.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % BUBBLE_PALETTE.length;
+  const color = BUBBLE_PALETTE[colorIndex];
   
-  // Minimalist content rendering for speed
+  // Avatar logic: Uses sender name/initials
+  const avatarHTML = `<div class="chat-avatar-fallback" style="width:36px; height:36px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; flex-shrink:0;">${getInitials(msg.senderEmail)}</div>`;
+  
   let content = (msg.text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  if (msg.type === "image") content = `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:8px;">`;
-  if (msg.type === "document") content = `<a href="${msg.fileData}" download="${msg.fileName}">📄 ${msg.fileName}</a>`;
+  if (msg.type === "image") content = `<img src="${msg.fileData}" style="max-width:100%; border-radius:8px; display:block;">`;
+  if (msg.type === "document") content = `<a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit;">📄 ${msg.fileName}</a>`;
 
-  const bubbleStyle = `max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : "#F3F4F6"}; color:${isMe ? color.text : "#111827"};`;
-  const rowStyle = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
+  const bubbleStyle = `max-width:70%; padding:10px 14px; border-radius:18px; font-size:14px; background:${isMe ? color.bg : "#eee"}; color:${isMe ? color.text : "#333"}; position:relative;`;
+  const rowStyle = `display:flex; margin-bottom:12px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
 
-  return `<div class="msg-row" data-id="${msg.id}" style="${rowStyle}">
-    ${isMe ? `<div style="${bubbleStyle}">${content}</div>${avatar}` : `${avatar}<div style="${bubbleStyle}">${content}</div>`}
-  </div>`;
+  return `
+    <div class="msg-row" style="${rowStyle}">
+      ${!isMe ? avatarHTML : ''}
+      <div style="${bubbleStyle}">${content}</div>
+      ${isMe ? avatarHTML : ''}
+    </div>`;
 }
 
 async function syncMessages() {
@@ -92,85 +80,98 @@ async function syncMessages() {
     const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
     const data = await r.json();
     const container = document.getElementById("messages");
-    if (container && data.messages) {
-      const newMsgs = data.messages.filter(m => !renderedMessageIds.has(m.id));
-      if (newMsgs.length > 0) {
-        let html = "";
-        newMsgs.forEach(m => { html += getMessageHTML(m); renderedMessageIds.add(m.id); });
-        container.insertAdjacentHTML('beforeend', html);
-        container.scrollTop = container.scrollHeight;
-      }
+    if (!container || !data.messages) throw "No container/data";
+
+    const newMsgs = data.messages.filter(m => !renderedMessageIds.has(m.id));
+    if (newMsgs.length > 0) {
+      let html = "";
+      newMsgs.forEach(m => {
+        html += getMessageHTML(m);
+        renderedMessageIds.add(m.id);
+      });
+      container.insertAdjacentHTML('beforeend', html);
+      container.scrollTop = container.scrollHeight;
     }
-  } catch (e) { console.error("Sync Error", e); }
+  } catch (e) { console.error("Sync Error:", e); }
   isFetching = false;
 }
 
 /****************************************************
- * 4. ACTIONS
+ * 4. ACTIONS (RE-LINKED)
  ****************************************************/
-async function sendMessage(payloadOverride = null) {
+async function handleSend() {
   const input = document.getElementById("messageInput");
-  const text = (input?.value || "").trim();
-  if (!payloadOverride && !text) return;
+  const text = input.value.trim();
+  if (!text || !activeConversationId) return;
 
-  // Optimistic Render
+  // Optimistic UI
   const container = document.getElementById("messages");
-  const tempId = "temp_" + Date.now();
-  const payload = payloadOverride || { type: "text", text };
-  
-  container.insertAdjacentHTML('beforeend', getMessageHTML({ id: tempId, senderEmail: loggedInUser.email, ...payload }));
+  const tempId = "t_" + Date.now();
+  container.insertAdjacentHTML('beforeend', getMessageHTML({ id: tempId, senderEmail: loggedInUser.email, text: text }));
   container.scrollTop = container.scrollHeight;
   renderedMessageIds.add(tempId);
-  if (!payloadOverride) input.value = "";
+  input.value = "";
 
   try {
-    const params = payloadOverride 
-      ? { method: "POST", body: JSON.stringify({ ...payload, module: "sendMessage", conversationId: activeConversationId, senderEmail: loggedInUser.email }) }
-      : { method: "GET" };
-    
-    const fetchUrl = payloadOverride ? API_URL : `${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`;
-    
-    await fetch(fetchUrl, params);
-    syncMessages(); 
-  } catch (e) { console.error("Send Error", e); }
+    await fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`);
+    syncMessages();
+  } catch (e) { console.error("Send error", e); }
+}
+
+async function loadMemberList() {
+  if (mode !== "community") {
+      const toggle = document.getElementById("toggleMembers");
+      if (toggle) toggle.style.display = "none";
+      return;
+  }
+  try {
+    const r = await fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`);
+    const d = await r.json();
+    const list = d.members || [];
+    let html = "<h3>Members</h3>";
+    list.forEach(email => {
+      html += `<div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:14px;">
+                <div class="chat-avatar-fallback" style="width:30px; height:30px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; font-size:10px;">${getInitials(email)}</div>
+                <span>${email.split('@')[0]}</span>
+               </div>`;
+    });
+    safeSetHTML("memberSidebar", html);
+  } catch (e) { console.error("Member list error", e); }
 }
 
 /****************************************************
- * 5. INITIALIZATION
+ * 5. INIT
  ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
   
-  // UI Listeners
-  document.getElementById("sendBtn")?.addEventListener("click", () => sendMessage());
-  document.getElementById("messageInput")?.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  });
+  // Attach listeners with null-checks
+  const sendBtn = document.getElementById("sendBtn");
+  if (sendBtn) sendBtn.onclick = handleSend;
 
-  // Start Core Engine
+  const msgInput = document.getElementById("messageInput");
+  if (msgInput) {
+    msgInput.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } };
+  }
+
   try {
+    // Get Conversation ID if missing
     if (!activeConversationId) {
       const mod = mode === "community" ? "startCommunityConversation" : "startConversation";
       const p = mode === "community" ? `&communityId=${communityId}` : `&otherEmail=${finalOtherEmail}`;
-      const res = await fetch(`${API_URL}?module=${mod}&userEmail=${loggedInUser.email}${p}`);
-      const d = await res.json();
+      const r = await fetch(`${API_URL}?module=${mod}&userEmail=${loggedInUser.email}${p}`);
+      const d = await r.json();
       activeConversationId = d.conversationId;
     }
 
-    // Load messages first!
+    // Run Chat and Memberlist
     await syncMessages();
-    setInterval(syncMessages, 3000);
-
-    // Load background data (Member list, etc.) WITHOUT blocking the chat
-    if (mode === "community") {
-      fetch(`${API_URL}?module=getCommunityMembers&communityId=${communityId}`)
-        .then(r => r.json())
-        .then(d => {
-          const list = document.getElementById("memberSidebar");
-          if (list) list.innerHTML = "<h3>Members</h3>" + d.members.map(m => `<div class="member">${m}</div>`).join("");
-        });
-    }
+    loadMemberList();
+    
+    // Set Heartbeat
+    setInterval(syncMessages, 4000);
+    
   } catch (e) {
-    console.error("Init Error", e);
+    console.error("Critical Init Error", e);
   }
 });
