@@ -296,3 +296,47 @@ body {
   border-radius: 10px;
   display: block;
 }
+
+/* Small image bubbles in chat */
+.chat-image-preview {
+  max-width: 150px !important;
+  max-height: 150px !important;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.chat-image-preview:hover {
+  opacity: 0.8;
+}
+
+/* Full-screen overlay (hidden by default) */
+#imageModal {
+  display: none; /* Hidden */
+  position: fixed;
+  z-index: 9999; /* On top of everything */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.9); /* Black background with opacity */
+  align-items: center;
+  justify-content: center;
+}
+
+/* The actual full-screen image */
+#modalImage {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 4px;
+}
+
+/* Close button (X) */
+#modalClose {
+  position: absolute;
+  top: 20px;
+  right: 35px;
+  color: #fff;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
