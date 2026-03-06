@@ -299,7 +299,7 @@ function startPolling() {
     if (activeConversationId) {
        loadMessagesOnce(false);
     }
-  }, 1000); // Polling every 1 seconds for better responsiveness
+  }, 5000); // Polling every 1 seconds for better responsiveness
 }
 
 /****************************************************
