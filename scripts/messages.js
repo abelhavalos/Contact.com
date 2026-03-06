@@ -311,7 +311,7 @@ function startPolling() {
   // Poll every 5 seconds
   pollingInterval = setInterval(() => {
     loadMessagesOnce(false);
-  }, 200);
+  }, 2000);
 }
 
 /****************************************************
