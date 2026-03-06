@@ -69,6 +69,23 @@ function fileToBase64(file) {
   });
 }
 
+// 2b. IMAGE MODAL HELPER
+function openImageModal(imgSrc) {
+  const modal = document.getElementById("imageModal");
+  const modalImg = document.getElementById("modalImage");
+  if (modal && modalImg) {
+    modal.style.display = "flex";
+    modalImg.src = imgSrc;
+  }
+}
+
+function closeImageModal() {
+  const modal = document.getElementById("imageModal");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
 /****************************************************
  * 3. UI COMPONENTS
  ****************************************************/
@@ -97,6 +114,24 @@ function loadNavbar() {
       <a href="profile.html">Profile</a>
       <a href="#" onclick="logout()">Logout</a>`;
   }
+}
+
+// 3b. CREATE IMAGE MODAL STRUCTURE
+function initImageModal() {
+  if (document.getElementById("imageModal")) return; // Already exists
+  const modal = document.createElement("div");
+  modal.id = "imageModal";
+  modal.innerHTML = `
+    <span id="modalClose">&times;</span>
+    <img id="modalImage">
+  `;
+  // Close when clicking background or X
+  modal.onclick = (e) => {
+    if (e.target.id === "imageModal" || e.target.id === "modalClose") {
+      closeImageModal();
+    }
+  };
+  document.body.appendChild(modal);
 }
 
 function toggleMenu() {
@@ -195,9 +230,7 @@ async function loadMessagesOnce(showSpinner = true) {
     const fragment = document.createDocumentFragment();
 
     serverMessages.forEach(msg => {
-      // Fallback ID if server doesn't provide one
       const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
-      
       if (!renderedMessageIds.has(uniqueKey)) {
         fragment.appendChild(buildMessageRow(msg));
         renderedMessageIds.add(uniqueKey);
@@ -206,12 +239,11 @@ async function loadMessagesOnce(showSpinner = true) {
     });
 
     if (addedCount > 0) {
-      console.log(`Sync complete: Added ${addedCount} new messages.`);
       container.appendChild(fragment);
       container.scrollTop = container.scrollHeight;
     }
   } catch (err) {
-    console.warn("Polling Sync silent failure (likely network):", err);
+    console.warn("Polling Sync silent failure:", err);
   } finally {
     if (showSpinner) hideChatLoader();
   }
@@ -245,7 +277,10 @@ function buildMessageRow(msg) {
   bubble.style.cssText = `max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : "#F3F4F6"}; color:${isMe ? color.text : "#111827"};`;
   
   if (msg.type === "image") {
-    bubble.innerHTML = `<img src="${msg.fileData}" class="chat-image" style="max-width:100%; border-radius:8px; display:block;">`;
+    // FIX: Optimized image rendering (small in chat, clickable)
+    const imgHTML = `<img src="${msg.fileData}" class="chat-image-preview">`;
+    bubble.innerHTML = imgHTML;
+    bubble.querySelector('.chat-image-preview').onclick = () => openImageModal(msg.fileData);
   } else if (msg.type === "document") {
     bubble.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="color:inherit; text-decoration:none;">📄 ${msg.fileName}</a>`;
   } else {
@@ -304,7 +339,7 @@ function startPolling() {
     if (activeConversationId) {
        loadMessagesOnce(false);
     }
-  }, 2000); 
+  }, 4000); 
 }
 
 /****************************************************
@@ -344,6 +379,7 @@ function setupEventListeners() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
+  initImageModal(); // FIX: Setup image full-screen logic
   showChatLoader();
   setupEventListeners();
 
@@ -369,7 +405,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     await Promise.all(backgroundTasks);
 
     if (activeConversationId) {
-      console.log("Chat active on ID:", activeConversationId);
       await loadMessagesOnce(true);
       startPolling(); 
     } else {
