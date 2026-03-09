@@ -230,53 +230,15 @@ async function loadMessagesOnce(showSpinner = true) {
     const fragment = document.createDocumentFragment();
 
     serverMessages.forEach(msg => {
-      // FIX: Use server ID if it exists, otherwise use a formatted key that matches our sender logic
-      const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
+      // FIX: Use a content-based key for your own messages to block the echo.
+      const isMe = msg.senderEmail === loggedInUser.email;
+      const uniqueKey = isMe 
+        ? `sent_${msg.text || msg.fileName || ""}` 
+        : (msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`);
       
       if (!renderedMessageIds.has(uniqueKey)) {
         fragment.appendChild(buildMessageRow(msg));
         renderedMessageIds.add(uniqueKey);
-        addedCount++;
-      }
-    });
-
-    if (addedCount > 0) {
-      container.appendChild(fragment);
-      container.scrollTop = container.scrollHeight;
-    }
-  } catch (err) {
-    console.warn("Polling Sync silent failure:", err);
-  } finally {
-    if (showSpinner) hideChatLoader();
-  }
-}
-
-async function loadMessagesOnce(showSpinner = true) {
-  if (!activeConversationId) return;
-  if (showSpinner) showChatLoader();
-
-  try {
-    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
-    const data = await r.json();
-    const serverMessages = data.messages || [];
-    const container = document.getElementById("messages");
-    if (!container) return;
-
-    let addedCount = 0;
-    const fragment = document.createDocumentFragment();
-
-    serverMessages.forEach(msg => {
-      const isMe = msg.senderEmail === loggedInUser.email;
-      
-      // FIX: If it's your own message, check a text-only key to block the echo.
-      // If it's someone else's message, use the standard ID or timestamp key.
-      const echoBlockKey = isMe 
-        ? `me_${msg.text || msg.fileName || ""}` 
-        : (msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`);
-      
-      if (!renderedMessageIds.has(echoBlockKey)) {
-        fragment.appendChild(buildMessageRow(msg));
-        renderedMessageIds.add(echoBlockKey);
         addedCount++;
       }
     });
@@ -299,9 +261,9 @@ function sendMessage(payloadOverride = null) {
 
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
-  // FIX: Immediately block this specific text from being rendered again by the poller
-  const echoBlockKey = `me_${payload.text || payload.fileName || ""}`;
-  renderedMessageIds.add(echoBlockKey);
+  // FIX: Immediately lock this message content so the poller ignores the "echo"
+  const lockKey = `sent_${payload.text || payload.fileName || ""}`;
+  renderedMessageIds.add(lockKey);
 
   const container = document.getElementById("messages");
   if (container) {
@@ -313,17 +275,16 @@ function sendMessage(payloadOverride = null) {
   if (!payloadOverride) {
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`, { mode: 'no-cors' })
-      .then(() => setTimeout(() => loadMessagesOnce(false), 1000));
+      .then(() => setTimeout(() => loadMessagesOnce(false), 1500)); 
   } else {
     fetch(API_URL, { 
       method: "POST", 
       mode: 'no-cors',
       body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
     })
-    .then(() => setTimeout(() => loadMessagesOnce(false), 1000));
+    .then(() => setTimeout(() => loadMessagesOnce(false), 1500));
   }
 }
-
 
 /****************************************************
  * 5. POLLING LOGIC
@@ -334,7 +295,7 @@ function startPolling() {
     if (activeConversationId) {
        loadMessagesOnce(false);
     }
-  }, 4000); 
+  }, 5000); 
 }
 
 /****************************************************
