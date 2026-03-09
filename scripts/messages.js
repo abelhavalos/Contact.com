@@ -230,7 +230,7 @@ async function loadMessagesOnce(showSpinner = true) {
     const fragment = document.createDocumentFragment();
 
     serverMessages.forEach(msg => {
-      // FIX: Use server ID primarily. Fallback is only for very old legacy messages.
+      // FIX: Use server ID if it exists, otherwise use a formatted key that matches our sender logic
       const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
       
       if (!renderedMessageIds.has(uniqueKey)) {
@@ -258,30 +258,39 @@ function sendMessage(payloadOverride = null) {
 
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
-  // FIX: Create a temporary unique key for the optimistic message 
-  // and add it to renderedMessageIds immediately so the poller ignores the "echo"
+  // FIX: Create a temporary object and a specific key to block the echo
   const now = Date.now();
-  const tempKey = `${loggedInUser.email}_${now}_${payload.text || ""}`;
-  renderedMessageIds.add(tempKey);
+  const tempMsg = { 
+    senderEmail: loggedInUser.email, 
+    ...payload, 
+    timestamp: now,
+    id: `temp_${now}` // Assign a temporary ID
+  };
+
+  // Add BOTH the temp ID and the combined key to the Set to be safe
+  renderedMessageIds.add(tempMsg.id);
+  renderedMessageIds.add(`${tempMsg.senderEmail}_${tempMsg.timestamp}_${tempMsg.text || ""}`);
 
   const container = document.getElementById("messages");
   if (container) {
-    const optMsg = { senderEmail: loggedInUser.email, ...payload, timestamp: now };
-    container.appendChild(buildMessageRow(optMsg));
+    container.appendChild(buildMessageRow(tempMsg));
     container.scrollTop = container.scrollHeight;
   }
 
   if (!payloadOverride) {
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`, { mode: 'no-cors' })
-      .then(() => setTimeout(() => loadMessagesOnce(false), 1500)); // Increased delay slightly to let server settle
+      .then(() => {
+        // Wait 2 seconds before the first sync to give the server time to process
+        setTimeout(() => loadMessagesOnce(false), 2000);
+      });
   } else {
     fetch(API_URL, { 
       method: "POST", 
       mode: 'no-cors',
       body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
     })
-    .then(() => setTimeout(() => loadMessagesOnce(false), 1500));
+    .then(() => setTimeout(() => loadMessagesOnce(false), 2000));
   }
 }
 
