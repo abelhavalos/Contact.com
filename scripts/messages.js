@@ -235,14 +235,16 @@ async function loadMessagesOnce(showSpinner = true) {
     serverMessages.forEach(msg => {
       const isMe = msg.senderEmail === loggedInUser.email;
       
-      // FIX: If the 'shield' is active, skip all server messages sent by ME
-      if (isMe && selfMessageShield) return;
-
+      // FIX 1: Generate a content-based key for your own messages
+      const contentKey = isMe ? `sent_${msg.text || msg.fileName || ""}` : null;
       const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
       
-      if (!renderedMessageIds.has(uniqueKey)) {
+      // FIX 2: Check BOTH the unique ID and the content-based lock
+      if (!renderedMessageIds.has(uniqueKey) && (!contentKey || !renderedMessageIds.has(contentKey))) {
         fragment.appendChild(buildMessageRow(msg));
         renderedMessageIds.add(uniqueKey);
+        // If it was a 'sent' message, make sure the content key is also marked as used
+        if (contentKey) renderedMessageIds.add(contentKey);
         addedCount++;
       }
     });
@@ -265,10 +267,9 @@ function sendMessage(payloadOverride = null) {
 
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
-  // FIX: Activate the shield. This prevents the poller from 
-  // rendering the server's copy of this message for 5 seconds.
-  selfMessageShield = true;
-  setTimeout(() => { selfMessageShield = false; }, 5000);
+  // FIX 3: Register the content key IMMEDIATELY before rendering or fetching
+  const lockKey = `sent_${payload.text || payload.fileName || ""}`;
+  renderedMessageIds.add(lockKey);
 
   const container = document.getElementById("messages");
   if (container) {
@@ -288,7 +289,6 @@ function sendMessage(payloadOverride = null) {
     });
   }
 }
-
 function buildMessageRow(msg) {
   const isMe = msg.senderEmail === loggedInUser.email;
   const color = getUserColor(msg.senderEmail);
