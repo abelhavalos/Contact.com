@@ -215,6 +215,9 @@ function renderCommunityMembersList(list) {
   container.appendChild(fragment);
 }
 
+// Add this at the top of your state section
+let selfMessageShield = false;
+
 async function loadMessagesOnce(showSpinner = true) {
   if (!activeConversationId) return;
   if (showSpinner) showChatLoader();
@@ -230,7 +233,13 @@ async function loadMessagesOnce(showSpinner = true) {
     const fragment = document.createDocumentFragment();
 
     serverMessages.forEach(msg => {
+      const isMe = msg.senderEmail === loggedInUser.email;
+      
+      // FIX: If the 'shield' is active, skip all server messages sent by ME
+      if (isMe && selfMessageShield) return;
+
       const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
+      
       if (!renderedMessageIds.has(uniqueKey)) {
         fragment.appendChild(buildMessageRow(msg));
         renderedMessageIds.add(uniqueKey);
@@ -246,6 +255,37 @@ async function loadMessagesOnce(showSpinner = true) {
     console.warn("Polling Sync silent failure:", err);
   } finally {
     if (showSpinner) hideChatLoader();
+  }
+}
+
+function sendMessage(payloadOverride = null) {
+  const input = document.getElementById("messageInput");
+  const text = (input?.value || "").trim();
+  if (!payloadOverride && (!text || !activeConversationId)) return;
+
+  const payload = payloadOverride || { module: "sendMessage", type: "text", text };
+  
+  // FIX: Activate the shield. This prevents the poller from 
+  // rendering the server's copy of this message for 5 seconds.
+  selfMessageShield = true;
+  setTimeout(() => { selfMessageShield = false; }, 5000);
+
+  const container = document.getElementById("messages");
+  if (container) {
+    const optMsg = { senderEmail: loggedInUser.email, ...payload, timestamp: Date.now() };
+    container.appendChild(buildMessageRow(optMsg));
+    container.scrollTop = container.scrollHeight;
+  }
+
+  if (!payloadOverride) {
+    input.value = "";
+    fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`, { mode: 'no-cors' });
+  } else {
+    fetch(API_URL, { 
+      method: "POST", 
+      mode: 'no-cors',
+      body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
+    });
   }
 }
 
@@ -301,34 +341,6 @@ function buildMessageRow(msg) {
   return row;
 }
 
-function sendMessage(payloadOverride = null) {
-  const input = document.getElementById("messageInput");
-  const text = (input?.value || "").trim();
-  if (!payloadOverride && (!text || !activeConversationId)) return;
-
-  const payload = payloadOverride || { module: "sendMessage", type: "text", text };
-  
-  // Optimistic render
-  const container = document.getElementById("messages");
-  if (container) {
-    const optMsg = { senderEmail: loggedInUser.email, ...payload, timestamp: Date.now() };
-    container.appendChild(buildMessageRow(optMsg));
-    container.scrollTop = container.scrollHeight;
-  }
-
-  if (!payloadOverride) {
-    input.value = "";
-    fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`, { mode: 'no-cors' })
-      .then(() => setTimeout(() => loadMessagesOnce(false), 800)); 
-  } else {
-    fetch(API_URL, { 
-      method: "POST", 
-      mode: 'no-cors',
-      body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
-    })
-    .then(() => setTimeout(() => loadMessagesOnce(false), 800));
-  }
-}
 
 /****************************************************
  * 5. POLLING LOGIC
