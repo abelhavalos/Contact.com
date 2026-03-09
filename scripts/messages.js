@@ -251,6 +251,47 @@ async function loadMessagesOnce(showSpinner = true) {
   }
 }
 
+async function loadMessagesOnce(showSpinner = true) {
+  if (!activeConversationId) return;
+  if (showSpinner) showChatLoader();
+
+  try {
+    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
+    const data = await r.json();
+    const serverMessages = data.messages || [];
+    const container = document.getElementById("messages");
+    if (!container) return;
+
+    let addedCount = 0;
+    const fragment = document.createDocumentFragment();
+
+    serverMessages.forEach(msg => {
+      const isMe = msg.senderEmail === loggedInUser.email;
+      
+      // FIX: If it's your own message, check a text-only key to block the echo.
+      // If it's someone else's message, use the standard ID or timestamp key.
+      const echoBlockKey = isMe 
+        ? `me_${msg.text || msg.fileName || ""}` 
+        : (msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`);
+      
+      if (!renderedMessageIds.has(echoBlockKey)) {
+        fragment.appendChild(buildMessageRow(msg));
+        renderedMessageIds.add(echoBlockKey);
+        addedCount++;
+      }
+    });
+
+    if (addedCount > 0) {
+      container.appendChild(fragment);
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch (err) {
+    console.warn("Polling Sync silent failure:", err);
+  } finally {
+    if (showSpinner) hideChatLoader();
+  }
+}
+
 function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
@@ -258,94 +299,30 @@ function sendMessage(payloadOverride = null) {
 
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
-  // FIX: Create a temporary object and a specific key to block the echo
-  const now = Date.now();
-  const tempMsg = { 
-    senderEmail: loggedInUser.email, 
-    ...payload, 
-    timestamp: now,
-    id: `temp_${now}` // Assign a temporary ID
-  };
-
-  // Add BOTH the temp ID and the combined key to the Set to be safe
-  renderedMessageIds.add(tempMsg.id);
-  renderedMessageIds.add(`${tempMsg.senderEmail}_${tempMsg.timestamp}_${tempMsg.text || ""}`);
+  // FIX: Immediately block this specific text from being rendered again by the poller
+  const echoBlockKey = `me_${payload.text || payload.fileName || ""}`;
+  renderedMessageIds.add(echoBlockKey);
 
   const container = document.getElementById("messages");
   if (container) {
-    container.appendChild(buildMessageRow(tempMsg));
+    const optMsg = { senderEmail: loggedInUser.email, ...payload, timestamp: Date.now() };
+    container.appendChild(buildMessageRow(optMsg));
     container.scrollTop = container.scrollHeight;
   }
 
   if (!payloadOverride) {
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`, { mode: 'no-cors' })
-      .then(() => {
-        // Wait 2 seconds before the first sync to give the server time to process
-        setTimeout(() => loadMessagesOnce(false), 2000);
-      });
+      .then(() => setTimeout(() => loadMessagesOnce(false), 1000));
   } else {
     fetch(API_URL, { 
       method: "POST", 
       mode: 'no-cors',
       body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
     })
-    .then(() => setTimeout(() => loadMessagesOnce(false), 2000));
+    .then(() => setTimeout(() => loadMessagesOnce(false), 1000));
   }
 }
-
-function buildMessageRow(msg) {
-  const isMe = msg.senderEmail === loggedInUser.email;
-  const color = getUserColor(msg.senderEmail);
-  const row = document.createElement("div");
-  row.className = "msg-row";
-  row.style.cssText = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
-
-  let pic = null, name = msg.senderEmail;
-  if (isMe) {
-    pic = loggedInUser.profilePic;
-    name = loggedInUser.fullName;
-  } else if (mode === "community") {
-    const s = communityMembers.find(m => m.email === msg.senderEmail) || {};
-    pic = s.profilePic;
-    name = s.fullName || msg.senderEmail;
-  } else {
-    pic = otherUser?.profilePic || otherUser?.ProfilePic;
-    name = otherUser?.fullName || finalOtherEmail;
-  }
-
-  const avatarHTML = pic 
-    ? `<img class="chat-avatar" src="${pic}" />` 
-    : `<div class="chat-avatar-fallback">${getInitials(name)}</div>`;
-
-  const bubble = document.createElement("div");
-  bubble.style.cssText = `max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : "#F3F4F6"}; color:${isMe ? color.text : "#111827"};`;
-  
-  if (msg.type === "image") {
-    // FIX: Optimized image rendering (small in chat, clickable)
-    const imgHTML = `<img src="${msg.fileData}" class="chat-image-preview">`;
-    bubble.innerHTML = imgHTML;
-    bubble.querySelector('.chat-image-preview').onclick = () => openImageModal(msg.fileData);
-  } else if (msg.type === "document") {
-    bubble.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="color:inherit; text-decoration:none;">📄 ${msg.fileName}</a>`;
-  } else {
-    bubble.textContent = msg.text || "";
-  }
-
-  const avatarWrapper = document.createElement("div");
-  avatarWrapper.style.cssText = "width:36px; display:flex; justify-content:center;";
-  avatarWrapper.innerHTML = avatarHTML;
-
-  if (isMe) {
-    row.appendChild(bubble);
-    row.appendChild(avatarWrapper);
-  } else {
-    row.appendChild(avatarWrapper);
-    row.appendChild(bubble);
-  }
-  return row;
-}
-
 
 
 /****************************************************
