@@ -339,7 +339,7 @@ function startPolling() {
     if (activeConversationId) {
        loadMessagesOnce(false);
     }
-  }, 2000); 
+  }, 4000); 
 }
 
 /****************************************************
