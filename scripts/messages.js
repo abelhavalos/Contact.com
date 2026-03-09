@@ -230,12 +230,7 @@ async function loadMessagesOnce(showSpinner = true) {
     const fragment = document.createDocumentFragment();
 
     serverMessages.forEach(msg => {
-      // FIX: Use a content-based key for your own messages to block the echo.
-      const isMe = msg.senderEmail === loggedInUser.email;
-      const uniqueKey = isMe 
-        ? `sent_${msg.text || msg.fileName || ""}` 
-        : (msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`);
-      
+      const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
       if (!renderedMessageIds.has(uniqueKey)) {
         fragment.appendChild(buildMessageRow(msg));
         renderedMessageIds.add(uniqueKey);
@@ -254,6 +249,58 @@ async function loadMessagesOnce(showSpinner = true) {
   }
 }
 
+function buildMessageRow(msg) {
+  const isMe = msg.senderEmail === loggedInUser.email;
+  const color = getUserColor(msg.senderEmail);
+  const row = document.createElement("div");
+  row.className = "msg-row";
+  row.style.cssText = `display:flex; margin-bottom:10px; gap:8px; align-items:flex-end; justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
+
+  let pic = null, name = msg.senderEmail;
+  if (isMe) {
+    pic = loggedInUser.profilePic;
+    name = loggedInUser.fullName;
+  } else if (mode === "community") {
+    const s = communityMembers.find(m => m.email === msg.senderEmail) || {};
+    pic = s.profilePic;
+    name = s.fullName || msg.senderEmail;
+  } else {
+    pic = otherUser?.profilePic || otherUser?.ProfilePic;
+    name = otherUser?.fullName || finalOtherEmail;
+  }
+
+  const avatarHTML = pic 
+    ? `<img class="chat-avatar" src="${pic}" />` 
+    : `<div class="chat-avatar-fallback">${getInitials(name)}</div>`;
+
+  const bubble = document.createElement("div");
+  bubble.style.cssText = `max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : "#F3F4F6"}; color:${isMe ? color.text : "#111827"};`;
+  
+  if (msg.type === "image") {
+    // FIX: Optimized image rendering (small in chat, clickable)
+    const imgHTML = `<img src="${msg.fileData}" class="chat-image-preview">`;
+    bubble.innerHTML = imgHTML;
+    bubble.querySelector('.chat-image-preview').onclick = () => openImageModal(msg.fileData);
+  } else if (msg.type === "document") {
+    bubble.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="color:inherit; text-decoration:none;">📄 ${msg.fileName}</a>`;
+  } else {
+    bubble.textContent = msg.text || "";
+  }
+
+  const avatarWrapper = document.createElement("div");
+  avatarWrapper.style.cssText = "width:36px; display:flex; justify-content:center;";
+  avatarWrapper.innerHTML = avatarHTML;
+
+  if (isMe) {
+    row.appendChild(bubble);
+    row.appendChild(avatarWrapper);
+  } else {
+    row.appendChild(avatarWrapper);
+    row.appendChild(bubble);
+  }
+  return row;
+}
+
 function sendMessage(payloadOverride = null) {
   const input = document.getElementById("messageInput");
   const text = (input?.value || "").trim();
@@ -261,10 +308,7 @@ function sendMessage(payloadOverride = null) {
 
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
-  // FIX: Immediately lock this message content so the poller ignores the "echo"
-  const lockKey = `sent_${payload.text || payload.fileName || ""}`;
-  renderedMessageIds.add(lockKey);
-
+  // Optimistic render
   const container = document.getElementById("messages");
   if (container) {
     const optMsg = { senderEmail: loggedInUser.email, ...payload, timestamp: Date.now() };
@@ -275,14 +319,14 @@ function sendMessage(payloadOverride = null) {
   if (!payloadOverride) {
     input.value = "";
     fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}`, { mode: 'no-cors' })
-      .then(() => setTimeout(() => loadMessagesOnce(false), 1500)); 
+      .then(() => setTimeout(() => loadMessagesOnce(false), 800)); 
   } else {
     fetch(API_URL, { 
       method: "POST", 
       mode: 'no-cors',
       body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email }) 
     })
-    .then(() => setTimeout(() => loadMessagesOnce(false), 1500));
+    .then(() => setTimeout(() => loadMessagesOnce(false), 800));
   }
 }
 
@@ -295,7 +339,7 @@ function startPolling() {
     if (activeConversationId) {
        loadMessagesOnce(false);
     }
-  }, 5000); 
+  }, 4000); 
 }
 
 /****************************************************
@@ -338,6 +382,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initImageModal(); // FIX: Setup image full-screen logic
   showChatLoader();
   setupEventListeners();
+
   const backgroundTasks = [];
   if (mode === "private") {
     const toggle = document.getElementById("toggleMembers");
