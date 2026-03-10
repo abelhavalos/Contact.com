@@ -332,13 +332,18 @@ async function updateNotificationBubble() {
     try {
         const r = await fetch(`${API_URL}?module=getNotifications&email=${encodeURIComponent(user.email)}`);
         const data = await r.json();
-        const unread = (data.notifications || []).filter(n => !n.read).length;
+        
+        // FIX: Filter for unread notifications that are NOT community (don't have "c_")
+        const unreadPrivate = (data.notifications || []).filter(n => {
+            const isPrivate = n.link && n.link.includes("conversationId=") && !n.link.includes("conversationId=c_");
+            return !n.read && isPrivate;
+        }).length;
 
         const bubble = document.getElementById("notifBubble");
         if (!bubble) return;
 
-        if (unread > 0) {
-            bubble.textContent = unread;
+        if (unreadPrivate > 0) {
+            bubble.textContent = unreadPrivate;
             bubble.classList.remove("hidden");
         } else {
             bubble.classList.add("hidden");
@@ -350,39 +355,33 @@ function renderNotifications(list) {
     const panel = document.getElementById("notificationsPanel");
     panel.innerHTML = `<h4 style="padding: 10px; border-bottom: 1px solid #eee;">Notifications</h4>`;
 
-    if (list.length === 0) {
-        panel.innerHTML += `<div style="padding:20px; text-align:center; color:#888;">No notifications yet</div>`;
+    // FIX: Filter the list to only include private conversations
+    const privateList = list.filter(n => n.link && n.link.includes("conversationId=") && !n.link.includes("conversationId=c_"));
+
+    if (privateList.length === 0) {
+        panel.innerHTML += `<div style="padding:20px; text-align:center; color:#888;">No private messages yet</div>`;
         return;
     }
 
     const currentUser = JSON.parse(localStorage.getItem("contact_user")).email;
 
-    list.forEach(n => {
+    privateList.forEach(n => {
         let senderEmail = "";
         let conversationId = "";
-        let isCommunity = false;
-        let communityId = "";
-
-        if (n.link && n.link.includes("conversationId=")) {
-            conversationId = n.link.split("conversationId=")[1];
-            if (conversationId.startsWith("c_")) {
-                isCommunity = true;
-                communityId = conversationId.replace("c_", "");
-            } else {
-                const parts = conversationId.replace("conv_", "").split("_");
-                senderEmail = (parts[0] === currentUser) ? parts[1] : parts[0];
-            }
-        }
+        
+        // We already filtered for private, so we can simplify this logic
+        conversationId = n.link.split("conversationId=")[1];
+        const parts = conversationId.replace("conv_", "").split("_");
+        senderEmail = (parts[0] === currentUser) ? parts[1] : parts[0];
 
         panel.innerHTML += `
-            <div class="notification-item" onclick="handleNotificationClick('${senderEmail}', '${conversationId}', '${isCommunity}', '${communityId}', '${n.link}')">
+            <div class="notification-item" onclick="handleNotificationClick('${senderEmail}', '${conversationId}', false, '', '${n.link}')">
                 <div class="notification-text">${n.text}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
             </div>
         `;
     });
 }
-
 function handleNotificationClick(senderEmail, conversationId, isCommunity, communityId, link) {
     const user = JSON.parse(localStorage.getItem("contact_user"));
     const targetUrl = isCommunity === "true" 
