@@ -41,7 +41,6 @@ function loadNavbar() {
     <div class="nav-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
       <a href="contacts.html">Contacts</a>
       <a href="profile.html">Profile</a>
       <a href="#" onclick="logout()">Logout</a>
@@ -56,7 +55,6 @@ function loadNavbar() {
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
       <a href="login.html">Login</a>
       <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     </div>
@@ -68,7 +66,6 @@ function loadNavbar() {
     ? `
       <a href="dashboard.html">Dashboard</a>
       <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
       <a href="contacts.html">Contacts</a>
       <a href="profile.html">Profile</a>
       <a href="#" onclick="logout()">Logout</a>
@@ -76,7 +73,6 @@ function loadNavbar() {
     : `
       <a href="index.html">Home</a>
       <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
       <a href="login.html">Login</a>
       <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     `;
