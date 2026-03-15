@@ -1,3 +1,6 @@
+/* ============================
+   API URL
+============================ */
 const API_URL =
   "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
@@ -82,15 +85,15 @@ function loadNavbar() {
     `;
 }
 
-function loadCreateCommunityButton() {
+function loadCreateEventButton() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  const wrapper = document.getElementById("createCommunityWrapper");
+  const wrapper = document.getElementById("createEventWrapper");
   if (!wrapper) return;
 
   if (user) {
     wrapper.innerHTML = `
-      <button class="btn-primary" onclick="openCreateCommunityPopup()">
-        Create Community
+      <button class="btn-primary" onclick="openCreateEventPopup()">
+        Create Event
       </button>
     `;
   } else {
@@ -99,26 +102,25 @@ function loadCreateCommunityButton() {
 }
 
 /* ============================
-   CREATE COMMUNITY POPUP
+   CREATE EVENT POPUP
 ============================ */
-function openCreateCommunityPopup() {
-  const b = document.getElementById("createCommunityBackdrop");
+function openCreateEventPopup() {
+  const b = document.getElementById("createEventBackdrop");
   if (b) b.style.display = "flex";
 }
 
-function closeCreateCommunityPopup() {
-  const b = document.getElementById("createCommunityBackdrop");
+function closeCreateEventPopup() {
+  const b = document.getElementById("createEventBackdrop");
   if (b) b.style.display = "none";
 }
 
 /* ============================
-   COMMUNITY IMAGE HANDLING
-   (mirrors profile.js compression)
+   EVENT IMAGE HANDLING
 ============================ */
-function initCommunityImageHandler() {
-  const picker = document.getElementById("communityImagePicker");
-  const preview = document.getElementById("communityImagePreview");
-  const input = document.getElementById("communityImageInput");
+function initEventImageHandler() {
+  const picker = document.getElementById("eventImagePicker");
+  const preview = document.getElementById("eventImagePreview");
+  const input = document.getElementById("eventImageInput");
 
   if (!picker || !preview || !input) return;
 
@@ -138,14 +140,14 @@ function initCommunityImageHandler() {
     };
 
     img.onload = () => {
-      compressCommunityImage(img);
+      compressEventImage(img);
     };
 
     reader.readAsDataURL(file);
   });
 }
 
-function compressCommunityImage(img) {
+function compressEventImage(img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
@@ -159,31 +161,25 @@ function compressCommunityImage(img) {
 
   let base64 = canvas.toDataURL("image/jpeg", 0.25);
 
-  if (base64.length > 120000) {
-    base64 = canvas.toDataURL("image/jpeg", 0.20);
-  }
-  if (base64.length > 120000) {
-    base64 = canvas.toDataURL("image/jpeg", 0.18);
-  }
-  if (base64.length > 120000) {
-    base64 = canvas.toDataURL("image/jpeg", 0.15);
-  }
+  if (base64.length > 120000) base64 = canvas.toDataURL("image/jpeg", 0.2);
+  if (base64.length > 120000) base64 = canvas.toDataURL("image/jpeg", 0.18);
+  if (base64.length > 120000) base64 = canvas.toDataURL("image/jpeg", 0.15);
 
-  const preview = document.getElementById("communityImagePreview");
+  const preview = document.getElementById("eventImagePreview");
   if (preview) preview.src = base64;
 
-  window.communityImageBase64 = base64;
+  window.eventImageBase64 = base64;
 }
 
 /* ============================
-   CREATE COMMUNITY (OPTIMISTIC + IMAGE)
+   CREATE EVENT (OPTIMISTIC)
 ============================ */
-async function submitCommunity() {
-  const nameEl = document.getElementById("communityTitle");
-  const descEl = document.getElementById("communityDescription");
-  if (!nameEl || !descEl) return;
+async function submitEvent() {
+  const titleEl = document.getElementById("eventTitle");
+  const descEl = document.getElementById("eventDescription");
+  if (!titleEl || !descEl) return;
 
-  const name = nameEl.value.trim();
+  const title = titleEl.value.trim();
   const description = descEl.value.trim();
   const user = JSON.parse(localStorage.getItem("contact_user"));
 
@@ -192,28 +188,28 @@ async function submitCommunity() {
     return;
   }
 
-  if (!name || !description) {
+  if (!title || !description) {
     showMessagePopup("Missing Fields", "Please fill out all fields.");
     return;
   }
 
-  const imageBase64 = window.communityImageBase64 || "";
+  const imageBase64 = window.eventImageBase64 || "";
 
-  closeCreateCommunityPopup();
+  closeCreateEventPopup();
 
   const tempId = "temp-" + Date.now();
-  const grid = document.getElementById("communityGrid");
+  const grid = document.getElementById("eventsGrid");
   if (!grid) return;
 
   const tempImgHtml = imageBase64
-    ? `<img src="${imageBase64}" class="community-card-image">`
+    ? `<img src="${imageBase64}" class="event-card-image">`
     : "";
 
   grid.insertAdjacentHTML(
     "afterbegin",
     `
-    <div class="card" data-community="${tempId}">
-      <h3>${name}</h3>
+    <div class="card" data-event="${tempId}">
+      <h3>${title}</h3>
       ${tempImgHtml}
       <p>${description}</p>
       <button class="btn-primary" disabled>Saving...</button>
@@ -221,73 +217,71 @@ async function submitCommunity() {
   `
   );
 
-  showMessagePopup("Success", "Community created!");
+  showMessagePopup("Success", "Event created!");
 
   try {
     const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
-        module: "createCommunity",
-        name,
+        module: "createEvent",
+        title,
         description,
         email: user.email,
-        imageBase64
+        eventPicture: imageBase64
       })
     });
 
     const data = await res.json();
 
     if (!data.success) {
-      document.querySelector(`[data-community="${tempId}"]`)?.remove();
-      showMessagePopup("Error", data.message || "Failed to save community.");
+      document.querySelector(`[data-event="${tempId}"]`)?.remove();
+      showMessagePopup("Error", data.message || "Failed to save event.");
       return;
     }
 
-    const tempCard = document.querySelector(
-      `[data-community="${tempId}"]`
-    );
+    const tempCard = document.querySelector(`[data-event="${tempId}"]`);
 
-    const finalImgHtml = data.imageUrl
-      ? `<img src="${data.imageUrl}" class="community-card-image">`
+    const finalImgHtml = data.eventPicture
+      ? `<img src="${data.eventPicture}" class="event-card-image">`
       : tempImgHtml;
 
     if (tempCard) {
       tempCard.outerHTML = `
-        <div class="card" data-community="${data.id}">
-          <h3>${data.name || name}</h3>
+        <div class="card" data-event="${data.id}">
+          <h3>${data.title || title}</h3>
           ${finalImgHtml}
           <p>${data.description || description}</p>
-          <button class="btn-primary" onclick="joinCommunity('${data.id}')">Join</button>
-          <button class="delete-btn" onclick="deleteCommunity('${data.id}')">Delete</button>
+          <button class="btn-primary" onclick="contactEventCreator('${data.creator}', '${data.creatorName}', '${data.title}')">Join</button>
+          <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
         </div>
       `;
     }
-  } catch (err) {
-    document.querySelector(`[data-community="${tempId}"]`)?.remove();
+  } catch {
+    document.querySelector(`[data-event="${tempId}"]`)?.remove();
     showMessagePopup("Network Error", "Please try again.");
   }
 }
 
 /* ============================
-   FAST COMMUNITIES LOADING
+   FAST EVENTS LOADING
 ============================ */
-let allCommunities = [];
+let allEvents = [];
 let index = 0;
 const BATCH = 20;
 
-function loadCachedCommunities() {
-  const cached = localStorage.getItem("cached_communities");
+function loadCachedEvents() {
+  const cached = localStorage.getItem("cached_events");
   if (!cached) return;
 
   try {
-    allCommunities = JSON.parse(cached);
+    allEvents = JSON.parse(cached);
   } catch {
-    allCommunities = [];
+    allEvents = [];
     return;
   }
 
   index = 0;
-  const grid = document.getElementById("communityGrid");
+  const grid = document.getElementById("eventsGrid");
   if (!grid) return;
 
   grid.innerHTML = "";
@@ -297,65 +291,60 @@ function loadCachedCommunities() {
   renderNextBatch();
 }
 
-async function fetchCommunities(force = false) {
+async function fetchEvents(force = false) {
   try {
-    const res = await fetch(`${API_URL}?module=getAllCommunities`);
+    const res = await fetch(`${API_URL}?module=getAllEvents`);
     const data = await res.json();
-    if (!data.success || !Array.isArray(data.communities)) return;
+    if (!data.success || !Array.isArray(data.events)) return;
 
-    const hadCache = !!localStorage.getItem("cached_communities");
-    localStorage.setItem(
-      "cached_communities",
-      JSON.stringify(data.communities)
-    );
+    const hadCache = !!localStorage.getItem("cached_events");
+    localStorage.setItem("cached_events", JSON.stringify(data.events));
 
     if (!force && hadCache) return;
 
-    allCommunities = data.communities;
+    allEvents = data.events;
     index = 0;
 
-    const grid = document.getElementById("communityGrid");
+    const grid = document.getElementById("eventsGrid");
     if (!grid) return;
     grid.innerHTML = "";
     renderNextBatch();
-  } catch {
-    // silent background failure
-  }
+  } catch {}
 }
 
 function renderNextBatch() {
-  if (!allCommunities.length) return;
-  const slice = allCommunities.slice(index, index + BATCH);
-  appendCommunities(slice);
+  if (!allEvents.length) return;
+  const slice = allEvents.slice(index, index + BATCH);
+  appendEvents(slice);
   index += BATCH;
 }
 
-function appendCommunities(list) {
-  const grid = document.getElementById("communityGrid");
+function appendEvents(list) {
+  const grid = document.getElementById("eventsGrid");
   if (!grid) return;
 
   const user = JSON.parse(localStorage.getItem("contact_user"));
 
-  list.forEach((c) => {
-    const isCreator = user && user.email === c.creator;
+  list.forEach((e) => {
+    const isCreator = user && user.email === e.creator;
 
-    const imgHtml = c.imageUrl
-      ? `<img src="${c.imageUrl}" class="community-card-image">`
+    const imgHtml = e.eventPicture
+      ? `<img src="${e.eventPicture}" class="event-card-image">`
       : "";
 
     grid.innerHTML += `
-      <div class="card" data-community="${c.id}">
-        <h3>${c.name}</h3>
+      <div class="card" data-event="${e.id}">
+        <h3>${e.title}</h3>
         ${imgHtml}
-        <p>${c.description}</p>
+        <p>${e.description}</p>
         ${
           isCreator
             ? `
-          <button class="delete-btn" onclick="deleteCommunity('${c.id}')">Delete</button>
-          <button class="btn-primary" onclick="joinCommunity('${c.id}')">Join</button>
+          <button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Join</button>
         `
             : `
-          <button class="btn-primary" onclick="joinCommunity('${c.id}')">Join</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Join</button>
         `
         }
       </div>
@@ -373,9 +362,9 @@ window.addEventListener("scroll", () => {
 });
 
 /* ============================
-   JOIN / DELETE COMMUNITY
+   JOIN / DELETE EVENT
 ============================ */
-async function joinCommunity(id) {
+async function joinEvent(id) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) {
     window.location.href = "signup.html";
@@ -383,82 +372,104 @@ async function joinCommunity(id) {
   }
 
   fetch(
-    `${API_URL}?module=joinCommunity&communityId=${encodeURIComponent(
+    `${API_URL}?module=joinEvent&eventId=${encodeURIComponent(
       id
     )}&email=${encodeURIComponent(user.email)}`
   ).catch(() => {});
 
-  window.location.href = `messages.html?mode=community&communityId=${encodeURIComponent(
+  window.location.href = `messages.html?mode=event&eventId=${encodeURIComponent(
     id
   )}`;
 }
 
-async function deleteCommunity(id) {
+async function deleteEvent(id) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) return;
 
-  const card = document.querySelector(`[data-community="${id}"]`);
+  const card = document.querySelector(`[data-event="${id}"]`);
   if (card) card.remove();
 
   let cached = [];
   try {
-    cached = JSON.parse(
-      localStorage.getItem("cached_communities") || "[]"
-    );
+    cached = JSON.parse(localStorage.getItem("cached_events") || "[]");
   } catch {
     cached = [];
   }
 
-  cached = cached.filter((c) => c.id !== id);
-  localStorage.setItem("cached_communities", JSON.stringify(cached));
+  cached = cached.filter((e) => e.id !== id);
+  localStorage.setItem("cached_events", JSON.stringify(cached));
 
-  allCommunities = allCommunities.filter((c) => c.id !== id);
+  allEvents = allEvents.filter((e) => e.id !== id);
 
-  showMessagePopup("Deleted", "Community removed.");
+  showMessagePopup("Deleted", "Event removed.");
 
   try {
     const res = await fetch(
-      `${API_URL}?module=deleteCommunity&communityId=${encodeURIComponent(
+      `${API_URL}?module=deleteEvent&eventId=${encodeURIComponent(
         id
       )}&email=${encodeURIComponent(user.email)}`
     );
     const data = await res.json();
 
     if (!data.success) {
-      const grid = document.getElementById("communityGrid");
+      const grid = document.getElementById("eventsGrid");
       if (!grid) return;
 
-      const imgHtml = data.imageUrl
-        ? `<img src="${data.imageUrl}" class="community-card-image">`
+      const imgHtml = data.eventPicture
+        ? `<img src="${data.eventPicture}" class="event-card-image">`
         : "";
 
       grid.insertAdjacentHTML(
         "afterbegin",
         `
-        <div class="card" data-community="${id}">
-          <h3>${data.name || "Community"}</h3>
+        <div class="card" data-event="${id}">
+          <h3>${data.title || "Event"}</h3>
           ${imgHtml}
           <p>${data.description || ""}</p>
-          <button class="delete-btn" onclick="deleteCommunity('${id}')">Delete</button>
-          <button class="btn-primary" onclick="joinCommunity('${id}')">Join</button>
+          <button class="delete-btn" onclick="deleteEvent('${id}')">Delete</button>
+          <button class="btn-primary" onclick="contactEventCreator('${e.creator}', '${e.creatorName}', '${e.title}')">Join</button>
         </div>
       `
       );
 
       cached.push({
         id,
-        name: data.name,
+        title: data.title,
         description: data.description,
-        imageUrl: data.imageUrl || "",
+        eventPicture: data.eventPicture || "",
         creator: user.email
       });
-      localStorage.setItem("cached_communities", JSON.stringify(cached));
+      localStorage.setItem("cached_events", JSON.stringify(cached));
 
-      showMessagePopup("Error", data.message || "Failed to delete community.");
+      showMessagePopup("Error", data.message || "Failed to delete event.");
     }
   } catch {
     showMessagePopup("Network Error", "Could not reach the server.");
   }
+}
+
+/* ============================
+   CONTACT EVENT CREATOR
+============================ */
+function contactEventCreator(creatorEmail, creatorName, eventTitle) {
+  const user = JSON.parse(localStorage.getItem("contact_user"));
+  if (!user) {
+    window.location.href = "signup.html";
+    return;
+  }
+
+  fetch(
+    `${API_URL}?module=addContact&email=${encodeURIComponent(
+      user.email
+    )}&contact=${encodeURIComponent(creatorEmail)}`
+  ).catch(() => {});
+
+  window.location.href =
+    `messages.html?mode=private&email=${encodeURIComponent(
+      creatorEmail
+    )}&name=${encodeURIComponent(
+      creatorName
+    )}&title=${encodeURIComponent(eventTitle)}`;
 }
 
 /* ============================
@@ -474,8 +485,8 @@ function logout() {
 ============================ */
 document.addEventListener("DOMContentLoaded", () => {
   loadNavbar();
-  loadCreateCommunityButton();
-  initCommunityImageHandler();
-  loadCachedCommunities();
-  fetchCommunities();
+  loadCreateEventButton();
+  initEventImageHandler();
+  loadCachedEvents();
+  fetchEvents();
 });
