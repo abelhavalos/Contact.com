@@ -1,5 +1,7 @@
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+/* ============================
+   API CONFIGURATION
+============================ */
+const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
 /* ============================
    POPUP HELPERS
@@ -20,7 +22,7 @@ function hideMessagePopup() {
 }
 
 /* ============================
-   NAVBAR
+   NAVBAR & UI
 ============================ */
 function toggleMenu() {
   const menu = document.getElementById("mobileMenu");
@@ -33,7 +35,7 @@ function loadNavbar() {
   const mobileMenu = document.getElementById("mobileMenu");
   if (!navbar || !mobileMenu) return;
 
-  const navContent = user 
+  const navHTML = user 
     ? `
     <div class="hamburger" onclick="toggleMenu()">
       <span></span><span></span><span></span>
@@ -60,37 +62,19 @@ function loadNavbar() {
       <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     </div>`;
 
-  navbar.innerHTML = navContent;
-  mobileMenu.innerHTML = user
-    ? `
-      <a href="dashboard.html">Dashboard</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="contacts.html">Contacts</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" onclick="logout()">Logout</a>`
-    : `
-      <a href="index.html">Home</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="login.html">Login</a>
-      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>`;
+  navbar.innerHTML = navHTML;
+  mobileMenu.innerHTML = navHTML;
 }
 
 function loadCreateEventButton() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   const wrapper = document.getElementById("createEventWrapper");
   if (!wrapper) return;
-
-  if (user) {
-    wrapper.innerHTML = `<button class="btn-primary" onclick="openCreateEventPopup()">Create Event</button>`;
-  } else {
-    wrapper.innerHTML = "";
-  }
+  wrapper.innerHTML = user ? `<button class="btn-primary" onclick="openCreateEventPopup()">Create Event</button>` : "";
 }
 
 /* ============================
-   CREATE EVENT POPUP
+   EVENT IMAGE HANDLING
 ============================ */
 function openCreateEventPopup() {
   const b = document.getElementById("createEventBackdrop");
@@ -102,16 +86,13 @@ function closeCreateEventPopup() {
   if (b) b.style.display = "none";
 }
 
-/* ============================
-   EVENT IMAGE HANDLING
-============================ */
 function initEventImageHandler() {
   const picker = document.getElementById("eventImagePicker");
   const input = document.getElementById("eventImageInput");
   if (!picker || !input) return;
 
-  picker.addEventListener("click", () => input.click());
-  input.addEventListener("change", () => {
+  picker.onclick = () => input.click();
+  input.onchange = () => {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -121,7 +102,7 @@ function initEventImageHandler() {
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-  });
+  };
 }
 
 function compressEventImage(img) {
@@ -133,14 +114,14 @@ function compressEventImage(img) {
   canvas.height = img.height * scale;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  let base64 = canvas.toDataURL("image/jpeg", 0.25);
+  let base64 = canvas.toDataURL("image/jpeg", 0.2);
   const preview = document.getElementById("eventImagePreview");
   if (preview) preview.src = base64;
   window.eventImageBase64 = base64;
 }
 
 /* ============================
-   CREATE EVENT (OPTIMISTIC)
+   EVENT CORE LOGIC (OPTIMISTIC)
 ============================ */
 async function submitEvent() {
   const titleEl = document.getElementById("eventTitle");
@@ -163,17 +144,15 @@ async function submitEvent() {
   const grid = document.getElementById("eventsGrid");
   if (!grid) return;
 
-  const tempImgHtml = imageBase64 ? `<img src="${imageBase64}" class="event-card-image">` : "";
+  // Optimistic UI
   grid.insertAdjacentHTML("afterbegin", `
     <div class="card" data-event="${tempId}">
       <h3>${title}</h3>
-      ${tempImgHtml}
+      ${imageBase64 ? `<img src="${imageBase64}" class="event-card-image">` : ""}
       <p>${description}</p>
       <button class="btn-primary" disabled>Saving...</button>
     </div>
   `);
-
-  showMessagePopup("Success", "Event created!");
 
   try {
     const res = await fetch(API_URL, {
@@ -188,33 +167,17 @@ async function submitEvent() {
     });
 
     const data = await res.json();
-    if (!data.success) {
-      document.querySelector(`[data-event="${tempId}"]`)?.remove();
-      showMessagePopup("Error", data.message || "Failed to save event.");
-      return;
-    }
+    if (!data.success) throw new Error(data.message);
 
-    const tempCard = document.querySelector(`[data-event="${tempId}"]`);
-    if (tempCard) {
-      const finalImg = data.imageUrl || imageBase64;
-      tempCard.outerHTML = `
-        <div class="card" data-event="${data.id}">
-          <h3>${data.title || title}</h3>
-          ${finalImg ? `<img src="${finalImg}" class="event-card-image">` : ""}
-          <p>${data.description || description}</p>
-          <button class="btn-primary" onclick="joinEvent('${data.id}', '${data.creator}', '${(data.creatorName || 'Organizer').replace(/'/g, "\\'")}', '${(data.title || title).replace(/'/g, "\\'")}')">Join</button>
-          <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
-        </div>`;
-    }
+    // Refresh to sync correctly with database IDs
+    fetchEvents(true);
+    showMessagePopup("Success", "Event created!");
   } catch (err) {
     document.querySelector(`[data-event="${tempId}"]`)?.remove();
-    showMessagePopup("Network Error", "Please try again.");
+    showMessagePopup("Error", err.message || "Failed to save event.");
   }
 }
 
-/* ============================
-   FAST LOADING LOGIC
-============================ */
 let allEvents = [];
 let index = 0;
 const BATCH = 20;
@@ -222,98 +185,82 @@ const BATCH = 20;
 function loadCachedEvents() {
   const cached = localStorage.getItem("cached_events");
   if (!cached) return;
-  try { allEvents = JSON.parse(cached); } catch { allEvents = []; return; }
-  index = 0;
-  const grid = document.getElementById("eventsGrid");
-  if (grid) { grid.innerHTML = ""; renderNextBatch(); }
+  try {
+    allEvents = JSON.parse(cached);
+    renderNextBatch(true);
+  } catch { allEvents = []; }
 }
 
 async function fetchEvents(force = false) {
   try {
     const res = await fetch(`${API_URL}?module=getAllEvents`);
     const data = await res.json();
-    if (!data.success || !Array.isArray(data.events)) return;
+    if (!data.success) return;
 
-    const hadCache = !!localStorage.getItem("cached_events");
     localStorage.setItem("cached_events", JSON.stringify(data.events));
-
-    if (!force && hadCache) return;
     allEvents = data.events;
-    index = 0;
-    const grid = document.getElementById("eventsGrid");
-    if (grid) { grid.innerHTML = ""; renderNextBatch(); }
-  } catch {}
+    renderNextBatch(true);
+  } catch (err) { console.error("Sync error:", err); }
 }
 
-function renderNextBatch() {
-  const slice = allEvents.slice(index, index + BATCH);
-  appendEvents(slice);
-  index += BATCH;
-}
-
-function appendEvents(list) {
+function renderNextBatch(clear = false) {
   const grid = document.getElementById("eventsGrid");
   if (!grid) return;
+  if (clear) { grid.innerHTML = ""; index = 0; }
+
   const user = JSON.parse(localStorage.getItem("contact_user"));
+  const slice = allEvents.slice(index, index + BATCH);
 
-  list.forEach((e) => {
+  slice.forEach(e => {
     const isCreator = user && user.email === e.creator;
-    const imgHtml = e.imageUrl ? `<img src="${e.imageUrl}" class="event-card-image">` : "";
     const escapedTitle = e.title.replace(/'/g, "\\'");
-    const escapedName = (e.creatorName || "Organizer").replace(/'/g, "\\'");
-
+    
     grid.innerHTML += `
       <div class="card" data-event="${e.id}">
         <h3>${e.title}</h3>
-        ${imgHtml}
+        ${e.imageUrl ? `<img src="${e.imageUrl}" class="event-card-image">` : ""}
         <p>${e.description}</p>
-        <button class="btn-primary" onclick="joinEvent('${e.id}', '${e.creator}', '${escapedName}', '${escapedTitle}')">Join</button>
-        ${isCreator ? `<button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>` : ""}
+        <div class="card-actions">
+           <button class="btn-primary" onclick="joinEvent('${e.id}', '${escapedTitle}')">Join Chat</button>
+           ${isCreator ? `<button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>` : ""}
+        </div>
       </div>`;
   });
+  index += BATCH;
 }
 
-window.addEventListener("scroll", () => {
-  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
-    renderNextBatch();
-  }
-});
-
 /* ============================
-   JOIN / DELETE EVENT
+   JOIN & DELETE (GROUP SYNC)
 ============================ */
-async function joinEvent(id, creatorEmail, creatorName, eventTitle) {
+async function joinEvent(id, title) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) { window.location.href = "signup.html"; return; }
 
-  // 1. Mark as joined in DB
-  fetch(`${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(() => {});
+  // Register join status on backend
+  fetch(`${API_URL}?module=joinEvent&eventId=${id}&email=${user.email}`).catch(() => {});
 
-  // 2. Add creator to contacts (Matches your events logic)
-  fetch(`${API_URL}?module=addContact&email=${encodeURIComponent(user.email)}&contact=${encodeURIComponent(creatorEmail)}`).catch(() => {});
-
-  // 3. Redirect to messages with mode=private (as events usually link to the creator)
-  window.location.href = `messages.html?mode=private&email=${encodeURIComponent(creatorEmail)}&name=${encodeURIComponent(creatorName)}&title=${encodeURIComponent(eventTitle)}`;
+  // Redirect to message.html in GROUP MODE (mode=event)
+  // This ensures members list and shared conversation render correctly
+  window.location.href = `messages.html?mode=event&eventId=${encodeURIComponent(id)}&title=${encodeURIComponent(title)}`;
 }
 
 async function deleteEvent(id) {
+  if (!confirm("Are you sure you want to delete this event?")) return;
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) return;
 
   document.querySelector(`[data-event="${id}"]`)?.remove();
-  allEvents = allEvents.filter((e) => e.id !== id);
+  allEvents = allEvents.filter(e => e.id !== id);
   localStorage.setItem("cached_events", JSON.stringify(allEvents));
-  showMessagePopup("Deleted", "Event removed.");
 
   try {
-    await fetch(`${API_URL}?module=deleteEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`);
+    await fetch(`${API_URL}?module=deleteEvent&eventId=${id}&email=${user.email}`);
   } catch {
-    showMessagePopup("Network Error", "Could not reach the server.");
+    showMessagePopup("Error", "Network error while deleting.");
   }
 }
 
 /* ============================
-   LOGOUT & INIT
+   INITIALIZATION
 ============================ */
 function logout() {
   localStorage.removeItem("contact_user");
@@ -327,3 +274,9 @@ document.addEventListener("DOMContentLoaded", () => {
   loadCachedEvents();
   fetchEvents();
 });
+
+window.onscroll = () => {
+  if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+    renderNextBatch();
+  }
+};
