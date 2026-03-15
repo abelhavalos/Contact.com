@@ -19,7 +19,6 @@ function loadNavbar() {
     const navLinksHTML = `
       <a href="dashboard.html">Dashboard</a>
       <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
       <a href="contacts.html">Contacts</a>
       <a href="profile.html">Profile</a>
       <a href="#" onclick="logout()" style="color:#ff4a4a !important;">Logout</a>
