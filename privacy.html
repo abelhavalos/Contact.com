@@ -236,11 +236,13 @@ function loadNavbar() {
     const navLinksHTML = isLoggedIn ? `
         <a href="dashboard.html">Dashboard</a>
         <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
         <a href="profile.html">Profile</a>
         <a href="#" onclick="logout()" style="color:#ff3b3b !important;">Logout</a>
     ` : `
         <a href="index.html">Home</a>
         <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
         <a href="login.html">Login</a>
         <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
     `;
@@ -254,6 +256,7 @@ function loadNavbar() {
     document.getElementById("mobileMenu").innerHTML = isLoggedIn ? navLinksHTML : `
         <a href="index.html">Home</a>
         <a href="communities.html">Communities</a>
+        <a href="events.html">Events</a>
         <a href="login.html">Login</a>
         <a href="signup.html" style="background: rgba(255,255,255,0.1);">Sign Up</a>
     `;
