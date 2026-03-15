@@ -39,7 +39,6 @@ function loadNavbar() {
   const navLinks = `
         <a href="dashboard.html">Dashboard</a>
         <a href="communities.html">Communities</a>
-        <a href="events.html">Events</a>
         <a href="contacts.html">Contacts</a>
         <a href="profile.html">Profile</a>
         <a href="#" onclick="logout()">Logout</a>
