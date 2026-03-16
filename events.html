@@ -275,7 +275,7 @@
         </div>
         <input type="file" id="communityImageInput" accept="image/*" style="display:none;" onchange="previewImage(this)">
         <textarea id="communityDescription" placeholder="What is this community about?" rows="3"></textarea>
-        <button onclick="submitCommunity()">Create Community</button>
+        <button onclick="submitCommunity()">Create Event</button>
         <button class="cancel-btn" onclick="closeCreateCommunityPopup()">Cancel</button>
     </div>
 </div>
@@ -329,7 +329,7 @@
         // If logged in, show "Create Community" button
         if(isLoggedIn && document.getElementById("createCommunityWrapper")) {
             document.getElementById("createCommunityWrapper").innerHTML = 
-                `<button class="btn-primary" onclick="openCreateCommunityPopup()">+ Create Community</button>`;
+                `<button class="btn-primary" onclick="openCreateCommunityPopup()">+ Create Event</button>`;
         }
     }
 
