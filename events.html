@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contact.com – Events</title>
+    <title>Contact.com – Communities</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -79,7 +79,7 @@
             transition: transform 0.2s ease;
         }
         .btn-primary:active { transform: scale(0.95); }
-
+        
         /* MOBILE MENU - Anchored Left */
         .mobile-menu {
             position: fixed;
@@ -118,76 +118,61 @@
         .page-title {
             text-align: center;
             margin-top: 50px;
-            font-size: 3rem;
+            font-size: 2.8rem;
             font-weight: 800;
             letter-spacing: -1px;
         }
 
-        #createEventContainer {
+        #createCommunityContainer {
             text-align: center;
             margin-top: 20px;
         }
 
-        /* FULL WIDTH EVENT LIST */
+        /* COMMUNITY GRID */
         .grid {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 25px;
-            padding: 40px 20px;
-            max-width: 1000px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            padding: 40px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
-        /* BUBBLE CARDS - Horizontal Layout */
+        /* COMMUNITY CARDS */
         .card {
             background: #ffffff;
             color: #222;
-            padding: 30px;
-            border-radius: 28px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            width: 100%;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 30px;
+            padding: 25px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            text-align: center;
             transition: transform 0.3s ease;
         }
         .card:hover { transform: translateY(-5px); }
 
-        .event-card-image {
-            width: 280px;
-            height: 180px;
-            min-width: 280px;
-            object-fit: cover;
-            border-radius: 20px;
-            background: #f0f2f5;
-        }
-
-        .card-content {
-            flex-grow: 1;
-            text-align: left;
-        }
-
         .card h3 { 
             color: #111; 
             margin-bottom: 10px; 
-            font-weight: 800; 
-            font-size: 1.7rem; 
+            font-weight: 800;
+            font-size: 1.4rem;
         }
-        .card p { 
-            color: #555; 
-            font-size: 1rem; 
-            margin-bottom: 20px; 
-            line-height: 1.6; 
+        .card p { color: #666; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; }
+
+        .community-card-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 15px;
+            background: #f0f2f5;
         }
 
         .delete-btn {
             background: #ff4a4a;
-            color: #ffffff !important;
-            padding: 10px 20px;
+            color: white !important;
+            padding: 8px 16px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             font-weight: 700;
             cursor: pointer;
         }
@@ -207,7 +192,7 @@
             background: #fff;
             border-radius: 24px;
             padding: 35px;
-            max-width: 450px;
+            max-width: 400px;
             width: 90%;
             text-align: center;
             color: #222;
@@ -215,7 +200,7 @@
 
         .popup-title {
             font-weight: 800;
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             margin-bottom: 20px;
             color: #111;
         }
@@ -228,7 +213,9 @@
             border: 1px solid #e5e7eb;
             background: #f9fafb;
             font-size: 15px;
+            outline: none;
         }
+        .popup input:focus { border-color: #4a6cff; }
 
         .popup button {
             width: 100%;
@@ -238,26 +225,30 @@
             border: none;
             border-radius: 12px;
             font-weight: 700;
+            font-size: 16px;
             cursor: pointer;
             margin-top: 10px;
         }
 
         .cancel-btn { background: #9ca3af !important; }
 
-        /* RESPONSIVE STACKING */
-        @media (max-width: 800px) {
-            .card {
-                flex-direction: column;
-                text-align: center;
-                padding: 20px;
-            }
-            .card-content { text-align: center; }
-            .event-card-image {
-                width: 100%;
-                min-width: 100%;
-            }
+        /* IMAGE PICKER */
+        #communityImagePicker {
+            width: 100%;
+            height: 160px;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            margin-bottom: 15px;
+            border: 2px dashed #cbd5e1;
+        }
+        #communityImagePicker img { width: 100%; height: 100%; object-fit: cover; }
+
+        @media (max-width: 850px) {
             .hamburger { display: flex; }
             .nav-links { display: none; }
+            .page-title { font-size: 2rem; }
+            .grid { padding: 20px; }
         }
     </style>
 </head>
@@ -267,27 +258,25 @@
 <nav class="navbar" id="navbar"></nav>
 <div class="mobile-menu" id="mobileMenu"></div>
 
-<h1 class="page-title">Events</h1>
+<h1 class="page-title">Communities</h1>
 
-<div id="createEventContainer">
-     <div id="createEventWrapper"></div>
+<div id="createCommunityContainer">
+     <div id="createCommunityWrapper"></div>
 </div>
 
-<div class="grid" id="eventsGrid"></div>
+<div class="grid" id="communityGrid"></div>
 
-<div id="createEventBackdrop" class="popup-backdrop">
+<div id="createCommunityBackdrop" class="popup-backdrop">
     <div class="popup">
-        <div class="popup-title">Create Event</div>
-        <input id="eventTitle" placeholder="Event Title">
-        
-        <div id="eventImagePicker" onclick="document.getElementById('eventImageInput').click()" style="cursor:pointer; border: 2px dashed #ccc; border-radius: 12px; margin-bottom: 15px; overflow: hidden; height: 160px;">
-            <img id="eventImagePreview" src="https://via.placeholder.com/300x180?text=Select+Event+Image" style="width:100%; height:100%; object-fit:cover;">
+        <div class="popup-title">Create Community</div>
+        <input id="communityTitle" placeholder="Community Name">
+        <div id="communityImagePicker" onclick="document.getElementById('communityImageInput').click()">
+            <img id="communityImagePreview" src="https://via.placeholder.com/300x180?text=Click+to+Upload">
         </div>
-        <input type="file" id="eventImageInput" accept="image/*" style="display:none;" onchange="previewEventImage(this)">
-        
-        <textarea id="eventDescription" placeholder="Tell people about the event..." rows="3"></textarea>
-        <button onclick="submitEvent()">Launch Event</button>
-        <button class="cancel-btn" onclick="closeCreateEventPopup()">Cancel</button>
+        <input type="file" id="communityImageInput" accept="image/*" style="display:none;" onchange="previewImage(this)">
+        <textarea id="communityDescription" placeholder="What is this community about?" rows="3"></textarea>
+        <button onclick="submitCommunity()">Create Community</button>
+        <button class="cancel-btn" onclick="closeCreateCommunityPopup()">Cancel</button>
     </div>
 </div>
 
@@ -300,7 +289,7 @@
 </div>
 
 <script>
-    // NAVBAR & AUTH LOGIC
+    // NAVBAR LOGIC
     function toggleMenu() {
         document.getElementById("mobileMenu").classList.toggle("show");
     }
@@ -334,13 +323,13 @@
             <a href="communities.html">Communities</a>
             <a href="events.html">Events</a>
             <a href="login.html">Login</a>
-            <a href="signup.html">Sign Up</a>
+            <a href="signup.html" style="background: rgba(255,255,255,0.1);">Sign Up</a>
         `;
 
-        // If logged in, show "Create Event" button
-        if(isLoggedIn && document.getElementById("createEventWrapper")) {
-            document.getElementById("createEventWrapper").innerHTML = 
-                `<button class="btn-primary" onclick="openCreateEventPopup()">+ Create Event</button>`;
+        // If logged in, show "Create Community" button
+        if(isLoggedIn && document.getElementById("createCommunityWrapper")) {
+            document.getElementById("createCommunityWrapper").innerHTML = 
+                `<button class="btn-primary" onclick="openCreateCommunityPopup()">+ Create Community</button>`;
         }
     }
 
@@ -349,23 +338,25 @@
         window.location.href = "index.html";
     }
 
-    function previewEventImage(input) {
+    function previewImage(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = (e) => document.getElementById('eventImagePreview').src = e.target.result;
+            reader.onload = function(e) {
+                document.getElementById('communityImagePreview').src = e.target.result;
+            }
             reader.readAsDataURL(input.files[0]);
         }
     }
 
     // Modal Controls
-    function openCreateEventPopup() { document.getElementById("createEventBackdrop").style.display = "flex"; }
-    function closeCreateEventPopup() { document.getElementById("createEventBackdrop").style.display = "none"; }
+    function openCreateCommunityPopup() { document.getElementById("createCommunityBackdrop").style.display = "flex"; }
+    function closeCreateCommunityPopup() { document.getElementById("createCommunityBackdrop").style.display = "none"; }
     function hideMessagePopup() { document.getElementById("messageBackdrop").style.display = "none"; }
 
     document.addEventListener("DOMContentLoaded", loadNavbar);
 </script>
 
-<script src="scripts/events.js"></script>
+<script src="scripts/communities.js"></script>
 
 </body>
 </html>
