@@ -202,21 +202,27 @@ function loadCachedEvents() {
 
 async function fetchEvents(force = false) {
   try {
-    // FIX: Changed from getAllCommunities to getAllEvents
+    // ADD THIS LINE: It clears the old mixed-up cache immediately
+    if (force) localStorage.removeItem("cached_events"); 
+
     const res = await fetch(`${API_URL}?module=getAllEvents`); 
     const data = await res.json();
-    
-    // FIX: Changed data.communities to data.events to match your backend getAllEvents.gs
+
     if (!data.success || !Array.isArray(data.events)) return;
 
+    // Overwrite the cache with ONLY the 2 events from your sheet
     localStorage.setItem("cached_events", JSON.stringify(data.events));
-    if (!force && localStorage.getItem("cached_events")) return;
-
+    
     allEvents = data.events;
     eventIndex = 0;
     const grid = document.getElementById("eventGrid");
-    if (grid) { grid.innerHTML = ""; renderNextBatch(); }
-  } catch (err) { console.error("Fetch failed", err); }
+    if (grid) { 
+        grid.innerHTML = ""; // Clear the grid before rendering only the 2 events
+        renderNextBatch(); 
+    }
+  } catch (err) { 
+    console.error("Fetch failed", err); 
+  }
 }
 
 function renderNextBatch() {
