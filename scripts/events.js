@@ -221,7 +221,7 @@ async function submitCommunity() {
   `
   );
 
-  showMessagePopup("Success", "Community created!");
+  showMessagePopup("Success", "Event created!");
 
   try {
     const res = await fetch(API_URL, {
@@ -239,7 +239,7 @@ async function submitCommunity() {
 
     if (!data.success) {
       document.querySelector(`[data-community="${tempId}"]`)?.remove();
-      showMessagePopup("Error", data.message || "Failed to save community.");
+      showMessagePopup("Error", data.message || "Failed to save event.");
       return;
     }
 
@@ -414,7 +414,7 @@ async function deleteCommunity(id) {
 
   allCommunities = allCommunities.filter((c) => c.id !== id);
 
-  showMessagePopup("Deleted", "Community removed.");
+  showMessagePopup("Deleted", "Event removed.");
 
   try {
     const res = await fetch(
@@ -436,7 +436,7 @@ async function deleteCommunity(id) {
         "afterbegin",
         `
         <div class="card" data-community="${id}">
-          <h3>${data.name || "Community"}</h3>
+          <h3>${data.name || "Event"}</h3>
           ${imgHtml}
           <p>${data.description || ""}</p>
           <button class="delete-btn" onclick="deleteCommunity('${id}')">Delete</button>
@@ -454,7 +454,7 @@ async function deleteCommunity(id) {
       });
       localStorage.setItem("cached_communities", JSON.stringify(cached));
 
-      showMessagePopup("Error", data.message || "Failed to delete community.");
+      showMessagePopup("Error", data.message || "Failed to delete event.");
     }
   } catch {
     showMessagePopup("Network Error", "Could not reach the server.");
