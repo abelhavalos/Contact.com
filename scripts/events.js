@@ -90,7 +90,7 @@ function loadCreateCommunityButton() {
   if (user) {
     wrapper.innerHTML = `
       <button class="btn-primary" onclick="openCreateCommunityPopup()">
-        Create Community
+        Create Event
       </button>
     `;
   } else {
