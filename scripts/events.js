@@ -52,7 +52,6 @@ function loadNavbar() {
     <div class="logo">Contact<span>.</span>com</div>
     <div class="nav-links">${navLinksHTML}</div>
   `;
-
   mobileMenu.innerHTML = navLinksHTML;
 }
 
@@ -60,7 +59,6 @@ function loadCreateEventButton() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   const wrapper = document.getElementById("createEventWrapper");
   if (!wrapper) return;
-
   if (user) {
     wrapper.innerHTML = `<button class="btn-primary" onclick="openCreateEventPopup()">+ Create Event</button>`;
   } else {
@@ -88,11 +86,8 @@ function initEventImageHandler() {
   const picker = document.getElementById("eventImagePicker");
   const preview = document.getElementById("eventImagePreview");
   const input = document.getElementById("eventImageInput");
-
   if (!picker || !preview || !input) return;
-
   picker.addEventListener("click", () => { input.click(); });
-
   input.addEventListener("change", () => {
     const file = input.files[0];
     if (!file) return;
@@ -112,7 +107,6 @@ function compressEventImage(img) {
   canvas.width = MAX_WIDTH;
   canvas.height = img.height * scale;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
   let base64 = canvas.toDataURL("image/jpeg", 0.25);
   const preview = document.getElementById("eventImagePreview");
   if (preview) preview.src = base64;
@@ -154,12 +148,11 @@ async function submitEvent() {
     const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
-        module: "createCommunity", // Using community module as discussed
+        module: "createEvent", // FIX: Changed from createCommunity
         name,
         description,
         email: user.email,
-        imageBase64,
-        category: "event" // Helper for your backend to distinguish if needed
+        imageBase64
       })
     });
 
@@ -200,7 +193,6 @@ function loadCachedEvents() {
   const cached = localStorage.getItem("cached_events");
   if (!cached) return;
   try { allEvents = JSON.parse(cached); } catch { allEvents = []; return; }
-
   eventIndex = 0;
   const grid = document.getElementById("eventGrid");
   if (!grid) return;
@@ -210,14 +202,17 @@ function loadCachedEvents() {
 
 async function fetchEvents(force = false) {
   try {
-    const res = await fetch(`${API_URL}?module=getAllCommunities`); // Fetching all, filtering logic can be added
+    // FIX: Changed from getAllCommunities to getAllEvents
+    const res = await fetch(`${API_URL}?module=getAllEvents`); 
     const data = await res.json();
-    if (!data.success || !Array.isArray(data.communities)) return;
+    
+    // FIX: Changed data.communities to data.events to match your backend getAllEvents.gs
+    if (!data.success || !Array.isArray(data.events)) return;
 
-    localStorage.setItem("cached_events", JSON.stringify(data.communities));
+    localStorage.setItem("cached_events", JSON.stringify(data.events));
     if (!force && localStorage.getItem("cached_events")) return;
 
-    allEvents = data.communities;
+    allEvents = data.events;
     eventIndex = 0;
     const grid = document.getElementById("eventGrid");
     if (grid) { grid.innerHTML = ""; renderNextBatch(); }
@@ -231,6 +226,7 @@ function renderNextBatch() {
   
   const user = JSON.parse(localStorage.getItem("contact_user"));
   slice.forEach(e => {
+    // FIX: Match the creator field name from your getAllEvents.gs
     const isCreator = user && user.email === e.creator;
     grid.innerHTML += `
       <div class="card" data-event="${e.id}">
@@ -253,10 +249,9 @@ async function joinEvent(id) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) { window.location.href = "signup.html"; return; }
 
-  // Silent join
-  fetch(`${API_URL}?module=joinCommunity&communityId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(()=>{});
+  // FIX: Changed module to joinEvent and communityId to eventId
+  fetch(`${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(()=>{});
 
-  // Redirect with the type=event flag for your original messages.js
   window.location.href = `messages.html?communityId=${encodeURIComponent(id)}&type=event`;
 }
 
@@ -268,7 +263,8 @@ async function deleteEvent(id) {
   document.querySelector(`[data-event="${id}"]`)?.remove();
   
   try {
-    await fetch(`${API_URL}?module=deleteCommunity&communityId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`);
+    // FIX: Changed module to deleteEvent and communityId to eventId
+    await fetch(`${API_URL}?module=deleteEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`);
     showMessagePopup("Deleted", "Event removed.");
   } catch (err) {
     showMessagePopup("Error", "Could not delete event from server.");
