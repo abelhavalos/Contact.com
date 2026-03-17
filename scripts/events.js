@@ -1,5 +1,4 @@
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
 /* ============================
    POPUP HELPERS
@@ -33,440 +32,247 @@ function loadNavbar() {
   const mobileMenu = document.getElementById("mobileMenu");
   if (!navbar || !mobileMenu) return;
 
-  const loggedInNav = `
-    <div class="hamburger" onclick="toggleMenu()">
-      <span></span><span></span><span></span>
-    </div>
-    <div class="logo">Contact<span>.</span>com</div>
-    <div class="nav-links">
+  const navLinksHTML = user ? `
       <a href="dashboard.html">Dashboard</a>
       <a href="communities.html">Communities</a>
       <a href="events.html">Events</a>
       <a href="contacts.html">Contacts</a>
       <a href="profile.html">Profile</a>
-      <a href="#" onclick="logout()">Logout</a>
-    </div>
+      <a href="#" onclick="logout()" style="color:#ff3b3b !important;">Logout</a>
+  ` : `
+      <a href="index.html">Home</a>
+      <a href="communities.html">Communities</a>
+      <a href="events.html">Events</a>
+      <a href="login.html">Login</a>
+      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
   `;
 
-  const publicNav = `
-    <div class="hamburger" onclick="toggleMenu()">
-      <span></span><span></span><span></span>
-    </div>
+  navbar.innerHTML = `
+    <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
     <div class="logo">Contact<span>.</span>com</div>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="login.html">Login</a>
-      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-    </div>
+    <div class="nav-links">${navLinksHTML}</div>
   `;
 
-  navbar.innerHTML = user ? loggedInNav : publicNav;
-
-  mobileMenu.innerHTML = user
-    ? `
-      <a href="dashboard.html">Dashboard</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="contacts.html">Contacts</a>
-      <a href="profile.html">Profile</a>
-      <a href="#" onclick="logout()">Logout</a>
-    `
-    : `
-      <a href="index.html">Home</a>
-      <a href="communities.html">Communities</a>
-      <a href="events.html">Events</a>
-      <a href="login.html">Login</a>
-      <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
-    `;
+  mobileMenu.innerHTML = navLinksHTML;
 }
 
-function loadCreateCommunityButton() {
+function loadCreateEventButton() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  const wrapper = document.getElementById("createCommunityWrapper");
+  const wrapper = document.getElementById("createEventWrapper");
   if (!wrapper) return;
 
   if (user) {
-    wrapper.innerHTML = `
-      <button class="btn-primary" onclick="openCreateCommunityPopup()">
-        Create Event
-      </button>
-    `;
+    wrapper.innerHTML = `<button class="btn-primary" onclick="openCreateEventPopup()">+ Create Event</button>`;
   } else {
     wrapper.innerHTML = "";
   }
 }
 
 /* ============================
-   CREATE COMMUNITY POPUP
+   CREATE EVENT POPUP
 ============================ */
-function openCreateCommunityPopup() {
-  const b = document.getElementById("createCommunityBackdrop");
+function openCreateEventPopup() {
+  const b = document.getElementById("createEventBackdrop");
   if (b) b.style.display = "flex";
 }
 
-function closeCreateCommunityPopup() {
-  const b = document.getElementById("createCommunityBackdrop");
+function closeCreateEventPopup() {
+  const b = document.getElementById("createEventBackdrop");
   if (b) b.style.display = "none";
 }
 
 /* ============================
-   COMMUNITY IMAGE HANDLING
-   (mirrors profile.js compression)
+   EVENT IMAGE HANDLING
 ============================ */
-function initCommunityImageHandler() {
-  const picker = document.getElementById("communityImagePicker");
-  const preview = document.getElementById("communityImagePreview");
-  const input = document.getElementById("communityImageInput");
+function initEventImageHandler() {
+  const picker = document.getElementById("eventImagePicker");
+  const preview = document.getElementById("eventImagePreview");
+  const input = document.getElementById("eventImageInput");
 
   if (!picker || !preview || !input) return;
 
-  picker.addEventListener("click", () => {
-    input.click();
-  });
+  picker.addEventListener("click", () => { input.click(); });
 
   input.addEventListener("change", () => {
     const file = input.files[0];
     if (!file) return;
-
     const img = new Image();
     const reader = new FileReader();
-
-    reader.onload = (e) => {
-      img.src = e.target.result;
-    };
-
-    img.onload = () => {
-      compressCommunityImage(img);
-    };
-
+    reader.onload = (e) => { img.src = e.target.result; };
+    img.onload = () => { compressEventImage(img); };
     reader.readAsDataURL(file);
   });
 }
 
-function compressCommunityImage(img) {
+function compressEventImage(img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-
   const MAX_WIDTH = 300;
   const scale = MAX_WIDTH / img.width;
-
   canvas.width = MAX_WIDTH;
   canvas.height = img.height * scale;
-
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   let base64 = canvas.toDataURL("image/jpeg", 0.25);
-
-  if (base64.length > 120000) {
-    base64 = canvas.toDataURL("image/jpeg", 0.20);
-  }
-  if (base64.length > 120000) {
-    base64 = canvas.toDataURL("image/jpeg", 0.18);
-  }
-  if (base64.length > 120000) {
-    base64 = canvas.toDataURL("image/jpeg", 0.15);
-  }
-
-  const preview = document.getElementById("communityImagePreview");
+  const preview = document.getElementById("eventImagePreview");
   if (preview) preview.src = base64;
-
-  window.communityImageBase64 = base64;
+  window.eventImageBase64 = base64;
 }
 
 /* ============================
-   CREATE COMMUNITY (OPTIMISTIC + IMAGE)
+   SUBMIT EVENT
 ============================ */
-async function submitCommunity() {
-  const nameEl = document.getElementById("communityTitle");
-  const descEl = document.getElementById("communityDescription");
+async function submitEvent() {
+  const nameEl = document.getElementById("eventTitle");
+  const descEl = document.getElementById("eventDescription");
   if (!nameEl || !descEl) return;
 
   const name = nameEl.value.trim();
   const description = descEl.value.trim();
   const user = JSON.parse(localStorage.getItem("contact_user"));
 
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
+  if (!user) { window.location.href = "login.html"; return; }
+  if (!name || !description) { showMessagePopup("Missing Fields", "Please fill out all fields."); return; }
 
-  if (!name || !description) {
-    showMessagePopup("Missing Fields", "Please fill out all fields.");
-    return;
-  }
-
-  const imageBase64 = window.communityImageBase64 || "";
-
-  closeCreateCommunityPopup();
+  const imageBase64 = window.eventImageBase64 || "";
+  closeCreateEventPopup();
 
   const tempId = "temp-" + Date.now();
-  const grid = document.getElementById("communityGrid");
+  const grid = document.getElementById("eventGrid");
   if (!grid) return;
 
-  const tempImgHtml = imageBase64
-    ? `<img src="${imageBase64}" class="community-card-image">`
-    : "";
-
-  grid.insertAdjacentHTML(
-    "afterbegin",
-    `
-    <div class="card" data-community="${tempId}">
+  grid.insertAdjacentHTML("afterbegin", `
+    <div class="card" data-event="${tempId}">
       <h3>${name}</h3>
-      ${tempImgHtml}
+      ${imageBase64 ? `<img src="${imageBase64}" class="event-card-image">` : ""}
       <p>${description}</p>
       <button class="btn-primary" disabled>Saving...</button>
     </div>
-  `
-  );
-
-  showMessagePopup("Success", "Event created!");
+  `);
 
   try {
     const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
-        module: "createCommunity",
+        module: "createCommunity", // Using community module as discussed
         name,
         description,
         email: user.email,
-        imageBase64
+        imageBase64,
+        category: "event" // Helper for your backend to distinguish if needed
       })
     });
 
     const data = await res.json();
-
     if (!data.success) {
-      document.querySelector(`[data-community="${tempId}"]`)?.remove();
+      document.querySelector(`[data-event="${tempId}"]`)?.remove();
       showMessagePopup("Error", data.message || "Failed to save event.");
       return;
     }
 
-    const tempCard = document.querySelector(
-      `[data-community="${tempId}"]`
-    );
-
-    const finalImgHtml = data.imageUrl
-      ? `<img src="${data.imageUrl}" class="community-card-image">`
-      : tempImgHtml;
-
+    const tempCard = document.querySelector(`[data-event="${tempId}"]`);
     if (tempCard) {
       tempCard.outerHTML = `
-        <div class="card" data-community="${data.id}">
+        <div class="card" data-event="${data.id}">
           <h3>${data.name || name}</h3>
-          ${finalImgHtml}
+          ${data.imageUrl ? `<img src="${data.imageUrl}" class="event-card-image">` : ""}
           <p>${data.description || description}</p>
-          <button class="btn-primary" onclick="joinCommunity('${data.id}')">Join</button>
-          <button class="delete-btn" onclick="deleteCommunity('${data.id}')">Delete</button>
+          <button class="btn-primary" onclick="joinEvent('${data.id}')">Join</button>
+          <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
         </div>
       `;
     }
+    showMessagePopup("Success", "Event created!");
   } catch (err) {
-    document.querySelector(`[data-community="${tempId}"]`)?.remove();
+    document.querySelector(`[data-event="${tempId}"]`)?.remove();
     showMessagePopup("Network Error", "Please try again.");
   }
 }
 
 /* ============================
-   FAST COMMUNITIES LOADING
+   LOADING EVENTS (CACHED)
 ============================ */
-let allCommunities = [];
-let index = 0;
+let allEvents = [];
+let eventIndex = 0;
 const BATCH = 20;
 
-function loadCachedCommunities() {
-  const cached = localStorage.getItem("cached_communities");
+function loadCachedEvents() {
+  const cached = localStorage.getItem("cached_events");
   if (!cached) return;
+  try { allEvents = JSON.parse(cached); } catch { allEvents = []; return; }
 
-  try {
-    allCommunities = JSON.parse(cached);
-  } catch {
-    allCommunities = [];
-    return;
-  }
-
-  index = 0;
-  const grid = document.getElementById("communityGrid");
+  eventIndex = 0;
+  const grid = document.getElementById("eventGrid");
   if (!grid) return;
-
   grid.innerHTML = "";
-  grid.style.opacity = "0";
-  setTimeout(() => (grid.style.opacity = "1"), 50);
-
   renderNextBatch();
 }
 
-async function fetchCommunities(force = false) {
+async function fetchEvents(force = false) {
   try {
-    const res = await fetch(`${API_URL}?module=getAllCommunities`);
+    const res = await fetch(`${API_URL}?module=getAllCommunities`); // Fetching all, filtering logic can be added
     const data = await res.json();
     if (!data.success || !Array.isArray(data.communities)) return;
 
-    const hadCache = !!localStorage.getItem("cached_communities");
-    localStorage.setItem(
-      "cached_communities",
-      JSON.stringify(data.communities)
-    );
+    localStorage.setItem("cached_events", JSON.stringify(data.communities));
+    if (!force && localStorage.getItem("cached_events")) return;
 
-    if (!force && hadCache) return;
-
-    allCommunities = data.communities;
-    index = 0;
-
-    const grid = document.getElementById("communityGrid");
-    if (!grid) return;
-    grid.innerHTML = "";
-    renderNextBatch();
-  } catch {
-    // silent background failure
-  }
+    allEvents = data.communities;
+    eventIndex = 0;
+    const grid = document.getElementById("eventGrid");
+    if (grid) { grid.innerHTML = ""; renderNextBatch(); }
+  } catch (err) { console.error("Fetch failed", err); }
 }
 
 function renderNextBatch() {
-  if (!allCommunities.length) return;
-  const slice = allCommunities.slice(index, index + BATCH);
-  appendCommunities(slice);
-  index += BATCH;
-}
-
-function appendCommunities(list) {
-  const grid = document.getElementById("communityGrid");
-  if (!grid) return;
-
+  const grid = document.getElementById("eventGrid");
+  if (!grid || !allEvents.length) return;
+  const slice = allEvents.slice(eventIndex, eventIndex + BATCH);
+  
   const user = JSON.parse(localStorage.getItem("contact_user"));
-
-  list.forEach((c) => {
-    const isCreator = user && user.email === c.creator;
-
-    const imgHtml = c.imageUrl
-      ? `<img src="${c.imageUrl}" class="community-card-image">`
-      : "";
-
+  slice.forEach(e => {
+    const isCreator = user && user.email === e.creator;
     grid.innerHTML += `
-      <div class="card" data-community="${c.id}">
-        <h3>${c.name}</h3>
-        ${imgHtml}
-        <p>${c.description}</p>
-        ${
-          isCreator
-            ? `
-          <button class="delete-btn" onclick="deleteCommunity('${c.id}')">Delete</button>
-          <button class="btn-primary" onclick="joinCommunity('${c.id}')">Join</button>
-        `
-            : `
-          <button class="btn-primary" onclick="joinCommunity('${c.id}')">Join</button>
-        `
-        }
-      </div>
-    `;
+      <div class="card" data-event="${e.id}">
+        <h3>${e.name}</h3>
+        ${e.imageUrl ? `<img src="${e.imageUrl}" class="event-card-image">` : ""}
+        <p>${e.description}</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button class="btn-primary" onclick="joinEvent('${e.id}')">Join</button>
+          ${isCreator ? `<button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>` : ""}
+        </div>
+      </div>`;
   });
+  eventIndex += BATCH;
 }
-
-window.addEventListener("scroll", () => {
-  if (
-    window.innerHeight + window.scrollY >=
-    document.body.offsetHeight - 200
-  ) {
-    renderNextBatch();
-  }
-});
 
 /* ============================
-   JOIN / DELETE COMMUNITY
+   JOIN / DELETE EVENT
 ============================ */
-async function joinCommunity(id) {
+async function joinEvent(id) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) {
-    window.location.href = "signup.html";
-    return;
-  }
+  if (!user) { window.location.href = "signup.html"; return; }
 
-  fetch(
-    `${API_URL}?module=joinCommunity&communityId=${encodeURIComponent(
-      id
-    )}&email=${encodeURIComponent(user.email)}`
-  ).catch(() => {});
+  // Silent join
+  fetch(`${API_URL}?module=joinCommunity&communityId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(()=>{});
 
-  window.location.href = `messages.html?mode=community&communityId=${encodeURIComponent(
-    id
-  )}`;
+  // Redirect with the type=event flag for your original messages.js
+  window.location.href = `messages.html?communityId=${encodeURIComponent(id)}&type=event`;
 }
 
-async function deleteCommunity(id) {
+async function deleteEvent(id) {
+  if (!confirm("Are you sure you want to delete this event?")) return;
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) return;
 
-  const card = document.querySelector(`[data-community="${id}"]`);
-  if (card) card.remove();
-
-  let cached = [];
+  document.querySelector(`[data-event="${id}"]`)?.remove();
+  
   try {
-    cached = JSON.parse(
-      localStorage.getItem("cached_communities") || "[]"
-    );
-  } catch {
-    cached = [];
+    await fetch(`${API_URL}?module=deleteCommunity&communityId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`);
+    showMessagePopup("Deleted", "Event removed.");
+  } catch (err) {
+    showMessagePopup("Error", "Could not delete event from server.");
   }
-
-  cached = cached.filter((c) => c.id !== id);
-  localStorage.setItem("cached_communities", JSON.stringify(cached));
-
-  allCommunities = allCommunities.filter((c) => c.id !== id);
-
-  showMessagePopup("Deleted", "Event removed.");
-
-  try {
-    const res = await fetch(
-      `${API_URL}?module=deleteCommunity&communityId=${encodeURIComponent(
-        id
-      )}&email=${encodeURIComponent(user.email)}`
-    );
-    const data = await res.json();
-
-    if (!data.success) {
-      const grid = document.getElementById("communityGrid");
-      if (!grid) return;
-
-      const imgHtml = data.imageUrl
-        ? `<img src="${data.imageUrl}" class="community-card-image">`
-        : "";
-
-      grid.insertAdjacentHTML(
-        "afterbegin",
-        `
-        <div class="card" data-community="${id}">
-          <h3>${data.name || "Event"}</h3>
-          ${imgHtml}
-          <p>${data.description || ""}</p>
-          <button class="delete-btn" onclick="deleteCommunity('${id}')">Delete</button>
-          <button class="btn-primary" onclick="joinCommunity('${id}')">Join</button>
-        </div>
-      `
-      );
-
-      cached.push({
-        id,
-        name: data.name,
-        description: data.description,
-        imageUrl: data.imageUrl || "",
-        creator: user.email
-      });
-      localStorage.setItem("cached_communities", JSON.stringify(cached));
-
-      showMessagePopup("Error", data.message || "Failed to delete event.");
-    }
-  } catch {
-    showMessagePopup("Network Error", "Could not reach the server.");
-  }
-}
-
-/* ============================
-   LOGOUT
-============================ */
-function logout() {
-  localStorage.removeItem("contact_user");
-  window.location.href = "index.html";
 }
 
 /* ============================
@@ -474,8 +280,19 @@ function logout() {
 ============================ */
 document.addEventListener("DOMContentLoaded", () => {
   loadNavbar();
-  loadCreateCommunityButton();
-  initCommunityImageHandler();
-  loadCachedCommunities();
-  fetchCommunities();
+  loadCreateEventButton();
+  initEventImageHandler();
+  loadCachedEvents();
+  fetchEvents();
 });
+
+window.addEventListener("scroll", () => {
+  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+    renderNextBatch();
+  }
+});
+
+function logout() {
+  localStorage.removeItem("contact_user");
+  window.location.href = "index.html";
+}
