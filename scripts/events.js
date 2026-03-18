@@ -1,7 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
 /* ============================
-   POPUP HELPERS
+    POPUP HELPERS
 ============================ */
 function showMessagePopup(title, message) {
   const t = document.getElementById("messageTitle");
@@ -19,7 +19,7 @@ function hideMessagePopup() {
 }
 
 /* ============================
-   NAVBAR
+    NAVBAR & UI INITIALIZATION
 ============================ */
 function toggleMenu() {
   const menu = document.getElementById("mobileMenu");
@@ -59,15 +59,11 @@ function loadCreateEventButton() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   const wrapper = document.getElementById("createEventWrapper");
   if (!wrapper) return;
-  if (user) {
-    wrapper.innerHTML = `<button class="btn-primary" onclick="openCreateEventPopup()">+ Create Event</button>`;
-  } else {
-    wrapper.innerHTML = "";
-  }
+  wrapper.innerHTML = user ? `<button class="btn-primary" onclick="openCreateEventPopup()">+ Create Event</button>` : "";
 }
 
 /* ============================
-   CREATE EVENT POPUP
+    EVENT IMAGE HANDLING
 ============================ */
 function openCreateEventPopup() {
   const b = document.getElementById("createEventBackdrop");
@@ -79,22 +75,20 @@ function closeCreateEventPopup() {
   if (b) b.style.display = "none";
 }
 
-/* ============================
-   EVENT IMAGE HANDLING
-============================ */
 function initEventImageHandler() {
   const picker = document.getElementById("eventImagePicker");
-  const preview = document.getElementById("eventImagePreview");
   const input = document.getElementById("eventImageInput");
-  if (!picker || !preview || !input) return;
-  picker.addEventListener("click", () => { input.click(); });
+  if (!picker || !input) return;
+
+  picker.addEventListener("click", () => input.click());
+
   input.addEventListener("change", () => {
     const file = input.files[0];
     if (!file) return;
     const img = new Image();
     const reader = new FileReader();
     reader.onload = (e) => { img.src = e.target.result; };
-    img.onload = () => { compressEventImage(img); };
+    img.onload = () => compressEventImage(img);
     reader.readAsDataURL(file);
   });
 }
@@ -102,39 +96,41 @@ function initEventImageHandler() {
 function compressEventImage(img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  const MAX_WIDTH = 300;
+  const MAX_WIDTH = 400; // Slightly higher quality for production
   const scale = MAX_WIDTH / img.width;
   canvas.width = MAX_WIDTH;
   canvas.height = img.height * scale;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  let base64 = canvas.toDataURL("image/jpeg", 0.25);
+
+  let base64 = canvas.toDataURL("image/jpeg", 0.3);
   const preview = document.getElementById("eventImagePreview");
   if (preview) preview.src = base64;
   window.eventImageBase64 = base64;
 }
 
 /* ============================
-   SUBMIT EVENT
+    SUBMIT EVENT
 ============================ */
 async function submitEvent() {
   const nameEl = document.getElementById("eventTitle");
   const descEl = document.getElementById("eventDescription");
-  if (!nameEl || !descEl) return;
-
-  const name = nameEl.value.trim();
-  const description = descEl.value.trim();
   const user = JSON.parse(localStorage.getItem("contact_user"));
 
   if (!user) { window.location.href = "login.html"; return; }
-  if (!name || !description) { showMessagePopup("Missing Fields", "Please fill out all fields."); return; }
+  const name = nameEl.value.trim();
+  const description = descEl.value.trim();
+
+  if (!name || !description) { 
+    showMessagePopup("Missing Fields", "Please provide a name and description."); 
+    return; 
+  }
 
   const imageBase64 = window.eventImageBase64 || "";
   closeCreateEventPopup();
 
+  // Optimistic UI Update
   const tempId = "temp-" + Date.now();
   const grid = document.getElementById("eventGrid");
-  if (!grid) return;
-
   grid.insertAdjacentHTML("afterbegin", `
     <div class="card" data-event="${tempId}">
       <h3>${name}</h3>
@@ -148,7 +144,7 @@ async function submitEvent() {
     const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
-        module: "createEvent", // FIX: Changed from createCommunity
+        module: "createEvent",
         name,
         description,
         email: user.email,
@@ -157,89 +153,82 @@ async function submitEvent() {
     });
 
     const data = await res.json();
-    if (!data.success) {
-      document.querySelector(`[data-event="${tempId}"]`)?.remove();
-      showMessagePopup("Error", data.message || "Failed to save event.");
-      return;
-    }
-
     const tempCard = document.querySelector(`[data-event="${tempId}"]`);
-    if (tempCard) {
+
+    if (data.success && tempCard) {
       tempCard.outerHTML = `
         <div class="card" data-event="${data.id}">
-          <h3>${data.name || name}</h3>
+          <h3>${data.name}</h3>
           ${data.imageUrl ? `<img src="${data.imageUrl}" class="event-card-image">` : ""}
-          <p>${data.description || description}</p>
-          <button class="btn-primary" onclick="joinEvent('${data.id}')">Join</button>
-          <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
+          <p>${data.description}</p>
+          <div class="card-actions">
+            <button class="btn-primary" onclick="joinEvent('${data.id}')">Join</button>
+            <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
+          </div>
         </div>
       `;
+      showMessagePopup("Success", "Event is live!");
+    } else {
+      if (tempCard) tempCard.remove();
+      showMessagePopup("Error", data.message || "Could not save event.");
     }
-    showMessagePopup("Success", "Event created!");
   } catch (err) {
-    document.querySelector(`[data-event="${tempId}"]`)?.remove();
-    showMessagePopup("Network Error", "Please try again.");
+    console.error(err);
+    showMessagePopup("Error", "Check your connection and try again.");
   }
 }
 
 /* ============================
-   LOADING EVENTS (CACHED)
+    DATA FETCHING & RENDERING
 ============================ */
 let allEvents = [];
 let eventIndex = 0;
 const BATCH = 20;
 
-function loadCachedEvents() {
-  const cached = localStorage.getItem("cached_events");
-  if (!cached) return;
-  try { allEvents = JSON.parse(cached); } catch { allEvents = []; return; }
-  eventIndex = 0;
+async function fetchEvents() {
   const grid = document.getElementById("eventGrid");
-  if (!grid) return;
-  grid.innerHTML = "";
-  renderNextBatch();
-}
-
-async function fetchEvents(force = false) {
   try {
-    // ADD THIS LINE: It clears the old mixed-up cache immediately
-    if (force) localStorage.removeItem("cached_events"); 
-
-    const res = await fetch(`${API_URL}?module=getAllEvents`); 
+    const res = await fetch(`${API_URL}?module=getAllEvents`);
     const data = await res.json();
 
-    if (!data.success || !Array.isArray(data.events)) return;
-
-    // Overwrite the cache with ONLY the 2 events from your sheet
-    localStorage.setItem("cached_events", JSON.stringify(data.events));
-    
-    allEvents = data.events;
-    eventIndex = 0;
-    const grid = document.getElementById("eventGrid");
-    if (grid) { 
-        grid.innerHTML = ""; // Clear the grid before rendering only the 2 events
-        renderNextBatch(); 
+    if (data.success && Array.isArray(data.events)) {
+      // Clear old data to prevent "mixing" with Communities
+      localStorage.setItem("cached_events", JSON.stringify(data.events));
+      allEvents = data.events;
+      eventIndex = 0;
+      if (grid) {
+        grid.innerHTML = "";
+        renderNextBatch();
+      }
     }
-  } catch (err) { 
-    console.error("Fetch failed", err); 
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    // Fallback to cache if offline
+    const cached = localStorage.getItem("cached_events");
+    if (cached) {
+      allEvents = JSON.parse(cached);
+      renderNextBatch();
+    }
   }
 }
 
 function renderNextBatch() {
   const grid = document.getElementById("eventGrid");
   if (!grid || !allEvents.length) return;
-  const slice = allEvents.slice(eventIndex, eventIndex + BATCH);
   
+  const slice = allEvents.slice(eventIndex, eventIndex + BATCH);
   const user = JSON.parse(localStorage.getItem("contact_user"));
+
   slice.forEach(e => {
-    // FIX: Match the creator field name from your getAllEvents.gs
-    const isCreator = user && user.email === e.creator;
+    // Check creator for delete button visibility
+    const isCreator = user && (user.email === e.creator || user.email === e.creatorEmail);
+    
     grid.innerHTML += `
       <div class="card" data-event="${e.id}">
         <h3>${e.name}</h3>
-        ${e.imageUrl ? `<img src="${e.imageUrl}" class="event-card-image">` : ""}
+        ${e.imageUrl ? `<img src="${e.imageUrl}" class="event-card-image" onerror="this.style.display='none'">` : ""}
         <p>${e.description}</p>
-        <div style="display:flex; gap:10px; justify-content:center;">
+        <div class="card-actions" style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
           <button class="btn-primary" onclick="joinEvent('${e.id}')">Join</button>
           ${isCreator ? `<button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>` : ""}
         </div>
@@ -249,43 +238,41 @@ function renderNextBatch() {
 }
 
 /* ============================
-   JOIN / DELETE EVENT
+    JOIN & DELETE ACTIONS
 ============================ */
 async function joinEvent(id) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) { window.location.href = "signup.html"; return; }
 
-  // FIX: Changed module to joinEvent and communityId to eventId
-  fetch(`${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(()=>{});
-
+  // Record join in Events_Members sheet
+  fetch(`${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`);
+  
+  // Navigate to chat
   window.location.href = `messages.html?communityId=${encodeURIComponent(id)}&type=event`;
 }
 
 async function deleteEvent(id) {
-  if (!confirm("Are you sure you want to delete this event?")) return;
+  if (!confirm("Delete this event permanently?")) return;
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) return;
-
-  document.querySelector(`[data-event="${id}"]`)?.remove();
   
+  document.querySelector(`[data-event="${id}"]`)?.remove();
+
   try {
-    // FIX: Changed module to deleteEvent and communityId to eventId
     await fetch(`${API_URL}?module=deleteEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`);
-    showMessagePopup("Deleted", "Event removed.");
+    showMessagePopup("Removed", "Event has been deleted.");
   } catch (err) {
-    showMessagePopup("Error", "Could not delete event from server.");
+    console.error(err);
   }
 }
 
 /* ============================
-   INIT
+    INITIALIZATION
 ============================ */
 document.addEventListener("DOMContentLoaded", () => {
   loadNavbar();
   loadCreateEventButton();
   initEventImageHandler();
-  loadCachedEvents();
-  fetchEvents();
+  fetchEvents(); // Fresh fetch on every load to ensure sheet sync
 });
 
 window.addEventListener("scroll", () => {
