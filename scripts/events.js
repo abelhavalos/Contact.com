@@ -1,7 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
 
 /* ============================
-    POPUP HELPERS
+   POPUP HELPERS
 ============================ */
 function showMessagePopup(title, message) {
   const t = document.getElementById("messageTitle");
@@ -19,7 +19,7 @@ function hideMessagePopup() {
 }
 
 /* ============================
-    NAVBAR & UI INITIALIZATION
+   NAVBAR
 ============================ */
 function toggleMenu() {
   const menu = document.getElementById("mobileMenu");
@@ -32,14 +32,16 @@ function loadNavbar() {
   const mobileMenu = document.getElementById("mobileMenu");
   if (!navbar || !mobileMenu) return;
 
-  const navLinksHTML = user ? `
+  const navLinks = `
       <a href="dashboard.html">Dashboard</a>
       <a href="communities.html">Communities</a>
       <a href="events.html">Events</a>
       <a href="contacts.html">Contacts</a>
       <a href="profile.html">Profile</a>
       <a href="#" onclick="logout()" style="color:#ff3b3b !important;">Logout</a>
-  ` : `
+  `;
+
+  const publicLinks = `
       <a href="index.html">Home</a>
       <a href="communities.html">Communities</a>
       <a href="events.html">Events</a>
@@ -47,23 +49,25 @@ function loadNavbar() {
       <button class="btn-primary" onclick="window.location.href='signup.html'">Sign Up</button>
   `;
 
+  const content = user ? navLinks : publicLinks;
+
   navbar.innerHTML = `
     <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
     <div class="logo">Contact<span>.</span>com</div>
-    <div class="nav-links">${navLinksHTML}</div>
+    <div class="nav-links">${content}</div>
   `;
-  mobileMenu.innerHTML = navLinksHTML;
+  mobileMenu.innerHTML = content;
 }
 
 function loadCreateEventButton() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   const wrapper = document.getElementById("createEventWrapper");
   if (!wrapper) return;
-  wrapper.innerHTML = user ? `<button class="btn-primary" onclick="openCreateEventPopup()">+ Create Event</button>` : "";
+  wrapper.innerHTML = user ? `<button class="btn-primary" onclick="openCreateEventPopup()">Create Event</button>` : "";
 }
 
 /* ============================
-    EVENT IMAGE HANDLING
+   CREATE EVENT POPUP
 ============================ */
 function openCreateEventPopup() {
   const b = document.getElementById("createEventBackdrop");
@@ -75,10 +79,14 @@ function closeCreateEventPopup() {
   if (b) b.style.display = "none";
 }
 
+/* ============================
+   EVENT IMAGE HANDLING
+============================ */
 function initEventImageHandler() {
   const picker = document.getElementById("eventImagePicker");
+  const preview = document.getElementById("eventImagePreview");
   const input = document.getElementById("eventImageInput");
-  if (!picker || !input) return;
+  if (!picker || !preview || !input) return;
 
   picker.addEventListener("click", () => input.click());
 
@@ -96,20 +104,20 @@ function initEventImageHandler() {
 function compressEventImage(img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  const MAX_WIDTH = 400; 
+  const MAX_WIDTH = 300;
   const scale = MAX_WIDTH / img.width;
   canvas.width = MAX_WIDTH;
   canvas.height = img.height * scale;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  let base64 = canvas.toDataURL("image/jpeg", 0.3);
+  let base64 = canvas.toDataURL("image/jpeg", 0.25);
   const preview = document.getElementById("eventImagePreview");
   if (preview) preview.src = base64;
   window.eventImageBase64 = base64;
 }
 
 /* ============================
-    SUBMIT EVENT
+   CREATE EVENT (OPTIMISTIC)
 ============================ */
 async function submitEvent() {
   const nameEl = document.getElementById("eventTitle");
@@ -117,20 +125,21 @@ async function submitEvent() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
 
   if (!user) { window.location.href = "login.html"; return; }
-  const name = nameEl.value.trim();
-  const description = descEl.value.trim();
-
-  if (!name || !description) { 
-    showMessagePopup("Missing Fields", "Please provide a name and description."); 
-    return; 
+  if (!nameEl.value.trim() || !descEl.value.trim()) {
+    showMessagePopup("Missing Fields", "Please fill out all fields.");
+    return;
   }
 
+  const name = nameEl.value.trim();
+  const description = descEl.value.trim();
   const imageBase64 = window.eventImageBase64 || "";
+
   closeCreateEventPopup();
 
-  // Optimistic UI Update (Shows for creator immediately)
   const tempId = "temp-" + Date.now();
   const grid = document.getElementById("eventGrid");
+  if (!grid) return;
+
   grid.insertAdjacentHTML("afterbegin", `
     <div class="card" data-event="${tempId}">
       <h3>${name}</h3>
@@ -156,68 +165,65 @@ async function submitEvent() {
     const tempCard = document.querySelector(`[data-event="${tempId}"]`);
 
     if (data.success && tempCard) {
-      // Update the "Fake" card with the real ID and Data
       tempCard.outerHTML = `
         <div class="card" data-event="${data.id}">
-          <h3>${data.name}</h3>
-          ${data.imageUrl ? `<img src="${data.imageUrl}" class="event-card-image">` : ""}
-          <p>${data.description}</p>
-          <div class="card-actions" style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+          <h3>${data.name || name}</h3>
+          ${data.imageUrl ? `<img src="${data.imageUrl}" class="event-card-image">` : (imageBase64 ? `<img src="${imageBase64}" class="event-card-image">` : "")}
+          <p>${data.description || description}</p>
+          <div style="display:flex; gap:10px; justify-content:center;">
             <button class="btn-primary" onclick="joinEvent('${data.id}')">Join</button>
             <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
           </div>
         </div>
       `;
-      showMessagePopup("Success", "Event is live!");
+      showMessagePopup("Success", "Event created!");
     } else {
       if (tempCard) tempCard.remove();
-      showMessagePopup("Error", data.message || "Could not save event.");
+      showMessagePopup("Error", data.message || "Failed to save event.");
     }
   } catch (err) {
-    console.error(err);
-    showMessagePopup("Error", "Server connection failed.");
+    document.querySelector(`[data-event="${tempId}"]`)?.remove();
+    showMessagePopup("Network Error", "Please try again.");
   }
 }
 
 /* ============================
-    DATA FETCHING & RENDERING
+   LOADING EVENTS
 ============================ */
 let allEvents = [];
 let eventIndex = 0;
 const BATCH = 20;
 
-async function fetchEvents() {
-  const grid = document.getElementById("eventGrid");
-  if (!grid) return;
-
+function loadCachedEvents() {
+  const cached = localStorage.getItem("cached_events");
+  if (!cached) return;
   try {
-    // 1. Force fetch from backend (getAllEvents.gs)
-    const res = await fetch(`${API_URL}?module=getAllEvents`);
-    const data = await res.json();
-
-    if (data.success && Array.isArray(data.events)) {
-      // 2. Clear old cached mixed data and UI
-      localStorage.setItem("cached_events", JSON.stringify(data.events));
-      allEvents = data.events;
-      eventIndex = 0;
-      grid.innerHTML = "";
-      
-      if (allEvents.length === 0) {
-        grid.innerHTML = "<p style='color:white; text-align:center;'>No events yet. Be the first to create one!</p>";
-      } else {
-        renderNextBatch();
-      }
-    }
-  } catch (err) {
-    console.error("Fetch failed:", err);
-    // 3. Fallback to cache ONLY if network fails
-    const cached = localStorage.getItem("cached_events");
-    if (cached) {
-      allEvents = JSON.parse(cached);
+    allEvents = JSON.parse(cached);
+    eventIndex = 0;
+    const grid = document.getElementById("eventGrid");
+    if (grid) {
       grid.innerHTML = "";
       renderNextBatch();
     }
-  }
+  } catch { allEvents = []; }
+}
+
+async function fetchEvents() {
+  try {
+    const res = await fetch(`${API_URL}?module=getAllEvents`);
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.events)) return;
+
+    localStorage.setItem("cached_events", JSON.stringify(data.events));
+    allEvents = data.events;
+    eventIndex = 0;
+
+    const grid = document.getElementById("eventGrid");
+    if (grid) {
+      grid.innerHTML = "";
+      renderNextBatch();
+    }
+  } catch (err) { console.error("Fetch failed", err); }
 }
 
 function renderNextBatch() {
@@ -228,60 +234,62 @@ function renderNextBatch() {
   const user = JSON.parse(localStorage.getItem("contact_user"));
 
   slice.forEach(e => {
-    // Check both potential creator fields from backend
     const isCreator = user && (user.email === e.creator || user.email === e.creatorEmail);
-    
+    const imgHtml = e.imageUrl ? `<img src="${e.imageUrl}" class="event-card-image" onerror="this.style.display='none'">` : "";
+
     grid.innerHTML += `
       <div class="card" data-event="${e.id}">
         <h3>${e.name}</h3>
-        ${e.imageUrl ? `<img src="${e.imageUrl}" class="event-card-image" onerror="this.style.display='none'">` : ""}
+        ${imgHtml}
         <p>${e.description}</p>
-        <div class="card-actions" style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+        <div style="display:flex; gap:10px; justify-content:center;">
           <button class="btn-primary" onclick="joinEvent('${e.id}')">Join</button>
           ${isCreator ? `<button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>` : ""}
         </div>
-      </div>`;
+      </div>
+    `;
   });
   eventIndex += BATCH;
 }
 
 /* ============================
-    JOIN & DELETE ACTIONS
+   JOIN / DELETE EVENT
 ============================ */
 async function joinEvent(id) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) { window.location.href = "signup.html"; return; }
 
-  // Record join in Events_Members sheet
   fetch(`${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(()=>{});
-  
-  // Navigate to chat with the event flag
   window.location.href = `messages.html?communityId=${encodeURIComponent(id)}&type=event`;
 }
 
 async function deleteEvent(id) {
-  if (!confirm("Delete this event permanently?")) return;
+  if (!confirm("Are you sure?")) return;
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) return;
 
   document.querySelector(`[data-event="${id}"]`)?.remove();
-
+  
   try {
     await fetch(`${API_URL}?module=deleteEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`);
-    showMessagePopup("Removed", "Event has been deleted.");
+    showMessagePopup("Deleted", "Event removed.");
+    // Update local cache
+    allEvents = allEvents.filter(e => e.id !== id);
+    localStorage.setItem("cached_events", JSON.stringify(allEvents));
   } catch (err) {
-    console.error("Delete failed", err);
+    showMessagePopup("Error", "Could not delete from server.");
   }
 }
 
 /* ============================
-    INITIALIZATION
+   INIT
 ============================ */
 document.addEventListener("DOMContentLoaded", () => {
   loadNavbar();
   loadCreateEventButton();
   initEventImageHandler();
-  fetchEvents(); // Always try fresh fetch on load
+  loadCachedEvents();
+  fetchEvents();
 });
 
 window.addEventListener("scroll", () => {
