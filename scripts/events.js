@@ -209,21 +209,40 @@ function loadCachedEvents() {
 }
 
 async function fetchEvents() {
+  const grid = document.getElementById("eventGrid");
+
+  // --- FORCE RESET START ---
+  // 1. Clear the UI immediately so old Communities vanish
+  if (grid) grid.innerHTML = "<p style='color:white; text-align:center;'>Loading Events...</p>";
+  // 2. Clear the local variables
+  allEvents = [];
+  eventIndex = 0;
+  // 3. Optional: Clear the storage to prevent "ghost" data
+  localStorage.removeItem("cached_events");
+  // --- FORCE RESET END ---
+
   try {
     const res = await fetch(`${API_URL}?module=getAllEvents`);
     const data = await res.json();
-    if (!data.success || !Array.isArray(data.events)) return;
+    
+    // Check if we actually got data back
+    if (!data.success || !Array.isArray(data.events)) {
+      if (grid) grid.innerHTML = "<p style='color:white;'>No events found.</p>";
+      return;
+    }
 
+    // Save the clean list of 4-5 events from your sheet
     localStorage.setItem("cached_events", JSON.stringify(data.events));
     allEvents = data.events;
-    eventIndex = 0;
-
-    const grid = document.getElementById("eventGrid");
+    
     if (grid) {
-      grid.innerHTML = "";
+      grid.innerHTML = ""; // Wipe the "Loading..." message
       renderNextBatch();
     }
-  } catch (err) { console.error("Fetch failed", err); }
+  } catch (err) { 
+    console.error("Fetch failed", err);
+    if (grid) grid.innerHTML = "<p style='color:red;'>Connection Error. Please refresh.</p>";
+  }
 }
 
 function renderNextBatch() {
