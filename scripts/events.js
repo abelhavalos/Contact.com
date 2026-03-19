@@ -274,16 +274,27 @@ function renderNextBatch() {
 /* ============================
    JOIN / DELETE EVENT
 ============================ */
+/* ============================
+   JOIN EVENT (FIXED)
+============================ */
 async function joinEvent(id, name) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
-  if (!user) { window.location.href = "signup.html"; return; }
+  if (!user) {
+    window.location.href = "signup.html";
+    return;
+  }
 
-  // 1. Record join in background
-  fetch(`${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(()=>{});
-  
-  // 2. Pass the ID, the TYPE (event), and the NAME in the URL
-  window.location.href = `messages.html?communityId=${encodeURIComponent(id)}&type=event&name=${encodeURIComponent(name)}`;
+  // 1. Background fetch to record the member join
+  // Note: Using 'eventId' to match your Events sheet logic
+  fetch(
+    `${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`
+  ).catch(() => {});
+
+  // 2. Redirect to chat with 'mode=event' and the 'name' parameter
+  // This ensures the chat header knows exactly what to display
+  window.location.href = `messages.html?mode=event&communityId=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 }
+
 async function deleteEvent(id) {
   if (!confirm("Are you sure?")) return;
   const user = JSON.parse(localStorage.getItem("contact_user"));
