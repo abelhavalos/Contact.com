@@ -262,7 +262,7 @@ function renderNextBatch() {
         ${imgHtml}
         <p>${e.description}</p>
         <div style="display:flex; gap:10px; justify-content:center;">
-          <button class="btn-primary" onclick="joinEvent('${e.id}')">Join</button>
+          <button class="btn-primary" onclick="joinEvent('${e.id}', '${e.name.replace(/'/g, "\\'")}')">Join</button>
           ${isCreator ? `<button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>` : ""}
         </div>
       </div>
