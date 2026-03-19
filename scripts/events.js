@@ -274,14 +274,16 @@ function renderNextBatch() {
 /* ============================
    JOIN / DELETE EVENT
 ============================ */
-async function joinEvent(id) {
+async function joinEvent(id, name) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) { window.location.href = "signup.html"; return; }
 
+  // 1. Record join in background
   fetch(`${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(()=>{});
-  window.location.href = `messages.html?communityId=${encodeURIComponent(id)}&type=event`;
+  
+  // 2. Pass the ID, the TYPE (event), and the NAME in the URL
+  window.location.href = `messages.html?communityId=${encodeURIComponent(id)}&type=event&name=${encodeURIComponent(name)}`;
 }
-
 async function deleteEvent(id) {
   if (!confirm("Are you sure?")) return;
   const user = JSON.parse(localStorage.getItem("contact_user"));
