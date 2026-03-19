@@ -171,7 +171,7 @@ async function submitEvent() {
           ${data.imageUrl ? `<img src="${data.imageUrl}" class="event-card-image">` : (imageBase64 ? `<img src="${imageBase64}" class="event-card-image">` : "")}
           <p>${data.description || description}</p>
           <div style="display:flex; gap:10px; justify-content:center;">
-            <button class="btn-primary" onclick="joinEvent('${data.id}')">Join</button>
+            <button class="btn-primary" onclick="joinEvent('${e.id}', '${e.name.replace(/'/g, "\\'")}')">Join</button>
             <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
           </div>
         </div>
