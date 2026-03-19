@@ -19,7 +19,7 @@ function hideMessagePopup() {
 }
 
 /* ============================
-   NAVBAR
+   NAVBAR & UI INITIALIZATION
 ============================ */
 function toggleMenu() {
   const menu = document.getElementById("mobileMenu");
@@ -67,19 +67,6 @@ function loadCreateEventButton() {
 }
 
 /* ============================
-   CREATE EVENT POPUP
-============================ */
-function openCreateEventPopup() {
-  const b = document.getElementById("createEventBackdrop");
-  if (b) b.style.display = "flex";
-}
-
-function closeCreateEventPopup() {
-  const b = document.getElementById("createEventBackdrop");
-  if (b) b.style.display = "none";
-}
-
-/* ============================
    EVENT IMAGE HANDLING
 ============================ */
 function initEventImageHandler() {
@@ -119,6 +106,16 @@ function compressEventImage(img) {
 /* ============================
    CREATE EVENT (OPTIMISTIC)
 ============================ */
+function openCreateEventPopup() {
+  const b = document.getElementById("createEventBackdrop");
+  if (b) b.style.display = "flex";
+}
+
+function closeCreateEventPopup() {
+  const b = document.getElementById("createEventBackdrop");
+  if (b) b.style.display = "none";
+}
+
 async function submitEvent() {
   const nameEl = document.getElementById("eventTitle");
   const descEl = document.getElementById("eventDescription");
@@ -140,6 +137,7 @@ async function submitEvent() {
   const grid = document.getElementById("eventGrid");
   if (!grid) return;
 
+  // Optimistic UI update
   grid.insertAdjacentHTML("afterbegin", `
     <div class="card" data-event="${tempId}">
       <h3>${name}</h3>
@@ -165,13 +163,15 @@ async function submitEvent() {
     const tempCard = document.querySelector(`[data-event="${tempId}"]`);
 
     if (data.success && tempCard) {
+      // FIX: Passing name properly to joinEvent in the outerHTML replacement
+      const safeName = (data.name || name).replace(/'/g, "\\'");
       tempCard.outerHTML = `
         <div class="card" data-event="${data.id}">
           <h3>${data.name || name}</h3>
           ${data.imageUrl ? `<img src="${data.imageUrl}" class="event-card-image">` : (imageBase64 ? `<img src="${imageBase64}" class="event-card-image">` : "")}
           <p>${data.description || description}</p>
           <div style="display:flex; gap:10px; justify-content:center;">
-            <button class="btn-primary" onclick="joinEvent('${e.id}', '${e.name.replace(/'/g, "\\'")}')">Join</button>
+            <button class="btn-primary" onclick="joinEvent('${data.id}', '${safeName}')">Join</button>
             <button class="delete-btn" onclick="deleteEvent('${data.id}')">Delete</button>
           </div>
         </div>
@@ -194,54 +194,33 @@ let allEvents = [];
 let eventIndex = 0;
 const BATCH = 20;
 
-function loadCachedEvents() {
-  const cached = localStorage.getItem("cached_events");
-  if (!cached) return;
-  try {
-    allEvents = JSON.parse(cached);
-    eventIndex = 0;
-    const grid = document.getElementById("eventGrid");
-    if (grid) {
-      grid.innerHTML = "";
-      renderNextBatch();
-    }
-  } catch { allEvents = []; }
-}
-
 async function fetchEvents() {
   const grid = document.getElementById("eventGrid");
 
-  // --- FORCE RESET START ---
-  // 1. Clear the UI immediately so old Communities vanish
   if (grid) grid.innerHTML = "<p style='color:white; text-align:center;'>Loading Events...</p>";
-  // 2. Clear the local variables
   allEvents = [];
   eventIndex = 0;
-  // 3. Optional: Clear the storage to prevent "ghost" data
   localStorage.removeItem("cached_events");
-  // --- FORCE RESET END ---
 
   try {
     const res = await fetch(`${API_URL}?module=getAllEvents`);
     const data = await res.json();
     
-    // Check if we actually got data back
     if (!data.success || !Array.isArray(data.events)) {
-      if (grid) grid.innerHTML = "<p style='color:white;'>No events found.</p>";
+      if (grid) grid.innerHTML = "<p style='color:white; text-align:center;'>No events found.</p>";
       return;
     }
 
-    // Save the clean list of 4-5 events from your sheet
     localStorage.setItem("cached_events", JSON.stringify(data.events));
     allEvents = data.events;
     
     if (grid) {
-      grid.innerHTML = ""; // Wipe the "Loading..." message
+      grid.innerHTML = ""; 
       renderNextBatch();
     }
   } catch (err) { 
     console.error("Fetch failed", err);
-    if (grid) grid.innerHTML = "<p style='color:red;'>Connection Error. Please refresh.</p>";
+    if (grid) grid.innerHTML = "<p style='color:red; text-align:center;'>Connection Error. Please refresh.</p>";
   }
 }
 
@@ -255,6 +234,7 @@ function renderNextBatch() {
   slice.forEach(e => {
     const isCreator = user && (user.email === e.creator || user.email === e.creatorEmail);
     const imgHtml = e.imageUrl ? `<img src="${e.imageUrl}" class="event-card-image" onerror="this.style.display='none'">` : "";
+    const safeName = e.name.replace(/'/g, "\\'");
 
     grid.innerHTML += `
       <div class="card" data-event="${e.id}">
@@ -262,7 +242,7 @@ function renderNextBatch() {
         ${imgHtml}
         <p>${e.description}</p>
         <div style="display:flex; gap:10px; justify-content:center;">
-          <button class="btn-primary" onclick="joinEvent('${e.id}', '${e.name.replace(/'/g, "\\'")}')">Join</button>
+          <button class="btn-primary" onclick="joinEvent('${e.id}', '${safeName}')">Join</button>
           ${isCreator ? `<button class="delete-btn" onclick="deleteEvent('${e.id}')">Delete</button>` : ""}
         </div>
       </div>
@@ -274,9 +254,6 @@ function renderNextBatch() {
 /* ============================
    JOIN / DELETE EVENT
 ============================ */
-/* ============================
-   JOIN EVENT (FIXED)
-============================ */
 async function joinEvent(id, name) {
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) {
@@ -284,19 +261,15 @@ async function joinEvent(id, name) {
     return;
   }
 
-  // 1. Background fetch to record the member join
-  // Note: Using 'eventId' to match your Events sheet logic
-  fetch(
-    `${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`
-  ).catch(() => {});
+  // Background join log
+  fetch(`${API_URL}?module=joinEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`).catch(() => {});
 
-  // 2. Redirect to chat with 'mode=event' and the 'name' parameter
-  // This ensures the chat header knows exactly what to display
+  // Redirect with Name included to fix the title glitch
   window.location.href = `messages.html?mode=event&communityId=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 }
 
 async function deleteEvent(id) {
-  if (!confirm("Are you sure?")) return;
+  if (!confirm("Are you sure you want to delete this event?")) return;
   const user = JSON.parse(localStorage.getItem("contact_user"));
   if (!user) return;
 
@@ -305,7 +278,6 @@ async function deleteEvent(id) {
   try {
     await fetch(`${API_URL}?module=deleteEvent&eventId=${encodeURIComponent(id)}&email=${encodeURIComponent(user.email)}`);
     showMessagePopup("Deleted", "Event removed.");
-    // Update local cache
     allEvents = allEvents.filter(e => e.id !== id);
     localStorage.setItem("cached_events", JSON.stringify(allEvents));
   } catch (err) {
@@ -314,13 +286,17 @@ async function deleteEvent(id) {
 }
 
 /* ============================
-   INIT
+   LOGOUT & INIT
 ============================ */
+function logout() {
+  localStorage.removeItem("contact_user");
+  window.location.href = "index.html";
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   loadNavbar();
   loadCreateEventButton();
   initEventImageHandler();
-  loadCachedEvents();
   fetchEvents();
 });
 
@@ -329,8 +305,3 @@ window.addEventListener("scroll", () => {
     renderNextBatch();
   }
 });
-
-function logout() {
-  localStorage.removeItem("contact_user");
-  window.location.href = "index.html";
-}
