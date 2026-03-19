@@ -1,5 +1,5 @@
 /****************************************************
- * CONTACT.COM — ULTRA FAST MESSAGES.JS (FORCE-SYNC)
+ * CONTACT.COM — PRODUCTION MESSAGES.JS (EVENT READY)
  ****************************************************/
 
 const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0ZKu1qZsoH7A34OuSAtMBhm3TIZrOBJsvH3AGQT9YSmjx/exec";
@@ -8,6 +8,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyFafzkgdxhvXuNaPyzNZw0
 let loggedInUser = JSON.parse(localStorage.getItem("contact_user"));
 if (!loggedInUser) window.location.href = "login.html";
 
+// Normalize user object
 loggedInUser.fullName = loggedInUser.fullName || loggedInUser.FullName || loggedInUser.email;
 loggedInUser.profilePic = loggedInUser.profilePic || loggedInUser.ProfilePic || null;
 
@@ -15,9 +16,14 @@ const url = new URL(window.location.href);
 const otherEmailParam = url.searchParams.get("otherEmail");
 const conversationIdParam = url.searchParams.get("conversationId");
 const communityId = url.searchParams.get("communityId");
-const mode = communityId ? "community" : "private";
+
+// FIX: Detect if we are in 'event' mode from the URL
+const urlMode = url.searchParams.get("mode"); 
+const mode = urlMode || (communityId ? "community" : "private");
+
 const finalOtherEmail = otherEmailParam || url.searchParams.get("email");
-let chatTitle = url.searchParams.get("title") || "";
+// FIX: Prioritize the 'name' passed from events.html
+let chatTitle = url.searchParams.get("name") || url.searchParams.get("title") || "";
 
 let activeConversationId = conversationIdParam || null;
 let communityMembers = [];
@@ -69,7 +75,6 @@ function fileToBase64(file) {
   });
 }
 
-// 2b. IMAGE MODAL HELPER
 function openImageModal(imgSrc) {
   const modal = document.getElementById("imageModal");
   const modalImg = document.getElementById("modalImage");
@@ -81,9 +86,7 @@ function openImageModal(imgSrc) {
 
 function closeImageModal() {
   const modal = document.getElementById("imageModal");
-  if (modal) {
-    modal.style.display = "none";
-  }
+  if (modal) modal.style.display = "none";
 }
 
 /****************************************************
@@ -116,20 +119,13 @@ function loadNavbar() {
   }
 }
 
-// 3b. CREATE IMAGE MODAL STRUCTURE
 function initImageModal() {
-  if (document.getElementById("imageModal")) return; // Already exists
+  if (document.getElementById("imageModal")) return;
   const modal = document.createElement("div");
   modal.id = "imageModal";
-  modal.innerHTML = `
-    <span id="modalClose">&times;</span>
-    <img id="modalImage">
-  `;
-  // Close when clicking background or X
+  modal.innerHTML = `<span id="modalClose">&times;</span><img id="modalImage">`;
   modal.onclick = (e) => {
-    if (e.target.id === "imageModal" || e.target.id === "modalClose") {
-      closeImageModal();
-    }
+    if (e.target.id === "imageModal" || e.target.id === "modalClose") closeImageModal();
   };
   document.body.appendChild(modal);
 }
@@ -166,10 +162,16 @@ async function loadOtherUserProfile() {
 }
 
 async function loadCommunityInfo() {
+  // If we already have the chatTitle (passed name), set it immediately to avoid "Community" flicker
+  const header = document.getElementById("headerTitle");
+  if (header && chatTitle) {
+      header.innerHTML = `<div class="chat-header"><div class="chat-header-main">${chatTitle}</div></div>`;
+      if (mode === "event") return; // Events don't need the Community DB fetch
+  }
+
   const r = await fetch(`${API_URL}?module=getCommunityById&communityId=${communityId}`);
   const d = await r.json();
-  const name = d?.community?.name || "Community";
-  const header = document.getElementById("headerTitle");
+  const name = d?.community?.name || chatTitle || "Community";
   if (header) header.innerHTML = `<div class="chat-header"><div class="chat-header-main">${name}</div></div>`;
 }
 
@@ -197,26 +199,20 @@ function renderCommunityMembersList(list) {
   const container = document.getElementById("memberSidebar");
   if (!container) return;
   container.innerHTML = "<h3>Members</h3>";
-  const fragment = document.createDocumentFragment();
   list.forEach(m => {
     const row = document.createElement("div");
     row.className = "member";
-    row.style.marginBottom = "12px";
     row.onclick = () => window.location.href = `public-profile.html?email=${encodeURIComponent(m.email)}`;
     
     const avatar = m.profilePic 
       ? `<img class="chat-avatar" src="${m.profilePic}" />` 
       : `<div class="chat-avatar-fallback">${getInitials(m.fullName)}</div>`;
 
-    row.innerHTML = `<div class="member-row" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+    row.innerHTML = `<div class="member-row" style="display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:12px;">
       ${avatar}<div class="member-name">${m.fullName}</div></div>`;
-    fragment.appendChild(row);
+    container.appendChild(row);
   });
-  container.appendChild(fragment);
 }
-
-// Add this at the top of your state section
-let selfMessageShield = false;
 
 async function loadMessagesOnce(showSpinner = true) {
   if (!activeConversationId) return;
@@ -233,18 +229,10 @@ async function loadMessagesOnce(showSpinner = true) {
     const fragment = document.createDocumentFragment();
 
     serverMessages.forEach(msg => {
-      const isMe = msg.senderEmail === loggedInUser.email;
-      
-      // FIX 1: Generate a content-based key for your own messages
-      const contentKey = isMe ? `sent_${msg.text || msg.fileName || ""}` : null;
       const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
-      
-      // FIX 2: Check BOTH the unique ID and the content-based lock
-      if (!renderedMessageIds.has(uniqueKey) && (!contentKey || !renderedMessageIds.has(contentKey))) {
+      if (!renderedMessageIds.has(uniqueKey)) {
         fragment.appendChild(buildMessageRow(msg));
         renderedMessageIds.add(uniqueKey);
-        // If it was a 'sent' message, make sure the content key is also marked as used
-        if (contentKey) renderedMessageIds.add(contentKey);
         addedCount++;
       }
     });
@@ -254,7 +242,7 @@ async function loadMessagesOnce(showSpinner = true) {
       container.scrollTop = container.scrollHeight;
     }
   } catch (err) {
-    console.warn("Polling Sync silent failure:", err);
+    console.warn("Polling failure:", err);
   } finally {
     if (showSpinner) hideChatLoader();
   }
@@ -267,8 +255,8 @@ function sendMessage(payloadOverride = null) {
 
   const payload = payloadOverride || { module: "sendMessage", type: "text", text };
   
-  // FIX 3: Register the content key IMMEDIATELY before rendering or fetching
-  const lockKey = `sent_${payload.text || payload.fileName || ""}`;
+  // Local lock to prevent duplicates
+  const lockKey = `sent_${payload.text || payload.fileName || Date.now()}`;
   renderedMessageIds.add(lockKey);
 
   const container = document.getElementById("messages");
@@ -289,6 +277,7 @@ function sendMessage(payloadOverride = null) {
     });
   }
 }
+
 function buildMessageRow(msg) {
   const isMe = msg.senderEmail === loggedInUser.email;
   const color = getUserColor(msg.senderEmail);
@@ -300,7 +289,7 @@ function buildMessageRow(msg) {
   if (isMe) {
     pic = loggedInUser.profilePic;
     name = loggedInUser.fullName;
-  } else if (mode === "community") {
+  } else if (mode === "community" || mode === "event") {
     const s = communityMembers.find(m => m.email === msg.senderEmail) || {};
     pic = s.profilePic;
     name = s.fullName || msg.senderEmail;
@@ -314,15 +303,13 @@ function buildMessageRow(msg) {
     : `<div class="chat-avatar-fallback">${getInitials(name)}</div>`;
 
   const bubble = document.createElement("div");
+  bubble.className = "chat-bubble";
   bubble.style.cssText = `max-width:70%; padding:8px 12px; border-radius:16px; font-size:14px; background:${isMe ? color.bg : "#F3F4F6"}; color:${isMe ? color.text : "#111827"};`;
   
   if (msg.type === "image") {
-    // FIX: Optimized image rendering (small in chat, clickable)
-    const imgHTML = `<img src="${msg.fileData}" class="chat-image-preview">`;
-    bubble.innerHTML = imgHTML;
-    bubble.querySelector('.chat-image-preview').onclick = () => openImageModal(msg.fileData);
+    bubble.innerHTML = `<img src="${msg.fileData}" class="chat-image-preview" onclick="openImageModal('${msg.fileData}')">`;
   } else if (msg.type === "document") {
-    bubble.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName}" class="chat-doc" style="color:inherit; text-decoration:none;">📄 ${msg.fileName}</a>`;
+    bubble.innerHTML = `<a href="${msg.fileData}" download="${msg.fileName}" style="color:inherit; text-decoration:none;">📄 ${msg.fileName}</a>`;
   } else {
     bubble.textContent = msg.text || "";
   }
@@ -341,22 +328,16 @@ function buildMessageRow(msg) {
   return row;
 }
 
-
 /****************************************************
- * 5. POLLING LOGIC
+ * 5. POLLING & EVENTS
  ****************************************************/
 function startPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   pollingInterval = setInterval(() => {
-    if (activeConversationId) {
-       loadMessagesOnce(false);
-    }
+    if (activeConversationId) loadMessagesOnce(false);
   }, 4000); 
 }
 
-/****************************************************
- * 6. INIT & EVENT LISTENERS
- ****************************************************/
 function setupEventListeners() {
   document.getElementById("sendBtn")?.addEventListener("click", () => sendMessage());
   document.getElementById("messageInput")?.addEventListener("keydown", e => {
@@ -379,36 +360,42 @@ function setupEventListeners() {
       inp.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        try {
-          const b64 = await fileToBase64(file);
-          sendMessage({ module: "sendMessage", type: cfg.type, fileName: file.name, fileData: b64 });
-        } catch (err) { console.error("File processing failed", err); }
+        const b64 = await fileToBase64(file);
+        sendMessage({ module: "sendMessage", type: cfg.type, fileName: file.name, fileData: b64 });
         e.target.value = ""; 
       };
     }
   });
 }
 
+/****************************************************
+ * 6. INIT
+ ****************************************************/
 document.addEventListener("DOMContentLoaded", async () => {
   loadNavbar();
-  initImageModal(); // FIX: Setup image full-screen logic
+  initImageModal();
   showChatLoader();
   setupEventListeners();
 
   const backgroundTasks = [];
+  
   if (mode === "private") {
     const toggle = document.getElementById("toggleMembers");
     if (toggle) toggle.style.display = "none";
     backgroundTasks.push(loadOtherUserProfile());
   } else {
+    // Both 'community' and 'event' use these
     backgroundTasks.push(loadCommunityInfo());
     backgroundTasks.push(loadCommunityMembers());
   }
 
   try {
     if (!activeConversationId) {
-      const mod = mode === "community" ? "startCommunityConversation" : "startConversation";
-      const p = mode === "community" ? `&communityId=${communityId}` : `&otherEmail=${finalOtherEmail}`;
+      // Use startCommunityConversation for both Communities and Events
+      const isGroup = (mode === "community" || mode === "event");
+      const mod = isGroup ? "startCommunityConversation" : "startConversation";
+      const p = isGroup ? `&communityId=${communityId}` : `&otherEmail=${finalOtherEmail}`;
+      
       const r = await fetch(`${API_URL}?module=${mod}&userEmail=${loggedInUser.email}${p}`);
       const d = await r.json();
       activeConversationId = d.conversationId;
