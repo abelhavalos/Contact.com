@@ -226,6 +226,89 @@ async function loadMessagesOnce(showSpinner = true) {
     const fragment = document.createDocumentFragment();
 
     serverMessages.forEach(msg => {
+      // 1. Generate keys to check against existing messages
+      const msgId = msg.id ? String(msg.id) : null;
+      const content = msg.text || msg.fileName || "";
+      // Fuzzy key: combination of sender and content to catch duplicates if ID is missing
+      const contentKey = `sent_${msg.senderEmail}_${content}`;
+      
+      // 2. Check if we have already rendered this
+      if (
+        (msgId && renderedMessageIds.has(msgId)) || 
+        renderedMessageIds.has(contentKey)
+      ) {
+        return; // Skip this message
+      }
+
+      // 3. Render and track
+      fragment.appendChild(buildMessageRow(msg));
+      
+      if (msgId) renderedMessageIds.add(msgId);
+      renderedMessageIds.add(contentKey);
+      addedCount++;
+    });
+
+    if (addedCount > 0) {
+      container.appendChild(fragment);
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch (err) {
+    console.warn("Polling failure:", err);
+  } finally {
+    if (showSpinner) hideChatLoader();
+  }
+}
+
+function sendMessage(payloadOverride = null) {
+  const input = document.getElementById("messageInput");
+  const text = (input?.value || "").trim();
+  if (!payloadOverride && (!text || !activeConversationId)) return;
+
+  const payload = payloadOverride || { module: "sendMessage", type: "text", text };
+  const timestamp = Date.now();
+  
+  // THE FIX: Lock the UI immediately using the same fuzzy key logic as polling
+  const content = payload.text || payload.fileName || "";
+  const contentKey = `sent_${loggedInUser.email}_${content}`;
+  renderedMessageIds.add(contentKey);
+
+  const container = document.getElementById("messages");
+  if (container) {
+    const optMsg = { senderEmail: loggedInUser.email, ...payload, timestamp: timestamp };
+    container.appendChild(buildMessageRow(optMsg));
+    container.scrollTop = container.scrollHeight;
+  }
+
+  if (!payloadOverride) {
+    input.value = "";
+    // Using encodeURIComponent is good, but added timestamp to the URL to help server logging
+    fetch(`${API_URL}?module=sendMessage&conversationId=${activeConversationId}&senderEmail=${loggedInUser.email}&type=text&text=${encodeURIComponent(text)}&timestamp=${timestamp}`, { mode: 'no-cors' });
+  } else {
+    fetch(API_URL, { 
+      method: "POST", 
+      mode: 'no-cors',
+      body: JSON.stringify({ ...payload, conversationId: activeConversationId, senderEmail: loggedInUser.email, timestamp: timestamp }) 
+    });
+  }
+}
+
+
+/***
+async function loadMessagesOnce(showSpinner = true) {
+  if (!activeConversationId) return;
+  if (showSpinner) showChatLoader();
+
+  try {
+    const r = await fetch(`${API_URL}?module=getMessages&conversationId=${activeConversationId}`);
+    const data = await r.json();
+    const serverMessages = data.messages || [];
+    const container = document.getElementById("messages");
+    if (!container) return;
+
+    let addedCount = 0;
+    const fragment = document.createDocumentFragment();
+
+    serverMessages.forEach(msg => {
       // THE FIX: Check for the optimistic lock key OR the specific ID
       const optimisticKey = `sent_${msg.text || msg.fileName}_${msg.timestamp}`;
       const uniqueKey = msg.id || `${msg.senderEmail}_${msg.timestamp}_${msg.text}`;
@@ -278,6 +361,7 @@ function sendMessage(payloadOverride = null) {
     });
   }
 }
+*/
 
 function buildMessageRow(msg) {
   const isMe = msg.senderEmail === loggedInUser.email;
