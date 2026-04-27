@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HomeQuest CRM – Forgot Access</title>
+  <link rel="stylesheet" href="styles/forgot-access.css" />
+  <script defer src="forgot-access.js"></script>
+</head>
+
+<body>
+  <div class="hq-dashboard">
+
+    <header class="hq-topbar">
+      <div class="hq-logo">HQ</div>
+      <div class="hq-topbar-title">Forgot Access</div>
+      <button class="hq-exit" onclick="window.location.href='index.html'">BACK TO LOGIN</button>
+    </header>
+
+    <div class="hq-main" style="justify-content:center; align-items:center;">
+      <section class="hq-forgot-panel">
+        <h2>Request Access Reset</h2>
+        <p>Enter the email you use to log in.<br>We’ll notify your manager to reset your access.</p>
+
+        <input type="email" id="forgotEmail" placeholder="Your email" />
+
+        <button id="sendResetRequest">Send Reset Request</button>
+
+        <p id="forgotMessage" class="hq-message"></p>
+
+        <p class="hq-small-link">
+          
+        </p>
+      </section>
+    </div>
+
+    <footer class="hq-status-bar">
+      <span>Status: Forgot Access · Requesting Manager Approval</span>
+    </footer>
+
+  </div>
+</body>
+</html>
