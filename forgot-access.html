@@ -2,9 +2,189 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contact.com – Forgot Access</title>
-  <link rel="stylesheet" href="styles/forgot-access.css" />
-  <script defer src="forgot-access.js"></script>
+  <style>
+    /* --- THEME CONSTANTS --- */
+    :root {
+      --bg-dark: #121212;
+      --panel-bg: #1e1e1e;
+      --header-bg: #252525;
+      --accent-blue: #0078d4;
+      --text-main: #e0e0e0;
+      --text-muted: #a0a0a0;
+      --error-red: #ff4d4d;
+      --success-green: #4caf50;
+      --border-color: #333333;
+    }
+
+    /* --- BASE STYLES --- */
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden; /* Prevents scroll on the dashboard shell */
+    }
+
+    .hq-dashboard {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* --- TOPBAR --- */
+    .hq-topbar {
+      height: 60px;
+      background-color: var(--header-bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 2px solid var(--accent-blue);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+
+    .hq-logo {
+      font-weight: 800;
+      font-size: 1.4rem;
+      letter-spacing: -0.5px;
+      color: var(--accent-blue);
+    }
+
+    .hq-topbar-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+    }
+
+    .hq-exit {
+      background: transparent;
+      border: 1px solid var(--error-red);
+      color: var(--error-red);
+      padding: 6px 16px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .hq-exit:hover {
+      background: var(--error-red);
+      color: white;
+    }
+
+    /* --- MAIN CONTENT AREA --- */
+    .hq-main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+      background-size: 30px 30px; /* Dashboard grid feel */
+    }
+
+    .hq-forgot-panel {
+      background-color: var(--panel-bg);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+
+    .hq-forgot-panel h2 {
+      margin: 0 0 15px 0;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+
+    .hq-forgot-panel p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+
+    /* --- FORM ELEMENTS --- */
+    #forgotEmail {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 20px;
+      background-color: #0c0c0c;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 1rem;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #forgotEmail:focus {
+      border-color: var(--accent-blue);
+    }
+
+    #sendResetRequest {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--accent-blue);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #sendResetRequest:hover {
+      background-color: #005a9e;
+    }
+
+    #sendResetRequest:disabled {
+      background-color: #444;
+      cursor: not-allowed;
+    }
+
+    /* --- FEEDBACK MESSAGES --- */
+    .hq-message {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      min-height: 20px;
+      transition: color 0.2s;
+    }
+
+    /* --- STATUS BAR --- */
+    .hq-status-bar {
+      height: 30px;
+      background-color: var(--header-bg);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.75rem;
+      color: #666;
+      border-top: 1px solid var(--border-color);
+      letter-spacing: 0.5px;
+    }
+
+    .status-dot {
+      height: 8px;
+      width: 8px;
+      background-color: var(--accent-blue);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+  </style>
 </head>
 
 <body>
@@ -16,27 +196,58 @@
       <button class="hq-exit" onclick="window.location.href='login.html'">BACK TO LOGIN</button>
     </header>
 
-    <div class="hq-main" style="justify-content:center; align-items:center;">
+    <div class="hq-main">
       <section class="hq-forgot-panel">
         <h2>Request Access Reset</h2>
-        <p>Enter the email you use to log in.<br>We’ll notify your manager to reset your access.</p>
+        <p>Enter the email associated with your account.<br>We will notify your administrator to verify and reset your credentials.</p>
 
-        <input type="email" id="forgotEmail" placeholder="Your email" />
+        <input type="email" id="forgotEmail" placeholder="e.g. employee@contact.com" required />
 
         <button id="sendResetRequest">Send Reset Request</button>
 
         <p id="forgotMessage" class="hq-message"></p>
-
-        <p class="hq-small-link">
-          
-        </p>
       </section>
     </div>
 
     <footer class="hq-status-bar">
-      <span>Status: Forgot Access · Requesting Manager Approval</span>
+      <span class="status-dot"></span>
+      <span>System Status: Online · Mode: Reset Protocol · Waiting for input...</span>
     </footer>
 
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const resetBtn = document.getElementById('sendResetRequest');
+      const emailInput = document.getElementById('forgotEmail');
+      const displayMsg = document.getElementById('forgotMessage');
+
+      resetBtn.addEventListener('click', () => {
+        const emailValue = emailInput.value.trim();
+
+        // Basic Email Validation
+        if (!emailValue || !emailValue.includes('@')) {
+          displayMsg.textContent = "Please enter a valid company email address.";
+          displayMsg.style.color = "var(--error-red)";
+          return;
+        }
+
+        // Visual Feedback for Production Feel
+        resetBtn.disabled = true;
+        resetBtn.textContent = "Processing...";
+        displayMsg.textContent = "";
+
+        // Simulate API call to the manager notification system
+        setTimeout(() => {
+          displayMsg.textContent = "Request sent successfully. Your manager has been notified.";
+          displayMsg.style.color = "var(--success-green)";
+          resetBtn.textContent = "Request Logged";
+          
+          // Optional: clear input after success
+          emailInput.value = "";
+        }, 1500);
+      });
+    });
+  </script>
 </body>
 </html>
